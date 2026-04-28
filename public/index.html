@@ -989,7 +989,9 @@ ${content}
         const ranked = items.map((item, i) => {
           const name     = item.title || item.name || '(unknown)';
           const normName = normalize(name);
-          const isTarget = normName.includes(normBiz) || normBiz.includes(normName);
+          const isTarget = normName === normBiz ||
+                           normName.startsWith(normBiz) ||
+                           normBiz.startsWith(normName);
           return {
             pos: i + 1, name,
             rating:     item.totalScore ?? item.rating ?? null,
@@ -1001,6 +1003,13 @@ ${content}
             isTarget,
           };
         });
+
+        // Only first match is USTED — avoids duplicates with generic names
+        let found = false;
+        for (const r of ranked) {
+          if (r.isTarget && !found) { found = true; }
+          else if (r.isTarget) { r.isTarget = false; }
+        }
 
         const target      = ranked.find(r => r.isTarget);
         const number1     = ranked[0];
@@ -1014,8 +1023,8 @@ ${content}
 
         // Comparison table
         let compHtml = '';
-        if (target && number1 && target.pos !== 1) {
-          const you  = target;
+        if (number1 && (!target || target.pos !== 1)) {
+          const you  = target ?? { rating: null, reviews: null, website: false, phone: false, hours: false, categories: [] };
           const num1 = number1;
 
           const ratingBadge = (youVal, num1Val) => {
