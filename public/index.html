@@ -777,6 +777,38 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     return res.json();
   }
 
+  // ── Extract placeId from Google Maps URL ──
+  function extractPlaceId(url) {
+    const m = url.match(/[?&]query_place_id=(ChIJ[^&]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const m2 = url.match(/0x[0-9a-f]+:0x[0-9a-f]+/i);
+    if (m2) return m2[0]; // hex cid format
+    return null;
+  }
+
+  // ── Scrape a single profile by URL (only called when invisible) ──
+  async function scrapeProfile(token, url, label) {
+    setStatus(`${label} — not in top 20, fetching profile data…`);
+    try {
+      const run = await startActor(token, {
+        startUrls: [{ url }],
+        maxCrawledPlacesPerSearch: 1,
+        language: 'en',
+        maxImages: 0,
+        maxReviews: 0,
+        exportPlaceUrls: false,
+        scrapeContacts: false,
+        scrapeDirections: false,
+        additionalInfo: false,
+      });
+      await pollUntilDone(token, run.id, `${label} profile`);
+      const items = await fetchDataset(token, run.defaultDatasetId, 5);
+      return items[0] || null;
+    } catch(e) {
+      return null; // silently fail — comparison will show blanks
+    }
+  }
+
   // ── Main ──
   async function runCheck() {
     clearError();
@@ -799,8 +831,9 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         showError(`Could not read coordinates from: ${url.substring(0, 60)}… — make sure it's a full Google Maps URL, not a short link.`);
         return;
       }
-      const name = extractNameFromUrl(url) || 'Business';
-      businesses.push({ url, coords, name });
+      const name    = extractNameFromUrl(url) || 'Business';
+      const placeId = extractPlaceId(url);
+      businesses.push({ url, coords, name, placeId });
     }
 
     const btn = document.getElementById('runBtn');
@@ -856,7 +889,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
           }
         }
 
-        allResults.push({ business: biz, byKeyword });
+        allResults.push({ business: biz, byKeyword, profileCache: {} });
       }
 
       hideStatus();
@@ -989,7 +1022,10 @@ ${content}
         const ranked = items.map((item, i) => {
           const name     = item.title || item.name || '(unknown)';
           const normName = normalize(name);
-          const isTarget = normName.includes(normBiz) || normBiz.includes(normName);
+          // Match by placeId first (bulletproof), fall back to name
+          const isTarget = biz.placeId
+            ? (item.placeId === biz.placeId)
+            : (normName === normBiz || normName.startsWith(normBiz) || normBiz.startsWith(normName));
           return {
             pos: i + 1, name,
             rating:     item.totalScore ?? item.rating ?? null,
@@ -998,24 +1034,56 @@ ${content}
             website:    isRealWebsite(item.website ?? null),
             phone:      !!(item.phone ?? item.phoneUnformatted ?? null),
             hours:      !!(item.openingHours?.length),
+            placeId:    item.placeId,
             isTarget,
           };
         });
 
-        const target      = ranked.find(r => r.isTarget);
-        const number1     = ranked[0];
-        const pos         = target?.pos ?? null;
-        const total       = ranked.length;
+        // Only mark first match as target
+        let targetFound = false;
+        for (const r of ranked) {
+          if (r.isTarget && !targetFound) { targetFound = true; }
+          else if (r.isTarget) { r.isTarget = false; }
+        }
+
+        const target  = ranked.find(r => r.isTarget);
+        const number1 = ranked[0];
+        const pos     = target?.pos ?? null;
+        const total   = ranked.length;
+
+        // If invisible — scrape profile to get real data for comparison
+        let profileData = target || null;
+        if (!target && number1) {
+          const prof = await scrapeProfile(token, biz.url, `Business ${i+1} kw "${kw}"`);
+          if (prof) {
+            profileData = {
+              name:       prof.title || biz.name,
+              rating:     prof.totalScore ?? prof.rating ?? null,
+              reviews:    prof.reviewsCount ?? null,
+              categories: prof.categories ?? [],
+              website:    isRealWebsite(prof.website ?? null),
+              phone:      !!(prof.phone ?? null),
+              hours:      !!(prof.openingHours?.length),
+            };
+            // Update business name from real profile
+            if (prof.title) biz.name = prof.title;
+            if (prof.placeId) biz.placeId = prof.placeId;
+          }
+        }
         const rankClass   = !pos ? 'bad' : pos <= 5 ? 'good' : pos <= 12 ? 'mid' : 'bad';
         const rankDisplay = pos ? `#${pos}` : '20+';
         const rankDesc    = pos
           ? t.ranked(pos, total, kw)
           : t.invisible(total, kw);
 
-        // Comparison table
+        // Comparison table — show always (even when invisible, compare vs #1)
         let compHtml = '';
-        if (target && number1 && target.pos !== 1) {
-          const you  = target;
+        if (number1 && (!target || target.pos !== 1)) {
+          // Use real profile data — from search result if found, from profile scrape if invisible
+          const you  = profileData ?? {
+            rating: null, reviews: null, website: false,
+            phone: false, hours: false, categories: [],
+          };
           const num1 = number1;
 
           const ratingBadge = (youVal, num1Val) => {
