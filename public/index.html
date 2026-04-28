@@ -726,9 +726,12 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
   function isRealWebsite(url) {
     if (!url) return false;
+    if (typeof url !== 'string') return false;
+    if (url.trim() === '') return false;
     const social = ['facebook.com','fb.com','instagram.com','twitter.com',
                     'x.com','tiktok.com','youtube.com','linkedin.com',
-                    'yelp.com','tripadvisor.com'];
+                    'yelp.com','tripadvisor.com','google.com','goo.gl',
+                    'maps.app','linktr.ee','wa.me','whatsapp.com'];
     try {
       const host = new URL(url).hostname.replace('www.', '');
       return !social.some(s => host.includes(s));
@@ -961,7 +964,7 @@ ${content}
             rating:     item.totalScore ?? item.rating ?? null,
             reviews:    item.reviewsCount ?? item.reviewCount ?? null,
             categories: item.categories ?? (item.categoryName ? [item.categoryName] : []),
-            website:    isRealWebsite(item.website ?? item.url ?? null),
+            website:    isRealWebsite(item.website ?? null),
             phone:      !!(item.phone ?? item.phoneUnformatted ?? null),
             hours:      !!(item.openingHours?.length),
             isTarget,
