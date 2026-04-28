@@ -551,6 +551,15 @@
     return res.json();
   }
 
+  // Generate Google UULE location code from city name
+  function generateUule(location) {
+    const secret = 'AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY';
+    const str = 'role::1\nproducer::12\nprovenance::6\ntimestamp::' + 
+      (Date.now() * 1000) + '\nlatlng{\nlatitude_e7::0\nlongitude_e7::0\n}\nradius::-1\nfulladdress::' + location + '\n';
+    // Simple base64 UULE
+    return 'w+CAIQICIa' + btoa(location);
+  }
+
   async function runCheck() {
     clearError();
     document.getElementById('results').style.display = 'none';
@@ -577,14 +586,14 @@
         setStatus(`Searching "${kw}" in ${city || country} (${i+1}/${keywords.length})…`);
 
         const langCode = country === 'se' ? 'sv' : country === 'us' || country === 'gb' ? 'en' : 'es';
-        const searchUrl = city
-          ? `https://www.${engine}/search?q=${encodeURIComponent(kw)}&near=${encodeURIComponent(city)}&gl=${country}&hl=${langCode}&num=100`
-          : `https://www.${engine}/search?q=${encodeURIComponent(kw)}&gl=${country}&hl=${langCode}&num=100`;
 
         const run = await startActor(token, {
-          startUrls: [{ url: searchUrl }],
-          maxPagesPerQuery: 1,
+          queries: kw,
+          maxPagesPerQuery: 3,
+          countryCode: country,
+          languageCode: langCode,
           mobileResults: false,
+          ...(city ? { locationUule: generateUule(city) } : {}),
         });
 
         await pollUntilDone(token, run.id, `"${kw}"`);
