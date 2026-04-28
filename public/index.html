@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Maps Rank Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #222;
+    --accent: #c8f135;
+    --accent2: #ff4d4d;
+    --text: #f0f0f0;
+    --muted: #666;
+    --rank-good: #c8f135;
+    --rank-mid: #ffb347;
+    --rank-bad: #ff4d4d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .container { max-width: 820px; margin: 0 auto; }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  input, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, textarea:focus { border-color: var(--accent); }
+  input[type="password"] { letter-spacing: 0.1em; }
+  textarea { resize: vertical; line-height: 1.6; }
+
+  .hint {
+    margin-top: 6px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+  }
+
+  .url-counter {
+    margin-top: 6px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+  }
+
+  .url-counter span { color: var(--accent); }
+
+  .field { margin-bottom: 20px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .keywords-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .keyword-tag {
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 5px 10px 5px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .keyword-tag button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .keyword-tag button:hover { color: var(--accent2); }
+
+  .keyword-input-row { display: flex; gap: 8px; }
+  .keyword-input-row input { flex: 1; }
+
+  .btn-add {
+    background: var(--border);
+    border: 1px solid #333;
+    color: var(--text);
+    border-radius: 3px;
+    padding: 11px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .btn-add:hover { background: #2a2a2a; }
+
+  .btn-run {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 3px;
+    color: #0a0a0a;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    padding: 16px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: 8px;
+  }
+  .btn-run:hover { opacity: 0.9; }
+  .btn-run:active { transform: scale(0.99); }
+  .btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    align-items: center;
+    gap: 10px;
+    display: none;
+  }
+  .status-bar.visible { display: flex; }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    background: rgba(255,77,77,0.08);
+    border: 1px solid rgba(255,77,77,0.3);
+    border-radius: 4px;
+    padding: 14px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--rank-bad);
+    margin-bottom: 16px;
+    display: none;
+  }
+  .error-box.visible { display: block; }
+
+  /* ── RESULTS ── */
+  #results { display: none; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .results-header h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+
+  .btn-pdf {
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 3px;
+    padding: 8px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-pdf:hover { background: var(--accent); color: #0a0a0a; }
+
+  /* Business block */
+  .biz-block {
+    margin-bottom: 48px;
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+  }
+  .biz-block:first-child { border-top: none; padding-top: 0; }
+
+  .biz-header {
+    margin-bottom: 20px;
+  }
+
+  .biz-index {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .biz-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .keyword-section { margin-bottom: 28px; }
+
+  .keyword-label {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .rank-hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .rank-number {
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    min-width: 110px;
+  }
+  .rank-number.good { color: var(--rank-good); }
+  .rank-number.mid  { color: var(--rank-mid); }
+  .rank-number.bad  { color: var(--rank-bad); }
+
+  .rank-meta { flex: 1; }
+  .rank-meta .biz-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .rank-meta .rank-desc { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  .results-list {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-row.is-target {
+    background: rgba(200,241,53,0.07);
+    border-left: 3px solid var(--accent);
+  }
+  .result-row:hover:not(.is-target) { background: #111; }
+
+  .result-pos {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    width: 26px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .result-row.is-target .result-pos { color: var(--accent); font-weight: 700; }
+
+  .result-name { flex: 1; font-size: 13px; font-weight: 600; }
+  .result-row.is-target .result-name { color: var(--accent); }
+
+  .result-rating {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .invisible-row {
+    padding: 12px 14px;
+    background: rgba(255,77,77,0.05);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--rank-bad);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid rgba(255,77,77,0.15);
+  }
+
+  /* ── COMPARISON TABLE ── */
+  .comparison-wrap { margin-top: 10px; }
+
+  .comparison-title {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+
+  .comparison-table thead tr { background: #1a1a1a; }
+
+  .comparison-table th {
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  .comparison-table th:nth-child(2) { color: var(--accent); }
+
+  .comparison-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table tr:hover td { background: #111; }
+  .comparison-table td:first-child { color: var(--muted); font-size: 11px; }
+
+  .cmp-you  { color: var(--text); font-weight: 500; }
+  .cmp-num1 { color: #888; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .badge-good    { background: rgba(200,241,53,0.15); color: var(--accent); }
+  .badge-bad     { background: rgba(255,77,77,0.12);  color: var(--rank-bad); }
+  .badge-ok      { background: rgba(255,179,71,0.15); color: var(--rank-mid); }
+  .badge-neutral { background: #1e1e1e; color: #888; }
+
+  .coords-pill {
+    display: none;
+    margin-top: 6px;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+  }
+  .coords-pill.visible { display: inline-flex; }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: #fff; color: #000; padding: 20px; }
+    .card, .rank-hero, .results-list, .comparison-table { border-color: #ddd; background: #fff; }
+    .btn-pdf, .btn-run, #inputSection { display: none !important; }
+    #results { display: block !important; }
+    .rank-number.good { color: #4a7c00; }
+    .rank-number.mid  { color: #b36200; }
+    .rank-number.bad  { color: #c00; }
+    h1, .results-header h2, .rank-meta .biz-name, .result-name, .biz-title { color: #000; }
+    .result-row.is-target { background: #f5ffe0; }
+    .result-row.is-target .result-name,
+    .result-row.is-target .result-pos { color: #4a7c00; }
+    label, .hint, .logo, .subtitle, .keyword-label, .biz-index,
+    .result-rating, .rank-meta .rank-desc, .result-pos, .comparison-title { color: #555; }
+    .comparison-table thead tr { background: #f5f5f5; }
+    .comparison-table th { color: #888; border-color: #ddd; }
+    .comparison-table th:nth-child(2) { color: #4a7c00; }
+    .comparison-table td { border-color: #eee; color: #000; }
+    .badge-good { background: #f0ffe0; color: #4a7c00; }
+    .badge-bad  { background: #fff0f0; color: #c00; }
+    .badge-ok   { background: #fff8ec; color: #b36200; }
+    .badge-neutral { background: #f5f5f5; color: #666; }
+    .biz-block { border-top-color: #ddd; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">Maps Rank Checker</div>
+    <h1>Where do you<br>actually <span>rank?</span></h1>
+    <p class="subtitle">// paste up to 30 Google Maps URLs — rank check all of them at once</p>
+  </header>
+
+  <div id="inputSection">
+
+    <div class="card">
+      <div class="field">
+        <label>Apify API Token</label>
+        <input type="password" id="apifyToken" placeholder="apify_api_xxxx…" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>Google Maps URLs — one per line (max 30)</label>
+        <textarea id="mapsUrls" rows="6" placeholder="https://www.google.com/maps/place/Plomero+Garcia/@-33.123,-70.456,15z/…
+https://www.google.com/maps/place/Dr+Cifuentes/@-33.456,-70.789,15z/…
+https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></textarea>
+        <div class="url-counter" id="urlCounter">0 / 30 URLs</div>
+        <div class="hint">// coordinates are extracted automatically from each URL</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>Keywords</label>
+        <div class="keyword-input-row">
+          <input type="text" id="keywordInput" placeholder="e.g. plumber, gas fitter…">
+          <button class="btn-add" onclick="addKeyword()">+ Add</button>
+        </div>
+        <div class="hint">// all keywords run in one batch — much faster</div>
+        <div class="keywords-grid" id="keywordTags"></div>
+      </div>
+    </div>
+
+    <button class="btn-run" id="runBtn" onclick="runCheck()">▶ Run Rank Check</button>
+
+  </div>
+
+  <div class="status-bar" id="statusBar">
+    <div class="spinner"></div>
+    <span id="statusText">Initialising…</span>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div id="results">
+    <div class="results-header">
+      <h2>Audit Results</h2>
+      <button class="btn-pdf" onclick="window.print()">⬇ Save as PDF</button>
+    </div>
+    <div id="resultsBody"></div>
+  </div>
+
+</div>
+
+<script>
+  const BASE = 'https://api.apify.com/v2';
+  const ACTOR = 'compass~crawler-google-places';
+
+  let keywords = [];
+
+  // ── URL counter ──
+  document.getElementById('mapsUrls').addEventListener('input', function() {
+    const urls = parseUrls(this.value);
+    const counter = document.getElementById('urlCounter');
+    counter.innerHTML = `<span>${urls.length}</span> / 30 URLs`;
+    if (urls.length > 30) counter.style.color = 'var(--rank-bad)';
+    else counter.style.color = 'var(--muted)';
+  });
+
+  function parseUrls(raw) {
+    return raw.split('\n')
+      .map(u => u.trim())
+      .filter(u => u.includes('google.com/maps') || u.includes('goo.gl'));
+  }
+
+  // ── Coord extraction ──
+  function extractCoords(url) {
+    let m = url.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+    if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    m = url.match(/!3d(-?\d{1,3}\.\d+).*?!4d(-?\d{1,3}\.\d+)/);
+    if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    m = url.match(/[?&]ll=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+    if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    return null;
+  }
+
+  function extractNameFromUrl(url) {
+    const m = url.match(/maps\/place\/([^/@]+)/);
+    if (!m) return null;
+    return decodeURIComponent(m[1].replace(/\+/g, ' '));
+  }
+
+  // ── Keywords ──
+  document.getElementById('keywordInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addKeyword();
+  });
+
+  function addKeyword() {
+    const input = document.getElementById('keywordInput');
+    const val = input.value.trim();
+    if (!val || keywords.includes(val)) { input.value = ''; return; }
+    keywords.push(val);
+    input.value = '';
+    renderTags();
+  }
+
+  function removeKeyword(idx) {
+    keywords.splice(idx, 1);
+    renderTags();
+  }
+
+  function renderTags() {
+    document.getElementById('keywordTags').innerHTML = keywords.map((kw, i) => `
+      <div class="keyword-tag">
+        ${esc(kw)}
+        <button onclick="removeKeyword(${i})" title="Remove">×</button>
+      </div>
+    `).join('');
+  }
+
+  // ── Utils ──
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function setStatus(msg) {
+    document.getElementById('statusBar').classList.add('visible');
+    document.getElementById('statusText').textContent = msg;
+  }
+
+  function hideStatus() {
+    document.getElementById('statusBar').classList.remove('visible');
+  }
+
+  function showError(msg) {
+    const b = document.getElementById('errorBox');
+    b.textContent = '⚠ ' + msg;
+    b.classList.add('visible');
+  }
+
+  function clearError() {
+    document.getElementById('errorBox').classList.remove('visible');
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function normalize(s) {
+    return String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  function isRealWebsite(url) {
+    if (!url) return false;
+    const social = ['facebook.com','fb.com','instagram.com','twitter.com',
+                    'x.com','tiktok.com','youtube.com','linkedin.com',
+                    'yelp.com','tripadvisor.com'];
+    try {
+      const host = new URL(url).hostname.replace('www.', '');
+      return !social.some(s => host.includes(s));
+    } catch { return false; }
+  }
+
+  // ── Apify: start actor and poll ──
+  async function startActor(token, input) {
+    // Route through our proxy to avoid CORS
+    const res = await fetch(`/api/proxy?url=${encodeURIComponent(
+      `${BASE}/acts/${ACTOR}/runs?token=${token}&memory=2048`
+    )}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Apify HTTP ${res.status}`);
+    }
+
+    const { data: run } = await res.json();
+    return run;
+  }
+
+  async function pollUntilDone(token, runId, label) {
+    for (let i = 0; i < 72; i++) {
+      await sleep(5000);
+      const res  = await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/actor-runs/${runId}?token=${token}`)}`);
+      const data = await res.json();
+      const s    = data.data.status;
+      setStatus(`${label} — ${s} (${(i+1)*5}s)…`);
+      if (s === 'SUCCEEDED') break;
+      if (['FAILED','ABORTED','TIMED-OUT'].includes(s)) throw new Error(`Apify run ${s}`);
+    }
+  }
+
+  async function fetchDataset(token, datasetId, limit = 25) {
+    const res   = await fetch(`/api/proxy?url=${encodeURIComponent(
+      `${BASE}/datasets/${datasetId}/items?token=${token}&limit=${limit}`
+    )}`);
+    return res.json();
+  }
+
+  // ── Main ──
+  async function runCheck() {
+    clearError();
+    document.getElementById('results').style.display = 'none';
+
+    const token  = document.getElementById('apifyToken').value.trim();
+    const rawUrls = document.getElementById('mapsUrls').value;
+
+    if (!token)           return showError('Apify token is required.');
+    if (!keywords.length) return showError('Add at least one keyword.');
+
+    const urls = parseUrls(rawUrls).slice(0, 30);
+    if (!urls.length) return showError('Paste at least one valid Google Maps URL.');
+
+    // Parse all URLs
+    const businesses = [];
+    for (const url of urls) {
+      const coords = extractCoords(url);
+      if (!coords) {
+        showError(`Could not read coordinates from: ${url.substring(0, 60)}… — make sure it's a full Google Maps URL, not a short link.`);
+        return;
+      }
+      const name = extractNameFromUrl(url) || 'Business';
+      businesses.push({ url, coords, name });
+    }
+
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+
+    try {
+      // ── One Apify run per business, ALL keywords batched in one call ──
+      const allResults = []; // [{ business, keywordResults: { kw: [...items] } }]
+
+      for (let i = 0; i < businesses.length; i++) {
+        const biz = businesses[i];
+        setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords in one batch…`);
+
+        const run = await startActor(token, {
+          searchStringsArray: keywords,    // ALL keywords at once — one run per business
+          lat: biz.coords.lat,
+          lng: biz.coords.lng,
+          zoom: 14,
+          maxCrawledPlacesPerSearch: 20,
+          language: 'en',
+          maxImages: 0,
+          maxReviews: 0,
+          exportPlaceUrls: false,
+          scrapeContacts: false,
+          scrapeDirections: false,
+          additionalInfo: false,
+        });
+
+        await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
+
+        const items = await fetchDataset(token, run.defaultDatasetId, keywords.length * 25);
+
+        // Group items by searchString
+        const byKeyword = {};
+        for (const kw of keywords) byKeyword[kw] = [];
+
+        for (const item of items) {
+          const ss = (item.searchString || '').toLowerCase().trim();
+          // Match exact first
+          if (byKeyword[ss] !== undefined) {
+            byKeyword[ss].push(item);
+          } else {
+            // Fuzzy match
+            for (const kw of keywords) {
+              if (ss.includes(kw.toLowerCase()) || kw.toLowerCase().includes(ss)) {
+                byKeyword[kw].push(item);
+                break;
+              }
+            }
+          }
+        }
+
+        allResults.push({ business: biz, byKeyword });
+      }
+
+      hideStatus();
+      renderResults(allResults);
+
+    } catch (err) {
+      hideStatus();
+      showError(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── Render ──
+  function renderResults(allResults) {
+    const ts  = new Date().toLocaleString();
+    let html  = `<p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:32px;">// ${allResults.length} businesses · ${keywords.length} keywords · ${ts}</p>`;
+
+    for (let bi = 0; bi < allResults.length; bi++) {
+      const { business, byKeyword } = allResults[bi];
+      const normBiz = normalize(business.name);
+
+      html += `<div class="biz-block">
+        <div class="biz-header">
+          <div class="biz-index">// business ${bi + 1} of ${allResults.length}</div>
+          <div class="biz-title">${esc(business.name)}</div>
+        </div>`;
+
+      for (const kw of keywords) {
+        const items = byKeyword[kw] || [];
+
+        const ranked = items.map((item, i) => {
+          const name     = item.title || item.name || '(unknown)';
+          const normName = normalize(name);
+          const isTarget = normName.includes(normBiz) || normBiz.includes(normName);
+          return {
+            pos: i + 1, name,
+            rating:     item.totalScore ?? item.rating ?? null,
+            reviews:    item.reviewsCount ?? item.reviewCount ?? null,
+            categories: item.categories ?? (item.categoryName ? [item.categoryName] : []),
+            website:    isRealWebsite(item.website ?? item.url ?? null),
+            phone:      !!(item.phone ?? item.phoneUnformatted ?? null),
+            hours:      !!(item.openingHours?.length),
+            isTarget,
+          };
+        });
+
+        const target      = ranked.find(r => r.isTarget);
+        const number1     = ranked[0];
+        const pos         = target?.pos ?? null;
+        const total       = ranked.length;
+        const rankClass   = !pos ? 'bad' : pos <= 5 ? 'good' : pos <= 12 ? 'mid' : 'bad';
+        const rankDisplay = pos ? `#${pos}` : '20+';
+        const rankDesc    = pos
+          ? `Ranked ${pos} out of ${total} results`
+          : `Not visible in the top ${total} results`;
+
+        // Comparison table
+        let compHtml = '';
+        if (target && number1 && target.pos !== 1) {
+          const you  = target;
+          const num1 = number1;
+
+          const ratingBadge = (youVal, num1Val) => {
+            if (youVal == null) return `<span class="badge badge-bad">No rating</span>`;
+            const y = Number(youVal).toFixed(1);
+            if (youVal >= num1Val)       return `<span class="badge badge-good">★ ${y}</span>`;
+            if (youVal >= num1Val - 0.5) return `<span class="badge badge-ok">★ ${y}</span>`;
+            return `<span class="badge badge-bad">★ ${y}</span>`;
+          };
+
+          const reviewBadge = (youVal, num1Val) => {
+            if (!youVal) return `<span class="badge badge-bad">0</span>`;
+            if (youVal >= num1Val)       return `<span class="badge badge-good">${youVal}</span>`;
+            if (youVal >= num1Val * 0.5) return `<span class="badge badge-ok">${youVal}</span>`;
+            return `<span class="badge badge-bad">${youVal}</span>`;
+          };
+
+          const yesNoBadge = (youVal, num1Val) => {
+            const cls = youVal ? 'badge-good' : (num1Val ? 'badge-bad' : 'badge-neutral');
+            return `<span class="badge ${cls}">${youVal ? 'Yes' : 'No'}</span>`;
+          };
+
+          compHtml = `
+            <div class="comparison-wrap">
+              <div class="comparison-title">// vs #1 — ${esc(num1.name)}</div>
+              <table class="comparison-table">
+                <thead><tr>
+                  <th>Metric</th>
+                  <th>You — ${esc(business.name)}</th>
+                  <th>#1 — ${esc(num1.name)}</th>
+                </tr></thead>
+                <tbody>
+                  <tr>
+                    <td>Rating</td>
+                    <td class="cmp-you">${ratingBadge(you.rating, num1.rating)}</td>
+                    <td class="cmp-num1">${num1.rating != null ? '★ ' + Number(num1.rating).toFixed(1) : '—'}</td>
+                  </tr>
+                  <tr>
+                    <td>Reviews</td>
+                    <td class="cmp-you">${reviewBadge(you.reviews, num1.reviews)}</td>
+                    <td class="cmp-num1">${num1.reviews ?? '—'}</td>
+                  </tr>
+                  <tr>
+                    <td>Website</td>
+                    <td class="cmp-you">${yesNoBadge(you.website, num1.website)}</td>
+                    <td class="cmp-num1">${num1.website ? 'Yes' : 'No'}</td>
+                  </tr>
+                  <tr>
+                    <td>Phone</td>
+                    <td class="cmp-you">${yesNoBadge(you.phone, num1.phone)}</td>
+                    <td class="cmp-num1">${num1.phone ? 'Yes' : 'No'}</td>
+                  </tr>
+                  <tr>
+                    <td>Hours</td>
+                    <td class="cmp-you">${yesNoBadge(you.hours, num1.hours)}</td>
+                    <td class="cmp-num1">${num1.hours ? 'Yes' : 'No'}</td>
+                  </tr>
+                  <tr>
+                    <td>Categories</td>
+                    <td class="cmp-you"><span class="badge badge-neutral">${esc(you.categories?.join(', ') || '—')}</span></td>
+                    <td class="cmp-num1">${esc(num1.categories?.join(', ') || '—')}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>`;
+        }
+
+        html += `
+          <div class="keyword-section">
+            <div class="keyword-label">// keyword: "${esc(kw)}"</div>
+            <div class="rank-hero">
+              <div class="rank-number ${rankClass}">${rankDisplay}</div>
+              <div class="rank-meta">
+                <div class="biz-name">${esc(business.name)}</div>
+                <div class="rank-desc">${rankDesc} for "${esc(kw)}"</div>
+              </div>
+            </div>
+            <div class="results-list">
+              ${ranked.map(r => `
+                <div class="result-row${r.isTarget ? ' is-target' : ''}">
+                  <span class="result-pos">${r.pos}</span>
+                  <span class="result-name">${esc(r.name)}${r.isTarget ? ' ◀ YOU' : ''}</span>
+                  <span class="result-rating">${r.rating != null ? '★ ' + Number(r.rating).toFixed(1) + (r.reviews ? ' (' + r.reviews + ')' : '') : ''}</span>
+                </div>`).join('')}
+              ${!target ? `<div class="invisible-row">✕ &nbsp;${esc(business.name)} — not found in top ${total} results</div>` : ''}
+            </div>
+            ${compHtml}
+          </div>`;
+      }
+
+      html += `</div>`; // end biz-block
+    }
+
+    document.getElementById('resultsBody').innerHTML = html;
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+</script>
+</body>
+</html>
