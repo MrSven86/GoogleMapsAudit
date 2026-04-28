@@ -742,7 +742,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   async function startActor(token, input) {
     // Route through our proxy to avoid CORS
     const res = await fetch(`/api/proxy?url=${encodeURIComponent(
-      `${BASE}/acts/${ACTOR}/runs?token=${token}&memory=2048`
+      `${BASE}/acts/${ACTOR}/runs?token=${token}`
     )}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -832,6 +832,9 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
 
         const items = await fetchDataset(token, run.defaultDatasetId, 500);
+
+        // Sort by Apify's rank field — items come back in wrong order
+        items.sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
 
         // Group items by searchString
         const byKeyword = {};
