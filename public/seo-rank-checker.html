@@ -586,14 +586,14 @@
         setStatus(`Searching "${kw}" in ${city || country} (${i+1}/${keywords.length})…`);
 
         const langCode = country === 'se' ? 'sv' : country === 'us' || country === 'gb' ? 'en' : 'es';
+        const query = city ? `${kw} ${city}` : kw;
 
         const run = await startActor(token, {
-          queries: kw,
+          queries: query,
           maxPagesPerQuery: 3,
           countryCode: country,
           languageCode: langCode,
           mobileResults: false,
-          ...(city ? { locationUule: generateUule(city) } : {}),
         });
 
         await pollUntilDone(token, run.id, `"${kw}"`);
