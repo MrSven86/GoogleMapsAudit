@@ -833,6 +833,14 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
         const items = await fetchDataset(token, run.defaultDatasetId, 500);
 
+        // DEBUG — remove after checking
+        if (items.length > 0) {
+          console.log('=== APIFY ITEM FIELDS (first result) ===');
+          console.log(JSON.stringify(items[0], null, 2));
+          console.log('=== ALL TITLES IN ORDER ===');
+          console.log(items.map((it, i) => `${i+1}. ${it.title || it.name} | rank:${it.rank} | position:${it.position} | orderNo:${it.orderNo} | placeId:${it.placeId}`).join('\n'));
+        }
+
         // Group items by searchString
         const byKeyword = {};
         for (const kw of keywords) byKeyword[kw] = [];
