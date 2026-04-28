@@ -724,7 +724,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
         await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
 
-        const items = await fetchDataset(token, run.defaultDatasetId, keywords.length * 25);
+        const items = await fetchDataset(token, run.defaultDatasetId, 500);
 
         // Group items by searchString
         const byKeyword = {};
