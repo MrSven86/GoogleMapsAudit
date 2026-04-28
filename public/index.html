@@ -255,6 +255,20 @@
   }
   .biz-block:first-child { border-top: none; padding-top: 0; }
 
+  .biz-pdf-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 3px;
+    padding: 5px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .biz-pdf-btn:hover { border-color: var(--accent); color: var(--accent); }
+
   .biz-header {
     margin-bottom: 20px;
   }
@@ -760,6 +774,71 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     }
   }
 
+  // ── Open single business in new window for PDF saving ──
+  function openBizWindow(bi) {
+    const el = document.getElementById(`biz-block-${bi}`);
+    if (!el) return;
+
+    const bizName = el.dataset.bizname || 'report';
+    const content = el.innerHTML;
+
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>${bizName} — Rank Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Syne', sans-serif; background: #fff; color: #111; padding: 32px; max-width: 780px; margin: 0 auto; }
+  .biz-index { font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+  .biz-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 24px; }
+  .biz-pdf-btn { display: none; }
+  .keyword-section { margin-bottom: 28px; }
+  .keyword-label { font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+  .rank-hero { border: 1px solid #ddd; border-radius: 4px; padding: 20px 24px; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; }
+  .rank-number { font-size: 56px; font-weight: 800; line-height: 1; letter-spacing: -0.04em; min-width: 110px; }
+  .rank-number.good { color: #4a7c00; }
+  .rank-number.mid  { color: #b36200; }
+  .rank-number.bad  { color: #c00; }
+  .rank-meta .biz-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .rank-meta .rank-desc { font-family: 'DM Mono', monospace; font-size: 11px; color: #888; }
+  .results-list { border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+  .result-row { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-bottom: 1px solid #eee; }
+  .result-row:last-child { border-bottom: none; }
+  .result-row.is-target { background: #f5ffe0; border-left: 3px solid #4a7c00; }
+  .result-pos { font-family: 'DM Mono', monospace; font-size: 12px; color: #888; width: 26px; flex-shrink: 0; text-align: right; }
+  .result-row.is-target .result-pos { color: #4a7c00; font-weight: 700; }
+  .result-name { flex: 1; font-size: 13px; font-weight: 600; }
+  .result-row.is-target .result-name { color: #4a7c00; }
+  .result-rating { font-family: 'DM Mono', monospace; font-size: 11px; color: #888; flex-shrink: 0; }
+  .invisible-row { padding: 12px 14px; background: #fff0f0; font-family: 'DM Mono', monospace; font-size: 12px; color: #c00; }
+  .comparison-wrap { margin-top: 10px; }
+  .comparison-title { font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 8px; }
+  .comparison-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; font-family: 'DM Mono', monospace; font-size: 12px; }
+  .comparison-table thead tr { background: #f5f5f5; }
+  .comparison-table th { padding: 9px 12px; text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; font-weight: 500; border-bottom: 1px solid #ddd; }
+  .comparison-table th:nth-child(2) { color: #4a7c00; }
+  .comparison-table td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table td:first-child { color: #888; font-size: 11px; }
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 2px; font-size: 10px; font-weight: 600; }
+  .badge-good { background: #f0ffe0; color: #4a7c00; }
+  .badge-bad  { background: #fff0f0; color: #c00; }
+  .badge-ok   { background: #fff8ec; color: #b36200; }
+  .badge-neutral { background: #f5f5f5; color: #666; }
+  .print-hint { font-family: 'DM Mono', monospace; font-size: 12px; color: #888; margin-bottom: 24px; padding: 10px 14px; border: 1px solid #eee; border-radius: 4px; }
+  @media print { .print-hint { display: none; } }
+</style>
+</head>
+<body>
+<div class="print-hint">Press <strong>Ctrl+P</strong> (or Cmd+P on Mac) → Save as PDF</div>
+${content}
+</body>
+</html>`);
+    win.document.close();
+  }
+
   // ── Render ──
   function renderResults(allResults) {
     const ts  = new Date().toLocaleString();
@@ -769,9 +848,12 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
       const { business, byKeyword } = allResults[bi];
       const normBiz = normalize(business.name);
 
-      html += `<div class="biz-block">
+      html += `<div class="biz-block" id="biz-block-${bi}" data-bizname="${esc(business.name)}">
         <div class="biz-header">
-          <div class="biz-index">// business ${bi + 1} of ${allResults.length}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div class="biz-index">// business ${bi + 1} of ${allResults.length}</div>
+            <button class="biz-pdf-btn" onclick="openBizWindow(${bi})">⬇ Open as PDF</button>
+          </div>
           <div class="biz-title">${esc(business.name)}</div>
         </div>`;
 
