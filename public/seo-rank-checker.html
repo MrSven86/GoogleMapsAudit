@@ -414,6 +414,29 @@
           </select>
         </div>
       </div>
+      <div class="field">
+        <label>City</label>
+        <input type="text" id="cityName" placeholder="e.g. Buenos Aires, Stockholm, Madrid">
+        <div class="hint">// geographic restriction for search results</div>
+      </div>
+      <div class="field">
+        <label>Search Engine</label>
+        <select id="searchEngine">
+          <option value="google.com">google.com</option>
+          <option value="google.com.ar">google.com.ar 🇦🇷</option>
+          <option value="google.se">google.se 🇸🇪</option>
+          <option value="google.es">google.es 🇪🇸</option>
+          <option value="google.com.mx">google.com.mx 🇲🇽</option>
+          <option value="google.co.uk">google.co.uk 🇬🇧</option>
+          <option value="google.cl">google.cl 🇨🇱</option>
+          <option value="google.com.co">google.com.co 🇨🇴</option>
+          <option value="google.com.br">google.com.br 🇧🇷</option>
+          <option value="google.de">google.de 🇩🇪</option>
+          <option value="google.fr">google.fr 🇫🇷</option>
+          <option value="google.it">google.it 🇮🇹</option>
+          <option value="google.com.au">google.com.au 🇦🇺</option>
+        </select>
+      </div>
     </div>
 
     <div class="card">
@@ -535,6 +558,8 @@
     const token   = document.getElementById('apifyToken').value.trim();
     const website = document.getElementById('websiteUrl').value.trim();
     const country = document.getElementById('countryCode').value;
+    const city    = document.getElementById('cityName').value.trim();
+    const engine  = document.getElementById('searchEngine').value;
 
     if (!token)           return showError('Apify token is required.');
     if (!website)         return showError('Website URL is required.');
@@ -549,14 +574,16 @@
 
       for (let i = 0; i < keywords.length; i++) {
         const kw = keywords[i];
-        setStatus(`Searching "${kw}" (${i+1}/${keywords.length})…`);
+        setStatus(`Searching "${kw}" in ${city || country} (${i+1}/${keywords.length})…`);
+
+        const langCode = country === 'se' ? 'sv' : country === 'us' || country === 'gb' ? 'en' : 'es';
+        const searchUrl = city
+          ? `https://www.${engine}/search?q=${encodeURIComponent(kw)}&near=${encodeURIComponent(city)}&gl=${country}&hl=${langCode}&num=100`
+          : `https://www.${engine}/search?q=${encodeURIComponent(kw)}&gl=${country}&hl=${langCode}&num=100`;
 
         const run = await startActor(token, {
-          queries: kw,
-          resultsPerPage: 100,
+          startUrls: [{ url: searchUrl }],
           maxPagesPerQuery: 1,
-          countryCode: country,
-          languageCode: country === 'se' ? 'sv' : country === 'us' || country === 'gb' ? 'en' : 'es',
           mobileResults: false,
         });
 
