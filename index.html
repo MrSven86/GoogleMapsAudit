@@ -352,6 +352,80 @@
     border-top: 1px solid rgba(255,77,77,0.15);
   }
 
+  /* ── COMPARISON TABLE ── */
+  .comparison-wrap {
+    margin-top: 12px;
+    margin-bottom: 4px;
+  }
+
+  .comparison-title {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+
+  .comparison-table thead tr {
+    background: #1a1a1a;
+  }
+
+  .comparison-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comparison-table th:nth-child(2) { color: var(--accent); }
+  .comparison-table th:nth-child(3) { color: #888; }
+
+  .comparison-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table tr:hover td { background: #111; }
+
+  .comparison-table td:first-child {
+    color: var(--muted);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .cmp-you  { color: var(--text); font-weight: 500; }
+  .cmp-num1 { color: #888; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .badge-good { background: rgba(200,241,53,0.15); color: var(--accent); }
+  .badge-bad  { background: rgba(255,77,77,0.12);  color: var(--rank-bad); }
+  .badge-ok   { background: rgba(255,179,71,0.15); color: var(--rank-mid); }
+  .badge-neutral { background: #1e1e1e; color: #888; }
+
   @media print {
     body { background: #fff; color: #000; padding: 20px; }
     .card, .rank-hero, .results-list { border-color: #ddd; background: #fff; }
@@ -366,6 +440,17 @@
     .result-row.is-target .result-pos { color: #4a7c00; }
     label, .hint, .logo, .subtitle, .keyword-label,
     .result-rating, .rank-meta .rank-desc, .result-pos { color: #555; }
+    .comparison-table { border-color: #ddd; }
+    .comparison-table thead tr { background: #f5f5f5; }
+    .comparison-table th { color: #888; border-color: #ddd; }
+    .comparison-table th:nth-child(2) { color: #4a7c00; }
+    .comparison-table td { border-color: #eee; color: #000; }
+    .comparison-table td:first-child { color: #666; }
+    .cmp-you, .cmp-num1 { color: #000; }
+    .badge-good { background: #f0ffe0; color: #4a7c00; }
+    .badge-bad  { background: #fff0f0; color: #c00; }
+    .badge-ok   { background: #fff8ec; color: #b36200; }
+    .badge-neutral { background: #f5f5f5; color: #666; }
   }
 </style>
 </head>
@@ -659,14 +744,21 @@
         const normName = normalize(name);
         const isTarget = normName.includes(normBiz) || normBiz.includes(normName);
         return {
-          pos: i + 1, name,
-          rating:  item.totalScore ?? item.rating ?? null,
-          reviews: item.reviewsCount ?? item.reviewCount ?? null,
+          pos:        i + 1,
+          name,
+          rating:     item.totalScore ?? item.rating ?? null,
+          reviews:    item.reviewsCount ?? item.reviewCount ?? null,
+          categories: item.categories ?? item.categoryName ? [item.categoryName] : [],
+          website:    item.website ?? item.url ?? null,
+          phone:      item.phone ?? item.phoneUnformatted ?? null,
+          hours:      item.openingHours?.length > 0 || item.temporarilyClosed === false || item.businessStatus === 'OPERATIONAL',
           isTarget,
+          raw: item,
         };
       });
 
       const target      = ranked.find(r => r.isTarget);
+      const number1     = ranked[0];
       const pos         = target?.pos ?? null;
       const total       = ranked.length;
       const rankClass   = !pos ? 'bad' : pos <= 5 ? 'good' : pos <= 12 ? 'mid' : 'bad';
@@ -674,6 +766,85 @@
       const rankDesc    = pos
         ? `Ranked ${pos} out of ${total} results for "${kw}"`
         : `Not visible in the top ${total} results for "${kw}"`;
+
+      // Build comparison table if we have both target and #1
+      let comparisonHtml = '';
+      if (target && number1 && target.pos !== 1) {
+        const you = target;
+        const num1 = number1;
+
+        function ratingBadge(youVal, num1Val) {
+          if (youVal == null) return `<span class="badge badge-bad">No rating</span>`;
+          const y = Number(youVal).toFixed(1);
+          if (youVal >= num1Val)      return `<span class="badge badge-good">★ ${y}</span>`;
+          if (youVal >= num1Val - 0.5) return `<span class="badge badge-ok">★ ${y}</span>`;
+          return `<span class="badge badge-bad">★ ${y}</span>`;
+        }
+
+        function reviewBadge(youVal, num1Val) {
+          if (!youVal) return `<span class="badge badge-bad">0</span>`;
+          if (youVal >= num1Val)       return `<span class="badge badge-good">${youVal}</span>`;
+          if (youVal >= num1Val * 0.5) return `<span class="badge badge-ok">${youVal}</span>`;
+          return `<span class="badge badge-bad">${youVal}</span>`;
+        }
+
+        function yesNoBadge(youVal, num1Val) {
+          const yLabel = youVal ? 'Yes' : 'No';
+          const cls    = youVal ? 'badge-good' : (num1Val ? 'badge-bad' : 'badge-neutral');
+          return `<span class="badge ${cls}">${yLabel}</span>`;
+        }
+
+        const num1Rating  = num1.rating  != null ? Number(num1.rating).toFixed(1)  : '—';
+        const num1Reviews = num1.reviews != null ? num1.reviews : '—';
+        const num1Cats    = num1.categories?.length ? num1.categories.join(', ') : '—';
+        const youCats     = you.categories?.length  ? you.categories.join(', ')  : '—';
+
+        comparisonHtml = `
+          <div class="comparison-wrap">
+            <div class="comparison-title">// vs #1 in area — ${esc(num1.name)}</div>
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>You — ${esc(you.name)}</th>
+                  <th>#1 — ${esc(num1.name)}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Rating</td>
+                  <td class="cmp-you">${ratingBadge(you.rating, num1.rating)}</td>
+                  <td class="cmp-num1">${num1.rating != null ? '★ ' + num1Rating : '—'}</td>
+                </tr>
+                <tr>
+                  <td>Reviews</td>
+                  <td class="cmp-you">${reviewBadge(you.reviews, num1.reviews)}</td>
+                  <td class="cmp-num1">${num1Reviews}</td>
+                </tr>
+                <tr>
+                  <td>Website</td>
+                  <td class="cmp-you">${yesNoBadge(you.website, num1.website)}</td>
+                  <td class="cmp-num1">${num1.website ? 'Yes' : 'No'}</td>
+                </tr>
+                <tr>
+                  <td>Phone</td>
+                  <td class="cmp-you">${yesNoBadge(you.phone, num1.phone)}</td>
+                  <td class="cmp-num1">${num1.phone ? 'Yes' : 'No'}</td>
+                </tr>
+                <tr>
+                  <td>Hours listed</td>
+                  <td class="cmp-you">${yesNoBadge(you.hours, num1.hours)}</td>
+                  <td class="cmp-num1">${num1.hours ? 'Yes' : 'No'}</td>
+                </tr>
+                <tr>
+                  <td>Categories</td>
+                  <td class="cmp-you"><span class="badge badge-neutral">${esc(youCats)}</span></td>
+                  <td class="cmp-num1">${esc(num1Cats)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>`;
+      }
 
       html += `
         <div class="keyword-section">
@@ -685,7 +856,8 @@
               <div class="rank-desc">${rankDesc}</div>
             </div>
           </div>
-          <div class="results-list">
+          ${comparisonHtml}
+          <div class="results-list" style="margin-top:12px;">
             ${ranked.map(r => `
               <div class="result-row${r.isTarget ? ' is-target' : ''}">
                 <span class="result-pos">${r.pos}</span>
