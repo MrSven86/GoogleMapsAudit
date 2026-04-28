@@ -912,7 +912,35 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   .comparison-wrap { page-break-before: always; padding-top: 24px; margin-top: 0; }
   .comparison-title { font-size: 18px; font-family: 'Syne', sans-serif; font-weight: 800; letter-spacing: -0.01em; color: #111; margin-bottom: 4px; }
   .comparison-subtitle { font-size: 11px; font-family: 'DM Mono', monospace; color: #888; margin-bottom: 14px; }
+  /* Squeeze result rows so 20 fit on page 1 */
+  @media print {
+    body { padding: 16px; }
+    .biz-title { font-size: 16px; margin-bottom: 10px; }
+    .rank-hero { padding: 12px 16px; margin-bottom: 6px; }
+    .rank-number { font-size: 40px; min-width: 80px; }
+    .rank-meta .biz-name { font-size: 12px; }
+    .rank-meta .rank-desc { font-size: 10px; }
+    .keyword-section { margin-bottom: 12px; }
+    .keyword-label { margin-bottom: 6px; }
+    .result-row { padding: 4px 10px; }
+    .result-name { font-size: 11px; }
+    .result-rating { font-size: 10px; }
+    .result-pos { font-size: 10px; }
+    .print-hint { display: none; }
+  }
   .comparison-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; font-family: 'DM Mono', monospace; font-size: 12px; }
+  .comparison-table thead tr { background: #f5f5f5; }
+  .comparison-table th { padding: 9px 12px; text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; font-weight: 500; border-bottom: 1px solid #ddd; }
+  .comparison-table th:nth-child(2) { color: #4a7c00; }
+  .comparison-table td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table td:first-child { color: #888; font-size: 11px; }
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 2px; font-size: 10px; font-weight: 600; }
+  .badge-good { background: #f0ffe0; color: #4a7c00; }
+  .badge-bad  { background: #fff0f0; color: #c00; }
+  .badge-ok   { background: #fff8ec; color: #b36200; }
+  .badge-neutral { background: #f5f5f5; color: #666; }
+  .print-hint { font-family: 'DM Mono', monospace; font-size: 12px; color: #888; margin-bottom: 24px; padding: 10px 14px; border: 1px solid #eee; border-radius: 4px; } border-collapse: collapse; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; font-family: 'DM Mono', monospace; font-size: 12px; }
   .comparison-table thead tr { background: #f5f5f5; }
   .comparison-table th { padding: 9px 12px; text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; font-weight: 500; border-bottom: 1px solid #ddd; }
   .comparison-table th:nth-child(2) { color: #4a7c00; }
