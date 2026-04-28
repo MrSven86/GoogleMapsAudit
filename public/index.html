@@ -13,7 +13,7 @@
     --accent: #c8f135;
     --accent2: #ff4d4d;
     --text: #f0f0f0;
-    --muted: #666;
+    --muted: #999;
     --rank-good: #c8f135;
     --rank-mid: #ffb347;
     --rank-bad: #ff4d4d;
@@ -378,7 +378,6 @@
     border-top: 1px solid rgba(255,77,77,0.15);
   }
 
-  /* ── COMPARISON TABLE ── */
   .comparison-wrap { margin-top: 10px; }
 
   .comparison-title {
@@ -515,6 +514,14 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         <div class="hint">// all keywords run in one batch — much faster</div>
         <div class="keywords-grid" id="keywordTags"></div>
       </div>
+      <div class="field" style="margin-top:20px;">
+        <label>Report Language</label>
+        <select id="reportLang" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
+          <option value="en">🇬🇧 English</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="sv">🇸🇪 Svenska</option>
+        </select>
+      </div>
     </div>
 
     <button class="btn-run" id="runBtn" onclick="runCheck()">▶ Run Rank Check</button>
@@ -543,6 +550,89 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   const ACTOR = 'compass~crawler-google-places';
 
   let keywords = [];
+
+  // ── Translations ──
+  const T = {
+    en: {
+      keyword:       kw => `// keyword: "${kw}"`,
+      ranked:        (pos, total, kw) => `Ranked ${pos} out of ${total} results for "${kw}"`,
+      invisible:     (total, kw) => `Not visible in the top ${total} results for "${kw}"`,
+      notFound:      name => `${name} — not found in top results`,
+      you:           '◀ YOU',
+      vsTitle:       'Your profile vs #1',
+      vsSub:         (you, num1) => `// ${you} vs ${num1}`,
+      metric:        'Metric',
+      youCol:        name => `You — ${name}`,
+      num1Col:       name => `#1 — ${name}`,
+      rating:        'Rating',
+      reviews:       'Reviews',
+      website:       'Website',
+      phone:         'Phone',
+      hours:         'Hours listed',
+      categories:    'Categories',
+      yes:           'Yes',
+      no:            'No',
+      noRating:      'No rating',
+      bizOf:         (i, total) => `// business ${i} of ${total}`,
+      summary:       (n, k, ts) => `// ${n} businesses · ${k} keywords · ${ts}`,
+      openPdf:       '⬇ Open as PDF',
+      printHint:     'Press <strong>Ctrl+P</strong> (or Cmd+P on Mac) → Save as PDF',
+    },
+    es: {
+      keyword:       kw => `// palabra clave: "${kw}"`,
+      ranked:        (pos, total, kw) => `Posición ${pos} de ${total} resultados para "${kw}"`,
+      invisible:     (total, kw) => `No visible en el top ${total} para "${kw}"`,
+      notFound:      name => `${name} — no encontrado en los resultados`,
+      you:           '◀ USTED',
+      vsTitle:       'Tu perfil vs #1',
+      vsSub:         (you, num1) => `// ${you} vs ${num1}`,
+      metric:        'Métrica',
+      youCol:        name => `Usted — ${name}`,
+      num1Col:       name => `#1 — ${name}`,
+      rating:        'Calificación',
+      reviews:       'Reseñas',
+      website:       'Sitio web',
+      phone:         'Teléfono',
+      hours:         'Horarios',
+      categories:    'Categorías',
+      yes:           'Sí',
+      no:            'No',
+      noRating:      'Sin calificación',
+      bizOf:         (i, total) => `// negocio ${i} de ${total}`,
+      summary:       (n, k, ts) => `// ${n} negocios · ${k} palabras clave · ${ts}`,
+      openPdf:       '⬇ Abrir como PDF',
+      printHint:     'Presiona <strong>Ctrl+P</strong> (o Cmd+P en Mac) → Guardar como PDF',
+    },
+    sv: {
+      keyword:       kw => `// sökord: "${kw}"`,
+      ranked:        (pos, total, kw) => `Placering ${pos} av ${total} resultat för "${kw}"`,
+      invisible:     (total, kw) => `Inte synlig i topp ${total} för "${kw}"`,
+      notFound:      name => `${name} — hittades inte i resultaten`,
+      you:           '◀ DU',
+      vsTitle:       'Din profil vs #1',
+      vsSub:         (you, num1) => `// ${you} vs ${num1}`,
+      metric:        'Mätvärde',
+      youCol:        name => `Du — ${name}`,
+      num1Col:       name => `#1 — ${name}`,
+      rating:        'Betyg',
+      reviews:       'Recensioner',
+      website:       'Hemsida',
+      phone:         'Telefon',
+      hours:         'Öppettider',
+      categories:    'Kategorier',
+      yes:           'Ja',
+      no:            'Nej',
+      noRating:      'Inget betyg',
+      bizOf:         (i, total) => `// företag ${i} av ${total}`,
+      summary:       (n, k, ts) => `// ${n} företag · ${k} sökord · ${ts}`,
+      openPdf:       '⬇ Öppna som PDF',
+      printHint:     'Tryck <strong>Ctrl+P</strong> (eller Cmd+P på Mac) → Spara som PDF',
+    },
+  };
+
+  function getLang() {
+    return T[document.getElementById('reportLang').value] || T.en;
+  }
 
   // ── URL counter ──
   document.getElementById('mapsUrls').addEventListener('input', function() {
@@ -813,8 +903,9 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   .result-row.is-target .result-name { color: #4a7c00; }
   .result-rating { font-family: 'DM Mono', monospace; font-size: 11px; color: #888; flex-shrink: 0; }
   .invisible-row { padding: 12px 14px; background: #fff0f0; font-family: 'DM Mono', monospace; font-size: 12px; color: #c00; }
-  .comparison-wrap { margin-top: 10px; }
-  .comparison-title { font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 8px; }
+  .comparison-wrap { page-break-before: always; padding-top: 24px; margin-top: 0; }
+  .comparison-title { font-size: 18px; font-family: 'Syne', sans-serif; font-weight: 800; letter-spacing: -0.01em; color: #111; margin-bottom: 4px; }
+  .comparison-subtitle { font-size: 11px; font-family: 'DM Mono', monospace; color: #888; margin-bottom: 14px; }
   .comparison-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; font-family: 'DM Mono', monospace; font-size: 12px; }
   .comparison-table thead tr { background: #f5f5f5; }
   .comparison-table th { padding: 9px 12px; text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; font-weight: 500; border-bottom: 1px solid #ddd; }
@@ -832,7 +923,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 </style>
 </head>
 <body>
-<div class="print-hint">Press <strong>Ctrl+P</strong> (or Cmd+P on Mac) → Save as PDF</div>
+<div class="print-hint">${getLang().printHint}</div>
 ${content}
 </body>
 </html>`);
@@ -841,8 +932,9 @@ ${content}
 
   // ── Render ──
   function renderResults(allResults) {
+    const t   = getLang();
     const ts  = new Date().toLocaleString();
-    let html  = `<p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:32px;">// ${allResults.length} businesses · ${keywords.length} keywords · ${ts}</p>`;
+    let html  = `<p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:32px;">${t.summary(allResults.length, keywords.length, ts)}</p>`;
 
     for (let bi = 0; bi < allResults.length; bi++) {
       const { business, byKeyword } = allResults[bi];
@@ -851,8 +943,8 @@ ${content}
       html += `<div class="biz-block" id="biz-block-${bi}" data-bizname="${esc(business.name)}">
         <div class="biz-header">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <div class="biz-index">// business ${bi + 1} of ${allResults.length}</div>
-            <button class="biz-pdf-btn" onclick="openBizWindow(${bi})">⬇ Open as PDF</button>
+            <div class="biz-index">${t.bizOf(bi + 1, allResults.length)}</div>
+            <button class="biz-pdf-btn" onclick="openBizWindow(${bi})">${t.openPdf}</button>
           </div>
           <div class="biz-title">${esc(business.name)}</div>
         </div>`;
@@ -883,8 +975,8 @@ ${content}
         const rankClass   = !pos ? 'bad' : pos <= 5 ? 'good' : pos <= 12 ? 'mid' : 'bad';
         const rankDisplay = pos ? `#${pos}` : '20+';
         const rankDesc    = pos
-          ? `Ranked ${pos} out of ${total} results`
-          : `Not visible in the top ${total} results`;
+          ? t.ranked(pos, total, kw)
+          : t.invisible(total, kw);
 
         // Comparison table
         let compHtml = '';
@@ -893,7 +985,7 @@ ${content}
           const num1 = number1;
 
           const ratingBadge = (youVal, num1Val) => {
-            if (youVal == null) return `<span class="badge badge-bad">No rating</span>`;
+            if (youVal == null) return `<span class="badge badge-bad">${t.noRating}</span>`;
             const y = Number(youVal).toFixed(1);
             if (youVal >= num1Val)       return `<span class="badge badge-good">★ ${y}</span>`;
             if (youVal >= num1Val - 0.5) return `<span class="badge badge-ok">★ ${y}</span>`;
@@ -909,46 +1001,47 @@ ${content}
 
           const yesNoBadge = (youVal, num1Val) => {
             const cls = youVal ? 'badge-good' : (num1Val ? 'badge-bad' : 'badge-neutral');
-            return `<span class="badge ${cls}">${youVal ? 'Yes' : 'No'}</span>`;
+            return `<span class="badge ${cls}">${youVal ? t.yes : t.no}</span>`;
           };
 
           compHtml = `
             <div class="comparison-wrap">
-              <div class="comparison-title">// vs #1 — ${esc(num1.name)}</div>
+              <div class="comparison-title">${t.vsTitle}</div>
+              <div class="comparison-subtitle">${t.vsSub(esc(business.name), esc(num1.name))}</div>
               <table class="comparison-table">
                 <thead><tr>
-                  <th>Metric</th>
-                  <th>You — ${esc(business.name)}</th>
-                  <th>#1 — ${esc(num1.name)}</th>
+                  <th>${t.metric}</th>
+                  <th>${t.youCol(esc(business.name))}</th>
+                  <th>${t.num1Col(esc(num1.name))}</th>
                 </tr></thead>
                 <tbody>
                   <tr>
-                    <td>Rating</td>
+                    <td>${t.rating}</td>
                     <td class="cmp-you">${ratingBadge(you.rating, num1.rating)}</td>
                     <td class="cmp-num1">${num1.rating != null ? '★ ' + Number(num1.rating).toFixed(1) : '—'}</td>
                   </tr>
                   <tr>
-                    <td>Reviews</td>
+                    <td>${t.reviews}</td>
                     <td class="cmp-you">${reviewBadge(you.reviews, num1.reviews)}</td>
                     <td class="cmp-num1">${num1.reviews ?? '—'}</td>
                   </tr>
                   <tr>
-                    <td>Website</td>
+                    <td>${t.website}</td>
                     <td class="cmp-you">${yesNoBadge(you.website, num1.website)}</td>
-                    <td class="cmp-num1">${num1.website ? 'Yes' : 'No'}</td>
+                    <td class="cmp-num1">${num1.website ? t.yes : t.no}</td>
                   </tr>
                   <tr>
-                    <td>Phone</td>
+                    <td>${t.phone}</td>
                     <td class="cmp-you">${yesNoBadge(you.phone, num1.phone)}</td>
-                    <td class="cmp-num1">${num1.phone ? 'Yes' : 'No'}</td>
+                    <td class="cmp-num1">${num1.phone ? t.yes : t.no}</td>
                   </tr>
                   <tr>
-                    <td>Hours</td>
+                    <td>${t.hours}</td>
                     <td class="cmp-you">${yesNoBadge(you.hours, num1.hours)}</td>
-                    <td class="cmp-num1">${num1.hours ? 'Yes' : 'No'}</td>
+                    <td class="cmp-num1">${num1.hours ? t.yes : t.no}</td>
                   </tr>
                   <tr>
-                    <td>Categories</td>
+                    <td>${t.categories}</td>
                     <td class="cmp-you"><span class="badge badge-neutral">${esc(you.categories?.join(', ') || '—')}</span></td>
                     <td class="cmp-num1">${esc(num1.categories?.join(', ') || '—')}</td>
                   </tr>
@@ -959,22 +1052,22 @@ ${content}
 
         html += `
           <div class="keyword-section">
-            <div class="keyword-label">// keyword: "${esc(kw)}"</div>
+            <div class="keyword-label">${t.keyword(kw)}</div>
             <div class="rank-hero">
               <div class="rank-number ${rankClass}">${rankDisplay}</div>
               <div class="rank-meta">
                 <div class="biz-name">${esc(business.name)}</div>
-                <div class="rank-desc">${rankDesc} for "${esc(kw)}"</div>
+                <div class="rank-desc">${rankDesc}</div>
               </div>
             </div>
             <div class="results-list">
               ${ranked.map(r => `
                 <div class="result-row${r.isTarget ? ' is-target' : ''}">
                   <span class="result-pos">${r.pos}</span>
-                  <span class="result-name">${esc(r.name)}${r.isTarget ? ' ◀ YOU' : ''}</span>
+                  <span class="result-name">${esc(r.name)}${r.isTarget ? ' ' + t.you : ''}</span>
                   <span class="result-rating">${r.rating != null ? '★ ' + Number(r.rating).toFixed(1) + (r.reviews ? ' (' + r.reviews + ')' : '') : ''}</span>
                 </div>`).join('')}
-              ${!target ? `<div class="invisible-row">✕ &nbsp;${esc(business.name)} — not found in top ${total} results</div>` : ''}
+              ${!target ? `<div class="invisible-row">✕ &nbsp;${esc(t.notFound(business.name))}</div>` : ''}
             </div>
             ${compHtml}
           </div>`;
