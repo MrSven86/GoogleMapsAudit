@@ -703,6 +703,9 @@
       maxZoom: 19, crossOrigin: true,
     }).addTo(map);
 
+    // Fix tile loading artifact
+    setTimeout(() => map.invalidateSize(), 300);
+
     // Center pin
     const pinIcon = L.divIcon({
       className: '',
