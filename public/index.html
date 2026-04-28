@@ -816,7 +816,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
         const run = await startActor(token, {
           startUrls: keywords.map(kw => ({
-            url: `https://www.google.com/maps/search/${encodeURIComponent(kw)}/@${biz.coords.lat},${biz.coords.lng},17z`
+            url: `https://www.google.com/maps/search/${encodeURIComponent(kw)}/@${biz.coords.lat},${biz.coords.lng},15z`
           })),
           maxCrawledPlacesPerSearch: 20,
           language: 'en',
