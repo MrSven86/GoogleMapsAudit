@@ -515,6 +515,13 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         <div class="keywords-grid" id="keywordTags"></div>
       </div>
       <div class="field" style="margin-top:20px;">
+        <label>Search Area</label>
+        <select id="searchArea" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
+          <option value="15">🏙 Big City — Buenos Aires, Madrid, Stockholm…</option>
+          <option value="12">🏘 Small Town — Spokane, Hermiston, local area…</option>
+        </select>
+      </div>
+      <div class="field" style="margin-top:20px;">
         <label>Report Language</label>
         <select id="reportLang" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
           <option value="en">🇬🇧 English</option>
@@ -852,13 +859,14 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
       for (let i = 0; i < businesses.length; i++) {
         const biz = businesses[i];
+        const zoom = parseInt(document.getElementById('searchArea').value);
         setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords in one batch…`);
 
         const run = await startActor(token, {
-          searchStringsArray: keywords,    // ALL keywords at once — one run per business
+          searchStringsArray: keywords,
           lat: biz.coords.lat,
           lng: biz.coords.lng,
-          zoom: 14,
+          zoom: zoom,
           maxCrawledPlacesPerSearch: 20,
           language: 'en',
           maxImages: 0,
