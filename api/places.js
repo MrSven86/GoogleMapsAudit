@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         textQuery: keyword,
+        rankPreference: 'DISTANCE',
         locationBias: {
           circle: {
             center: { latitude: lat, longitude: lng },
