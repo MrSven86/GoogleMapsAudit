@@ -517,9 +517,21 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
       <div class="field" style="margin-top:20px;">
         <label>Search Area</label>
         <select id="searchArea" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
-          <option value="15">🏙 Big City — Buenos Aires, Madrid, Stockholm…</option>
-          <option value="11" selected>🏘 Small Town — Spokane, Hermiston, local area…</option>
+          <option value="13">🏙 Big City — Buenos Aires, Madrid, Stockholm…</option>
+          <option value="12" selected>🏘 Small Town — Spokane, Hermiston, local area…</option>
         </select>
+      </div>
+      <div class="field" style="margin-top:20px;">
+        <label>Search From (optional)</label>
+        <select id="searchFrom" onchange="toggleCityField()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
+          <option value="pin">📍 PIN — search from business location</option>
+          <option value="city">🏙 City — search from city center</option>
+          <option value="neighborhood">🏘 Neighborhood — search from neighborhood</option>
+        </select>
+        <div id="cityField" style="display:none;margin-top:8px;">
+          <input type="text" id="cityName" placeholder="e.g. Spokane, Buenos Aires, Palermo…">
+          <div class="hint">// we'll geocode this and search from there</div>
+        </div>
       </div>
       <div class="field" style="margin-top:20px;">
         <label>Report Language</label>
@@ -660,6 +672,24 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
   function getLang() {
     return T[document.getElementById('reportLang').value] || T.en;
+  }
+
+  function toggleCityField() {
+    const mode = document.getElementById('searchFrom').value;
+    document.getElementById('cityField').style.display = mode === 'pin' ? 'none' : 'block';
+  }
+
+  async function geocodeCity(cityName) {
+    const token = document.getElementById('apifyToken').value.trim();
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cityName)}&key=${token}`;
+    // Use Google Geocoding via proxy — but we don't have key here
+    // Fallback: use Nominatim (OpenStreetMap) — free, no key needed
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1`);
+    const data = await res.json();
+    if (data && data[0]) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+    throw new Error(`Could not find location: ${cityName}`);
   }
 
   function buildChecklist(you, t) {
@@ -859,13 +889,27 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
       for (let i = 0; i < businesses.length; i++) {
         const biz = businesses[i];
-        const zoom = parseInt(document.getElementById('searchArea').value);
+        const zoom      = parseInt(document.getElementById('searchArea').value);
+        const searchFrom = document.getElementById('searchFrom').value;
+        let searchLat   = biz.coords.lat;
+        let searchLng   = biz.coords.lng;
+
+        if (searchFrom !== 'pin') {
+          const cityName = document.getElementById('cityName').value.trim();
+          if (cityName) {
+            setStatus(`Geocoding "${cityName}"…`);
+            const cityCoords = await geocodeCity(cityName);
+            searchLat = cityCoords.lat;
+            searchLng = cityCoords.lng;
+          }
+        }
+
         setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords in one batch…`);
 
         const run = await startActor(token, {
           searchStringsArray: keywords,
-          lat: biz.coords.lat,
-          lng: biz.coords.lng,
+          lat: searchLat,
+          lng: searchLng,
           zoom: zoom,
           maxCrawledPlacesPerSearch: 20,
           language: 'en',
