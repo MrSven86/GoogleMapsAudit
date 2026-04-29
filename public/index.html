@@ -859,7 +859,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
         for (const kw of keywords) {
           setStatus(`Business ${i+1}/${businesses.length}: "${kw}"…`);
-          const res = await fetch('/api/places', {
+          const res = await fetch('/api/places/nearby', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ keyword: kw, lat: biz.coords.lat, lng: biz.coords.lng, radius }),
