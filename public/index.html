@@ -518,7 +518,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         <label>Search Area</label>
         <select id="searchArea" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
           <option value="15">🏙 Big City — Buenos Aires, Madrid, Stockholm…</option>
-          <option value="12">🏘 Small Town — Spokane, Hermiston, local area…</option>
+          <option value="11" selected>🏘 Small Town — Spokane, Hermiston, local area…</option>
         </select>
       </div>
       <div class="field" style="margin-top:20px;">
@@ -829,7 +829,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     clearError();
     document.getElementById('results').style.display = 'none';
 
-    const token   = document.getElementById('apifyToken').value.trim();
+    const token  = document.getElementById('apifyToken').value.trim();
     const rawUrls = document.getElementById('mapsUrls').value;
 
     if (!token)           return showError('Apify token is required.');
@@ -854,12 +854,13 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     btn.disabled = true;
 
     try {
-      const allResults = [];
+      // ── One Apify run per business, ALL keywords batched in one call ──
+      const allResults = []; // [{ business, keywordResults: { kw: [...items] } }]
 
       for (let i = 0; i < businesses.length; i++) {
-        const biz  = businesses[i];
+        const biz = businesses[i];
         const zoom = parseInt(document.getElementById('searchArea').value);
-        setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords…`);
+        setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords in one batch…`);
 
         const run = await startActor(token, {
           searchStringsArray: keywords,
@@ -877,16 +878,23 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         });
 
         await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
+
         const items = await fetchDataset(token, run.defaultDatasetId, 500);
+
+        // Sort by Apify's rank field — items come back in wrong order
         items.sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
 
+        // Group items by searchString
         const byKeyword = {};
         for (const kw of keywords) byKeyword[kw] = [];
+
         for (const item of items) {
           const ss = (item.searchString || '').toLowerCase().trim();
+          // Match exact first
           if (byKeyword[ss] !== undefined) {
             byKeyword[ss].push(item);
           } else {
+            // Fuzzy match
             for (const kw of keywords) {
               if (ss.includes(kw.toLowerCase()) || kw.toLowerCase().includes(ss)) {
                 byKeyword[kw].push(item);
@@ -1039,7 +1047,9 @@ ${content}
         const ranked = items.map((item, i) => {
           const name     = item.title || item.name || '(unknown)';
           const normName = normalize(name);
-          const isTarget = normName.includes(normBiz) || normBiz.includes(normName);
+          const isTarget = normName === normBiz ||
+                           normName.startsWith(normBiz) ||
+                           normBiz.startsWith(normName);
           return {
             pos: i + 1, name,
             rating:     item.totalScore ?? item.rating ?? null,
@@ -1051,6 +1061,13 @@ ${content}
             isTarget,
           };
         });
+
+        // Only first match is target
+        let found = false;
+        for (const r of ranked) {
+          if (r.isTarget && !found) { found = true; }
+          else if (r.isTarget) { r.isTarget = false; }
+        }
 
         const target      = ranked.find(r => r.isTarget);
         const number1     = ranked[0];
@@ -1064,8 +1081,8 @@ ${content}
 
         // Comparison table
         let compHtml = '';
-        if (target && number1 && target.pos !== 1) {
-          const you  = target;
+        if (number1 && (!target || target.pos !== 1)) {
+          const you  = target ?? { rating: null, reviews: null, website: false, phone: false, hours: false, categories: [] };
           const num1 = number1;
 
           const ratingBadge = (youVal, num1Val) => {
