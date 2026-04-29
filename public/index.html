@@ -488,6 +488,13 @@
 
     <div class="card">
       <div class="field">
+        <label>Apify API Token</label>
+        <input type="password" id="apifyToken" placeholder="apify_api_xxxx…" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field">
         <label>Google Maps URLs — one per line (max 30)</label>
         <textarea id="mapsUrls" rows="6" placeholder="https://www.google.com/maps/place/Plomero+Garcia/@-33.123,-70.456,15z/…
 https://www.google.com/maps/place/Dr+Cifuentes/@-33.456,-70.789,15z/…
@@ -822,9 +829,12 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     clearError();
     document.getElementById('results').style.display = 'none';
 
+    const token   = document.getElementById('apifyToken').value.trim();
+    const rawUrls = document.getElementById('mapsUrls').value;
+
+    if (!token)           return showError('Apify token is required.');
     if (!keywords.length) return showError('Add at least one keyword.');
 
-    const rawUrls = document.getElementById('mapsUrls').value;
     const urls = parseUrls(rawUrls).slice(0, 30);
     if (!urls.length) return showError('Paste at least one valid Google Maps URL.');
 
@@ -847,37 +857,42 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
       const allResults = [];
 
       for (let i = 0; i < businesses.length; i++) {
-        const biz = businesses[i];
-        const zoom    = parseInt(document.getElementById('searchArea').value);
-        // Convert zoom to radius: zoom 15 ≈ 2500m, zoom 12 ≈ 20000m
-        const radius  = zoom === 15 ? 2500 : zoom === 12 ? 20000 : 5000;
-
+        const biz  = businesses[i];
+        const zoom = parseInt(document.getElementById('searchArea').value);
         setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords…`);
+
+        const run = await startActor(token, {
+          searchStringsArray: keywords,
+          lat: biz.coords.lat,
+          lng: biz.coords.lng,
+          zoom: zoom,
+          maxCrawledPlacesPerSearch: 20,
+          language: 'en',
+          maxImages: 0,
+          maxReviews: 0,
+          exportPlaceUrls: false,
+          scrapeContacts: false,
+          scrapeDirections: false,
+          additionalInfo: false,
+        });
+
+        await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
+        const items = await fetchDataset(token, run.defaultDatasetId, 500);
+        items.sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
 
         const byKeyword = {};
         for (const kw of keywords) byKeyword[kw] = [];
-
-        for (const kw of keywords) {
-          setStatus(`Business ${i+1}/${businesses.length}: "${kw}"…`);
-          const res = await fetch('/api/places/nearby', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ keyword: kw, lat: biz.coords.lat, lng: biz.coords.lng, radius }),
-          });
-          const data = await res.json();
-          if (data.places) {
-            byKeyword[kw] = data.places.map((p, idx) => ({
-              title:        p.displayName?.text || '',
-              totalScore:   p.rating ?? null,
-              reviewsCount: p.userRatingCount ?? null,
-              website:      p.websiteUri ?? null,
-              phone:        p.nationalPhoneNumber ?? null,
-              openingHours: p.regularOpeningHours?.periods ?? [],
-              categories:   p.types ?? [],
-              placeId:      p.id ?? null,
-              rank:         idx + 1,
-              searchString: kw,
-            }));
+        for (const item of items) {
+          const ss = (item.searchString || '').toLowerCase().trim();
+          if (byKeyword[ss] !== undefined) {
+            byKeyword[ss].push(item);
+          } else {
+            for (const kw of keywords) {
+              if (ss.includes(kw.toLowerCase()) || kw.toLowerCase().includes(ss)) {
+                byKeyword[kw].push(item);
+                break;
+              }
+            }
           }
         }
 
