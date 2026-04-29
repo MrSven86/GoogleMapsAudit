@@ -515,6 +515,13 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         <div class="keywords-grid" id="keywordTags"></div>
       </div>
       <div class="field" style="margin-top:20px;">
+        <label>Search Area</label>
+        <select id="searchArea" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
+          <option value="15">🏙 Big City — Buenos Aires, Madrid, Stockholm…</option>
+          <option value="12">🏘 Small Town — Spokane, Hermiston, local area…</option>
+        </select>
+      </div>
+      <div class="field" style="margin-top:20px;">
         <label>Report Language</label>
         <select id="reportLang" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
           <option value="en">🇬🇧 English</option>
@@ -577,13 +584,6 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
       summary:       (n, k, ts) => `// ${n} businesses · ${k} keywords · ${ts}`,
       openPdf:       '⬇ Open as PDF',
       printHint:     'Press <strong>Ctrl+P</strong> (or Cmd+P on Mac) → Save as PDF',
-      checklistTitle: 'Profile Optimization Checklist',
-      checklistStep: 'Step', checklistItem: 'Item', checklistStatus: 'Status', checklistAction: 'Action required',
-      cl: { phone: 'Phone', hours: 'Opening hours', categories: 'Categories', rating: 'Rating', reviews: 'Reviews',
-            configured: 'Configured', missing: 'MISSING', none: 'NONE', noRating: 'No rating',
-            addPhone: 'Add phone number to profile', addHours: 'Set up opening hours',
-            addCats: 'Add 3-5 relevant categories', getReviews: 'Get first reviews',
-            moreReviews: 'Need 10+ reviews — set up review request system', reviewsLow: '(low)' },
     },
     es: {
       keyword:       kw => `// palabra clave: "${kw}"`,
@@ -609,13 +609,6 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
       summary:       (n, k, ts) => `// ${n} negocios · ${k} palabras clave · ${ts}`,
       openPdf:       '⬇ Abrir como PDF',
       printHint:     'Presiona <strong>Ctrl+P</strong> (o Cmd+P en Mac) → Guardar como PDF',
-      checklistTitle: 'Checklist de optimización del perfil',
-      checklistStep: 'Paso', checklistItem: 'Ítem', checklistStatus: 'Estado', checklistAction: 'Acción requerida',
-      cl: { phone: 'Teléfono', hours: 'Horarios de atención', categories: 'Categorías', rating: 'Calificación', reviews: 'Reseñas',
-            configured: 'Configurado', missing: 'VACÍO', none: 'NINGUNA', noRating: 'Sin calificación',
-            addPhone: 'Agregar teléfono al perfil', addHours: 'Configurar horarios de atención',
-            addCats: 'Agregar 3-5 categorías relevantes', getReviews: 'Conseguir primeras reseñas',
-            moreReviews: 'Necesita 10+ reseñas — configurar sistema de solicitud', reviewsLow: '(pocas)' },
     },
     sv: {
       keyword:       kw => `// sökord: "${kw}"`,
@@ -641,37 +634,11 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
       summary:       (n, k, ts) => `// ${n} företag · ${k} sökord · ${ts}`,
       openPdf:       '⬇ Öppna som PDF',
       printHint:     'Tryck <strong>Ctrl+P</strong> (eller Cmd+P på Mac) → Spara som PDF',
-      checklistTitle: 'Checklista för profiloptimering',
-      checklistStep: 'Steg', checklistItem: 'Punkt', checklistStatus: 'Status', checklistAction: 'Åtgärd krävs',
-      cl: { phone: 'Telefon', hours: 'Öppettider', categories: 'Kategorier', rating: 'Betyg', reviews: 'Recensioner',
-            configured: 'Konfigurerat', missing: 'SAKNAS', none: 'INGEN', noRating: 'Inget betyg',
-            addPhone: 'Lägg till telefonnummer', addHours: 'Ange öppettider',
-            addCats: 'Lägg till 3-5 relevanta kategorier', getReviews: 'Få första recensionerna',
-            moreReviews: 'Behöver 10+ recensioner — sätt upp system för recensionsförfrågningar', reviewsLow: '(få)' },
     },
   };
 
   function getLang() {
     return T[document.getElementById('reportLang').value] || T.en;
-  }
-
-  function buildChecklist(you, num1, t) {
-    const ok  = (label) => `<span class="cl-ok">✓ ${label}</span>`;
-    const bad = (label) => `<span class="cl-bad">✗ ${label}</span>`;
-    const rows = [
-      { step: 'A1', item: t.cl.phone,      status: you.phone      ? ok(t.cl.configured)                          : bad(t.cl.missing),   action: you.phone      ? '—' : t.cl.addPhone },
-      { step: 'A2', item: t.cl.hours,      status: you.hours      ? ok(t.cl.configured)                          : bad(t.cl.missing),   action: you.hours      ? '—' : t.cl.addHours },
-      { step: 'A3', item: t.cl.categories, status: you.categories?.length ? ok(you.categories.join(', '))        : bad(t.cl.none),      action: you.categories?.length ? '—' : t.cl.addCats },
-      { step: 'A4', item: t.cl.rating,     status: you.rating     ? ok('★ ' + Number(you.rating).toFixed(1))     : bad(t.cl.noRating),  action: you.rating     ? '—' : t.cl.getReviews },
-      { step: 'A5', item: t.cl.reviews,    status: you.reviews >= 10 ? ok(you.reviews) : bad((you.reviews || 0) + ' ' + t.cl.reviewsLow), action: (!you.reviews || you.reviews < 10) ? t.cl.moreReviews : '—' },
-    ];
-    return rows.map(r => `
-      <tr>
-        <td>${r.step}</td>
-        <td>${r.item}</td>
-        <td>${r.status}</td>
-        <td class="cl-action">${r.action}</td>
-      </tr>`).join('');
   }
 
   // ── URL counter ──
@@ -852,12 +819,14 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
       for (let i = 0; i < businesses.length; i++) {
         const biz = businesses[i];
+        const zoom = parseInt(document.getElementById('searchArea').value);
         setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords in one batch…`);
 
         const run = await startActor(token, {
-          startUrls: keywords.map(kw => ({
-            url: `https://www.google.com/maps/search/${encodeURIComponent(kw)}/@${biz.coords.lat},${biz.coords.lng},15z`
-          })),
+          searchStringsArray: keywords,
+          lat: biz.coords.lat,
+          lng: biz.coords.lng,
+          zoom: zoom,
           maxCrawledPlacesPerSearch: 20,
           language: 'en',
           maxImages: 0,
@@ -949,16 +918,6 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   .result-rating { font-family: 'DM Mono', monospace; font-size: 11px; color: #888; flex-shrink: 0; }
   .invisible-row { padding: 12px 14px; background: #fff0f0; font-family: 'DM Mono', monospace; font-size: 12px; color: #c00; }
   .comparison-wrap { page-break-before: always; padding-top: 24px; margin-top: 0; }
-  .checklist-wrap { margin-bottom: 0; }
-  .checklist-title { font-size: 15px; font-family: 'Syne', sans-serif; font-weight: 800; color: #111; margin-bottom: 10px; letter-spacing: -0.01em; }
-  .checklist-table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 11px; border: 1px solid #ddd; }
-  .checklist-table th { background: #f5f5f5; padding: 7px 10px; text-align: left; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #888; border-bottom: 1px solid #ddd; font-weight: 500; }
-  .checklist-table td { padding: 5px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
-  .checklist-table tr:last-child td { border-bottom: none; }
-  .checklist-table td:first-child { color: #aaa; font-size: 10px; }
-  .cl-ok { color: #4a7c00; font-weight: 600; }
-  .cl-bad { color: #c00; font-weight: 600; }
-  .cl-action { color: #555; font-size: 10px; }
   .comparison-title { font-size: 18px; font-family: 'Syne', sans-serif; font-weight: 800; letter-spacing: -0.01em; color: #111; margin-bottom: 4px; }
   .comparison-subtitle { font-size: 11px; font-family: 'DM Mono', monospace; color: #888; margin-bottom: 14px; }
   /* Squeeze result rows so 20 fit on page 1 */
@@ -1053,7 +1012,7 @@ ${content}
           };
         });
 
-        // Only first match is USTED — avoids duplicates with generic names
+        // Only first match is target — avoids duplicates
         let found = false;
         for (const r of ranked) {
           if (r.isTarget && !found) { found = true; }
@@ -1098,21 +1057,7 @@ ${content}
 
           compHtml = `
             <div class="comparison-wrap">
-              <div class="checklist-wrap">
-                <div class="checklist-title">${t.checklistTitle}</div>
-                <table class="checklist-table">
-                  <thead><tr>
-                    <th style="width:40px">${t.checklistStep}</th>
-                    <th>${t.checklistItem}</th>
-                    <th style="width:120px">${t.checklistStatus}</th>
-                    <th>${t.checklistAction}</th>
-                  </tr></thead>
-                  <tbody>
-                    ${buildChecklist(you, num1, t)}
-                  </tbody>
-                </table>
-              </div>
-              <div class="comparison-title" style="margin-top:24px">${t.vsTitle}</div>
+              <div class="comparison-title">${t.vsTitle}</div>
               <div class="comparison-subtitle">${t.vsSub(esc(business.name), esc(num1.name))}</div>
               <table class="comparison-table">
                 <thead><tr>
