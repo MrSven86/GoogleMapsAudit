@@ -515,13 +515,6 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         <div class="keywords-grid" id="keywordTags"></div>
       </div>
       <div class="field" style="margin-top:20px;">
-        <label>Search Area</label>
-        <select id="searchArea" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
-          <option value="13">🏙 Big City — Buenos Aires, Madrid, Stockholm…</option>
-          <option value="12" selected>🏘 Small Town — Spokane, Hermiston, local area…</option>
-        </select>
-      </div>
-      <div class="field" style="margin-top:20px;">
         <label>Search From (optional)</label>
         <select id="searchFrom" onchange="toggleCityField()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
           <option value="pin">📍 PIN — search from business location</option>
@@ -889,10 +882,10 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
       for (let i = 0; i < businesses.length; i++) {
         const biz = businesses[i];
-        const zoom      = parseInt(document.getElementById('searchArea').value);
         const searchFrom = document.getElementById('searchFrom').value;
-        let searchLat   = biz.coords.lat;
-        let searchLng   = biz.coords.lng;
+        let searchLat    = biz.coords.lat;
+        let searchLng    = biz.coords.lng;
+        let useZoom      = 12;
 
         if (searchFrom !== 'pin') {
           const cityName = document.getElementById('cityName').value.trim();
@@ -901,16 +894,16 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
             const cityCoords = await geocodeCity(cityName);
             searchLat = cityCoords.lat;
             searchLng = cityCoords.lng;
+            useZoom   = null; // let Apify decide
           }
         }
 
         setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords in one batch…`);
 
-        const run = await startActor(token, {
+        const actorInput = {
           searchStringsArray: keywords,
           lat: searchLat,
           lng: searchLng,
-          zoom: zoom,
           maxCrawledPlacesPerSearch: 20,
           language: 'en',
           maxImages: 0,
@@ -919,7 +912,10 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
           scrapeContacts: false,
           scrapeDirections: false,
           additionalInfo: false,
-        });
+        };
+        if (useZoom !== null) actorInput.zoom = useZoom;
+
+        const run = await startActor(token, actorInput);
 
         await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
 
