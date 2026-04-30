@@ -342,7 +342,7 @@ async function runCheck(){
       const adv=!!document.getElementById('advancedAudit')?.checked;
 
       setStatus(`Business ${i+1}/${businesses.length}: searching ${searchQueries.length} queries…`);
-      const input={searchStringsArray:searchQueries,lat,lng,maxCrawledPlacesPerSearch:20,language:document.getElementById('reportLang').value==='sv'?'sv':'en',maxImages:adv?20:0,maxReviews:0,exportPlaceUrls:false,scrapeContacts:false,scrapeDirections:false,additionalInfo:adv};
+      const input={searchStringsArray:searchQueries,lat,lng,maxCrawledPlacesPerSearch:20,language:document.getElementById('reportLang').value==='sv'?'sv':'en',maxImages:0,maxReviews:0,exportPlaceUrls:false,scrapeContacts:false,scrapeDirections:false,additionalInfo:false};
       if(!cityCoords)input.zoom=12;
 
       const run=await startActor(token,input);
