@@ -736,6 +736,12 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     return decodeURIComponent(m[1].replace(/\+/g, ' '));
   }
 
+  function extractPlaceIdFromUrl(url) {
+    const m = url.match(/!1s(0x[0-9a-f]+:[0-9a-fx]+)/i);
+    if (m) return m[1];
+    return null;
+  }
+
   // ── Keywords ──
   document.getElementById('keywordInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') addKeyword();
@@ -869,8 +875,9 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         showError(`Could not read coordinates from: ${url.substring(0, 60)}… — make sure it's a full Google Maps URL, not a short link.`);
         return;
       }
-      const name = extractNameFromUrl(url) || 'Business';
-      businesses.push({ url, coords, name });
+      const name    = extractNameFromUrl(url) || 'Business';
+      const placeId = extractPlaceIdFromUrl(url);
+      businesses.push({ url, coords, name, placeId });
     }
 
     const btn = document.getElementById('runBtn');
@@ -1071,6 +1078,7 @@ ${content}
     for (let bi = 0; bi < allResults.length; bi++) {
       const { business, byKeyword } = allResults[bi];
       const normBiz = normalize(business.name);
+      const bizPlaceId = business.placeId;
 
       html += `<div class="biz-block" id="biz-block-${bi}" data-bizname="${esc(business.name)}">
         <div class="biz-header">
@@ -1087,7 +1095,8 @@ ${content}
         const ranked = items.map((item, i) => {
           const name     = item.title || item.name || '(unknown)';
           const normName = normalize(name);
-          const isTarget = normName === normBiz ||
+          const isTarget = (bizPlaceId && item.placeId && item.placeId === bizPlaceId) ||
+                           normName === normBiz ||
                            normName.startsWith(normBiz) ||
                            normBiz.startsWith(normName);
           return {
