@@ -514,18 +514,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         <div class="hint">// all keywords run in one batch — much faster</div>
         <div class="keywords-grid" id="keywordTags"></div>
       </div>
-      <div class="field" style="margin-top:20px;">
-        <label>Search From (optional)</label>
-        <select id="searchFrom" onchange="toggleCityField()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
-          <option value="pin">📍 PIN — search from business location</option>
-          <option value="city">🏙 City — search from city center</option>
-          <option value="neighborhood">🏘 Neighborhood — search from neighborhood</option>
-        </select>
-        <div id="cityField" style="display:none;margin-top:8px;">
-          <input type="text" id="cityName" placeholder="e.g. Spokane, Buenos Aires, Palermo…">
-          <div class="hint">// we'll geocode this and search from there</div>
-        </div>
-      </div>
+
       <div class="field" style="margin-top:20px;">
         <label>Report Language</label>
         <select id="reportLang" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
@@ -667,23 +656,6 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     return T[document.getElementById('reportLang').value] || T.en;
   }
 
-  function toggleCityField() {
-    const mode = document.getElementById('searchFrom').value;
-    document.getElementById('cityField').style.display = mode === 'pin' ? 'none' : 'block';
-  }
-
-  async function geocodeCity(cityName) {
-    const token = document.getElementById('apifyToken').value.trim();
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cityName)}&key=${token}`;
-    // Use Google Geocoding via proxy — but we don't have key here
-    // Fallback: use Nominatim (OpenStreetMap) — free, no key needed
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1`);
-    const data = await res.json();
-    if (data && data[0]) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-    }
-    throw new Error(`Could not find location: ${cityName}`);
-  }
 
   function buildChecklist(you, t) {
     const ok  = (label) => `<span class="cl-ok">✓ ${label}</span>`;
@@ -884,33 +856,36 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     btn.disabled = true;
 
     try {
-      // ── One Apify run per business, ALL keywords batched in one call ──
-      const allResults = []; // [{ business, keywordResults: { kw: [...items] } }]
+      const allResults = [];
 
       for (let i = 0; i < businesses.length; i++) {
         const biz = businesses[i];
-        const searchFrom = document.getElementById('searchFrom').value;
-        let searchLat    = biz.coords.lat;
-        let searchLng    = biz.coords.lng;
-        let useZoom      = 12;
 
-        if (searchFrom !== 'pin') {
-          const cityName = document.getElementById('cityName').value.trim();
-          if (cityName) {
-            setStatus(`Geocoding "${cityName}"…`);
-            const cityCoords = await geocodeCity(cityName);
-            searchLat = cityCoords.lat;
-            searchLng = cityCoords.lng;
-            useZoom   = null; // let Apify decide
-          }
-        }
+        // ── Step 1: Profile scrape to get real name + coordinates ──
+        setStatus(`Business ${i+1}/${businesses.length}: fetching profile…`);
+        const profRun = await startActor(token, {
+          startUrls: [{ url: biz.url.startsWith('http') ? biz.url : 'https://' + biz.url }],
+          maxCrawledPlacesPerSearch: 1,
+          maxReviews: 0,
+          maxImages: 0,
+          scrapeReviewerInfo: false,
+        });
+        await pollUntilDone(token, profRun.id, `Profile ${i+1}/${businesses.length}`);
+        const profItems = await fetchDataset(token, profRun.defaultDatasetId, 5);
+        const profile   = profItems[0] || null;
 
-        setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords in one batch…`);
+        const realName = (profile && profile.title) ? profile.title : biz.name;
+        const searchLat = (profile && profile.location) ? profile.location.lat : biz.coords.lat;
+        const searchLng = (profile && profile.location) ? profile.location.lng : biz.coords.lng;
 
-        const actorInput = {
+        // ── Step 2: Search keywords from real coordinates ──
+        setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords…`);
+
+        const run = await startActor(token, {
           searchStringsArray: keywords,
           lat: searchLat,
           lng: searchLng,
+          zoom: 15,
           maxCrawledPlacesPerSearch: 20,
           maxImages: 0,
           maxReviews: 0,
@@ -918,29 +893,20 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
           scrapeContacts: false,
           scrapeDirections: false,
           additionalInfo: false,
-        };
-        if (useZoom !== null) actorInput.zoom = useZoom;
-
-        const run = await startActor(token, actorInput);
+        });
 
         await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
-
         const items = await fetchDataset(token, run.defaultDatasetId, 500);
-
-        // Sort by Apify's rank field — items come back in wrong order
         items.sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
 
-        // Group items by searchString
         const byKeyword = {};
         for (const kw of keywords) byKeyword[kw] = [];
 
         for (const item of items) {
           const ss = (item.searchString || '').toLowerCase().trim();
-          // Match exact first
           if (byKeyword[ss] !== undefined) {
             byKeyword[ss].push(item);
           } else {
-            // Fuzzy match
             for (const kw of keywords) {
               if (ss.includes(kw.toLowerCase()) || kw.toLowerCase().includes(ss)) {
                 byKeyword[kw].push(item);
@@ -950,7 +916,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
           }
         }
 
-        allResults.push({ business: biz, byKeyword });
+        allResults.push({ business: { ...biz, name: realName }, byKeyword });
       }
 
       hideStatus();
@@ -1096,8 +1062,14 @@ ${content}
           const normName = normalize(name);
           const isTarget = (bizPlaceId && item.placeId && item.placeId === bizPlaceId) ||
                            normName === normBiz ||
-                           normName.startsWith(normBiz) ||
-                           normBiz.startsWith(normName);
+                           normName.includes(normBiz) ||
+                           normBiz.includes(normName) ||
+                           (() => {
+                             const bizWords = normBiz.split(/\s+/).filter(w => w.length > 2);
+                             if (bizWords.length <= 1) return false;
+                             const mc = bizWords.filter(w => normName.includes(w)).length;
+                             return mc >= bizWords.length * 0.6;
+                           })();
           return {
             pos: i + 1, name,
             rating:     item.totalScore ?? item.rating ?? null,
