@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<title>Competitor SEO Audit</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--surface:#141414;--border:#222;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Syne,sans-serif;padding:40px 20px}.container{max-width:900px;margin:auto}
+h1{font-size:56px;line-height:.95;margin:0 0 12px}h1 span{color:var(--accent)}p,label,.hint,input,button,textarea,select,td,th{font-family:'DM Mono',monospace}
+.sub{color:var(--muted);margin-bottom:32px}.card{background:var(--surface);border:1px solid var(--border);padding:24px;margin-bottom:16px;border-radius:4px}
+label{display:block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+input,select{width:100%;background:#050505;border:1px solid var(--border);color:var(--text);padding:12px;font-size:13px;border-radius:3px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{margin-bottom:18px}.hint{font-size:11px;color:var(--muted);margin-top:6px}
+button{width:100%;background:var(--accent);border:0;color:#000;padding:16px;font-weight:800;font-size:16px;cursor:pointer;border-radius:3px}
+button:disabled{opacity:.45}.status,.error{display:none;padding:14px 18px;border-radius:4px;margin:16px 0;font-family:'DM Mono',monospace;font-size:13px}
+.status{background:var(--surface);border:1px solid var(--border);color:var(--muted)}.error{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);color:var(--red)}
+.visible{display:block}.results{display:none;margin-top:34px}.hero{border:1px solid var(--border);background:var(--surface);padding:22px;border-radius:4px;margin-bottom:18px}
+.score{font-size:58px;font-weight:800;color:var(--accent)}.section{margin:28px 0}.section h2{font-size:24px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-size:12px}th{background:#1a1a1a;color:var(--muted);text-align:left;padding:9px}td{border-top:1px solid var(--border);padding:9px;vertical-align:top}
+.good{color:var(--accent);font-weight:bold}.bad{color:var(--red);font-weight:bold}.mid{color:var(--orange);font-weight:bold}.url{color:var(--muted);font-size:11px}
+.reco{background:rgba(200,241,53,.08);border:1px solid rgba(200,241,53,.22);padding:14px;margin:10px 0;border-radius:4px;font-family:'DM Mono',monospace;font-size:13px;line-height:1.6}
+@media(max-width:700px){.grid{grid-template-columns:1fr}h1{font-size:42px}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Competitor<br><span>SEO Audit</span></h1>
+<p class="sub">// compare your page against the top 3 Google results and get concrete recommendations</p>
+
+<div class="card">
+  <div class="field">
+    <label>Apify API Token</label>
+    <input id="token" type="password" placeholder="apify_api_xxxx">
+  </div>
+</div>
+
+<div class="card">
+  <div class="field">
+    <label>Your URL</label>
+    <input id="url" value="https://rediviva.se/" placeholder="https://example.com/page">
+  </div>
+  <div class="grid">
+    <div class="field">
+      <label>Keyword</label>
+      <input id="keyword" value="optiker">
+    </div>
+    <div class="field">
+      <label>City / modifier</label>
+      <input id="city" value="Uppsala">
+    </div>
+  </div>
+  <div class="grid">
+    <div class="field">
+      <label>Google domain</label>
+      <select id="googleDomain">
+        <option value="google.se" selected>google.se</option>
+        <option value="google.com">google.com</option>
+        <option value="google.es">google.es</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Language</label>
+      <select id="language">
+        <option value="sv" selected>Svenska</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<button id="runBtn" onclick="runAudit()">▶ Run Competitor Audit</button>
+
+<div id="status" class="status"></div>
+<div id="error" class="error"></div>
+
+<div id="results" class="results">
+  <div id="resultsBody"></div>
+</div>
+</div>
+
+<script>
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function showStatus(s){document.getElementById('status').textContent=s;document.getElementById('status').classList.add('visible')}
+function hideStatus(){document.getElementById('status').classList.remove('visible')}
+function showError(s){document.getElementById('error').textContent='⚠ '+s;document.getElementById('error').classList.add('visible')}
+function clearError(){document.getElementById('error').classList.remove('visible')}
+
+async function runAudit(){
+  clearError(); hideStatus();
+  document.getElementById('results').style.display='none';
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true;
+  showStatus('Running audit… fetching Google top 3 and crawling pages.');
+
+  try{
+    const payload={
+      token:document.getElementById('token').value.trim(),
+      url:document.getElementById('url').value.trim(),
+      keyword:document.getElementById('keyword').value.trim(),
+      city:document.getElementById('city').value.trim(),
+      googleDomain:document.getElementById('googleDomain').value,
+      language:document.getElementById('language').value
+    };
+
+    const res=await fetch('/api/competitor-audit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Audit failed');
+
+    render(data);
+    hideStatus();
+  }catch(e){
+    hideStatus(); showError(e.message);
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+function mark(v){return v?'<span class="good">✓</span>':'<span class="bad">✗</span>'}
+
+function render(data){
+  const you=data.you;
+  const comps=data.competitors;
+  const recs=data.recommendations;
+
+  let html=`
+  <div class="hero">
+    <div class="score">${data.score}/100</div>
+    <div>Your page vs Google Top 3 for <strong>"${esc(data.query)}"</strong></div>
+  </div>
+
+  <div class="section">
+    <h2>Top 3 competitors</h2>
+    <table>
+      <thead><tr><th>#</th><th>Title</th><th>URL</th><th>Words</th><th>H1</th><th>Keyword</th><th>City</th></tr></thead>
+      <tbody>
+        ${comps.map(c=>`
+          <tr>
+            <td>${c.position}</td>
+            <td>${esc(c.title)}</td>
+            <td><div class="url">${esc(c.url)}</div></td>
+            <td>${c.audit.wordCount}</td>
+            <td>${mark(c.audit.hasH1)}</td>
+            <td>${mark(c.audit.keywordInImportantPlaces)}</td>
+            <td>${mark(c.audit.cityInImportantPlaces)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Your page</h2>
+    <table>
+      <tbody>
+        <tr><th>Title</th><td>${esc(you.audit.title)}</td></tr>
+        <tr><th>Meta description</th><td>${esc(you.audit.metaDescription)}</td></tr>
+        <tr><th>H1</th><td>${esc(you.audit.h1)}</td></tr>
+        <tr><th>Word count</th><td>${you.audit.wordCount}</td></tr>
+        <tr><th>Keyword in title/H1/meta</th><td>${mark(you.audit.keywordInImportantPlaces)}</td></tr>
+        <tr><th>City in title/H1/meta</th><td>${mark(you.audit.cityInImportantPlaces)}</td></tr>
+        <tr><th>Phone found</th><td>${mark(you.audit.hasPhone)}</td></tr>
+        <tr><th>Schema markup</th><td>${mark(you.audit.hasSchema)}</td></tr>
+        <tr><th>Images with alt</th><td>${you.audit.imagesWithAlt} / ${you.audit.images}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Why competitors may be winning</h2>
+    ${recs.map(r=>`<div class="reco">${esc(r)}</div>`).join('')}
+  </div>`;
+
+  document.getElementById('resultsBody').innerHTML=html;
+  document.getElementById('results').style.display='block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>
