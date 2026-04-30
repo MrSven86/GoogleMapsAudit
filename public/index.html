@@ -1,83 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Google Maps Rank Checker</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0a;--surface:#141414;--border:#222;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999}
+:root{--bg:#0a0a0a;--surface:#141414;--border:#222;--accent:#c8f135;--accent2:#ff4d4d;--text:#f0f0f0;--muted:#999;--rank-good:#c8f135;--rank-mid:#ffb347;--rank-bad:#ff4d4d}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:Syne,sans-serif;min-height:100vh;padding:40px 20px}
-.container{max-width:860px;margin:0 auto}
-header{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:36px}
-.logo,label,.hint,.url-counter,.status-bar,.error-box,.keyword-label,.biz-index,.rank-desc,.result-pos,.result-rating,table{font-family:'DM Mono',monospace}
-.logo{font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
-h1{font-size:clamp(32px,6vw,56px);font-weight:800;line-height:.95;letter-spacing:-.04em}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;padding:40px 20px}
+.container{max-width:820px;margin:0 auto}
+header{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:40px}
+.logo{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
+h1{font-size:clamp(28px,5vw,48px);font-weight:800;line-height:1;letter-spacing:-.03em}
 h1 span{color:var(--accent)}
-.subtitle{margin-top:12px;color:var(--muted);font-size:13px;font-family:'DM Mono',monospace}
+.subtitle{margin-top:10px;color:var(--muted);font-size:13px;font-family:'DM Mono',monospace}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px 28px;margin-bottom:16px}
-.field{margin-bottom:20px}.field:last-child{margin-bottom:0}
-label{display:block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;outline:none}
+label{display:block;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;outline:none;transition:border-color .2s}
 input:focus,textarea:focus,select:focus{border-color:var(--accent)}
-textarea{resize:vertical;line-height:1.55}
-.hint,.url-counter{margin-top:6px;font-size:11px;color:var(--muted)}
+input[type=password]{letter-spacing:.1em}
+textarea{resize:vertical;line-height:1.6}
+.hint,.url-counter{margin-top:6px;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted)}
 .url-counter span{color:var(--accent)}
+.field{margin-bottom:20px}
+.field:last-child{margin-bottom:0}
+.keywords-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.keyword-tag{background:#1a1a1a;border:1px solid var(--border);border-radius:2px;padding:5px 10px 5px 12px;font-family:'DM Mono',monospace;font-size:12px;display:flex;align-items:center;gap:8px}
+.keyword-tag button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:0;line-height:1}
+.keyword-tag button:hover{color:var(--accent2)}
 .keyword-input-row{display:flex;gap:8px}
 .keyword-input-row input{flex:1}
-.btn-add{background:#222;border:1px solid #333;color:var(--text);border-radius:3px;padding:11px 16px;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer}
-.keyword-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.tag{background:#1a1a1a;border:1px solid var(--border);border-radius:2px;padding:5px 10px;font-family:'DM Mono',monospace;font-size:12px}
-.tag button{background:none;border:0;color:var(--muted);cursor:pointer;margin-left:8px}
-.btn-run{width:100%;background:var(--accent);border:0;border-radius:3px;color:#0a0a0a;font-family:Syne,sans-serif;font-weight:800;font-size:16px;letter-spacing:.05em;padding:16px;cursor:pointer;margin-top:8px}
-.btn-run:disabled{opacity:.45;cursor:not-allowed}
-.status-bar{display:none;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--muted)}
-.status-bar.visible{display:flex;align-items:center;gap:10px}
-.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.btn-add{background:var(--border);border:1px solid #333;color:var(--text);border-radius:3px;padding:11px 16px;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;white-space:nowrap}
+.btn-add:hover{background:#2a2a2a}
+.btn-run{width:100%;background:var(--accent);border:none;border-radius:3px;color:#0a0a0a;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:.05em;padding:16px;cursor:pointer;margin-top:8px}
+.btn-run:hover{opacity:.9}
+.btn-run:disabled{opacity:.4;cursor:not-allowed}
+.checkbox-label{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;letter-spacing:.12em}
+.checkbox-label input{width:auto;accent-color:var(--accent)}
+.status-bar{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:16px;font-family:'DM Mono',monospace;font-size:13px;color:var(--muted);align-items:center;gap:10px;display:none}
+.status-bar.visible{display:flex}
+.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error-box{display:none;background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);border-radius:4px;padding:14px 18px;font-size:13px;color:var(--red);margin-bottom:16px}
+.error-box{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);border-radius:4px;padding:14px 18px;font-family:'DM Mono',monospace;font-size:13px;color:var(--rank-bad);margin-bottom:16px;display:none}
 .error-box.visible{display:block}
 #results{display:none}
-.results-header{display:flex;align-items:center;justify-content:space-between;margin:32px 0 24px}
-.results-header h2{font-size:22px;font-weight:800}
-.btn-pdf,.biz-pdf-btn{background:none;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:8px 16px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-transform:uppercase}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.results-header h2{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.btn-pdf,.biz-pdf-btn{background:none;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:8px 16px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.1em;text-transform:uppercase}
 .biz-pdf-btn{border-color:var(--border);color:var(--muted);padding:5px 12px;font-size:11px}
-.biz-block{margin-bottom:52px;border-top:1px solid var(--border);padding-top:32px}
-.biz-block:first-child{border-top:0;padding-top:0}
-.biz-index,.keyword-label{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.biz-title{font-size:22px;font-weight:800;margin-bottom:20px}
-.keyword-section{margin-bottom:32px}
-.rank-hero{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:20px 24px;margin-bottom:10px;display:flex;gap:20px;align-items:center}
-.rank-number{font-size:58px;font-weight:800;line-height:1;min-width:120px}
-.good{color:var(--accent)}.mid{color:var(--orange)}.bad{color:var(--red)}
-.rank-name{font-size:15px;font-weight:700;margin-bottom:4px}.rank-desc{font-size:11px;color:var(--muted)}
+.btn-pdf:hover,.biz-pdf-btn:hover{background:var(--accent);color:#0a0a0a;border-color:var(--accent)}
+.biz-block{margin-bottom:48px;border-top:1px solid var(--border);padding-top:32px}
+.biz-block:first-child{border-top:none;padding-top:0}
+.biz-header{margin-bottom:20px}
+.biz-index,.keyword-label,.comparison-title{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.biz-title{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.keyword-section{margin-bottom:28px}
+.rank-hero{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:20px 24px;margin-bottom:10px;display:flex;align-items:center;gap:20px}
+.rank-number{font-size:56px;font-weight:800;line-height:1;letter-spacing:-.04em;min-width:110px}
+.rank-number.good{color:var(--rank-good)}
+.rank-number.mid{color:var(--rank-mid)}
+.rank-number.bad{color:var(--rank-bad)}
+.rank-meta{flex:1}
+.rank-meta .biz-name{font-size:15px;font-weight:700;margin-bottom:4px}
+.rank-meta .rank-desc{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
 .results-list{border:1px solid var(--border);border-radius:4px;overflow:hidden}
-.result-row{display:flex;gap:14px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center}
-.result-row:last-child{border-bottom:0}
+.result-row{display:flex;align-items:center;gap:14px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.result-row:last-child{border-bottom:none}
 .result-row.is-target{background:rgba(200,241,53,.07);border-left:3px solid var(--accent)}
-.result-pos{width:28px;text-align:right;font-size:12px;color:var(--muted)}
-.result-name{flex:1;font-size:13px;font-weight:600}
+.result-pos{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);width:26px;flex-shrink:0;text-align:right}
 .result-row.is-target .result-pos,.result-row.is-target .result-name{color:var(--accent);font-weight:700}
-.result-rating{font-size:11px;color:var(--muted)}
-.invisible{padding:12px 14px;background:rgba(255,77,77,.05);color:var(--red);font-family:'DM Mono',monospace;font-size:12px}
-.section-title{font-size:15px;font-weight:800;margin:22px 0 8px}
-.comparison-title{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px}
-table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-size:12px;margin-top:8px}
-th{background:#1a1a1a;color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:9px 12px;border-bottom:1px solid var(--border)}
-td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
-tr:last-child td{border-bottom:0}
-.badge{display:inline-block;padding:2px 7px;border-radius:2px;font-size:10px;font-weight:700}
+.result-name{flex:1;font-size:13px;font-weight:600}
+.result-rating{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0}
+.invisible-row{padding:12px 14px;background:rgba(255,77,77,.05);font-family:'DM Mono',monospace;font-size:12px;color:var(--rank-bad);display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,77,77,.15)}
+.comparison-wrap{margin-top:10px}
+.comparison-table,.checklist-table{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:4px;overflow:hidden;font-family:'DM Mono',monospace;font-size:12px;margin-top:8px}
+.comparison-table thead tr,.checklist-table thead tr{background:#1a1a1a}
+.comparison-table th,.checklist-table th{padding:9px 12px;text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)}
+.comparison-table th:nth-child(2){color:var(--accent)}
+.comparison-table td,.checklist-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.comparison-table tr:last-child td,.checklist-table tr:last-child td{border-bottom:none}
+.comparison-table td:first-child{color:var(--muted);font-size:11px}
+.checklist-title{font-size:15px;font-weight:800;margin:18px 0 8px}
+.badge{display:inline-block;padding:2px 7px;border-radius:2px;font-size:10px;font-weight:600}
 .badge-good{background:rgba(200,241,53,.15);color:var(--accent)}
-.badge-bad{background:rgba(255,77,77,.12);color:var(--red)}
-.badge-ok{background:rgba(255,179,71,.15);color:var(--orange)}
+.badge-bad{background:rgba(255,77,77,.12);color:var(--rank-bad)}
+.badge-ok{background:rgba(255,179,71,.15);color:var(--rank-mid)}
 .badge-neutral{background:#1e1e1e;color:#888}
-.cl-ok{color:var(--accent);font-weight:700}.cl-bad{color:var(--red);font-weight:700}.cl-action{color:var(--muted);font-size:10px}
+.cl-ok{color:var(--accent);font-weight:600}
+.cl-bad{color:var(--rank-bad);font-weight:600}
+.cl-action{color:var(--muted);font-size:10px}
 @media print{
-body{background:#fff;color:#000;padding:20px}.card,#inputSection,.btn-run,.btn-pdf,.biz-pdf-btn{display:none!important}
-#results{display:block!important}.rank-hero,.results-list,table{background:#fff;border-color:#ddd}.good{color:#4a7c00}.mid{color:#b36200}.bad{color:#c00}
-.result-row.is-target{background:#f5ffe0}.result-row.is-target .result-pos,.result-row.is-target .result-name{color:#4a7c00}
-th{background:#f5f5f5;color:#777;border-color:#ddd}td{border-color:#eee;color:#000}.cl-ok{color:#4a7c00}.cl-bad{color:#c00}
+body{background:#fff;color:#000;padding:20px}
+.card,.rank-hero,.results-list,.comparison-table,.checklist-table{border-color:#ddd;background:#fff}
+.btn-pdf,.btn-run,#inputSection,.biz-pdf-btn{display:none!important}
+#results{display:block!important}
+.rank-number.good{color:#4a7c00}.rank-number.mid{color:#b36200}.rank-number.bad{color:#c00}
+h1,.results-header h2,.rank-meta .biz-name,.result-name,.biz-title{color:#000}
+.result-row.is-target{background:#f5ffe0}
+.result-row.is-target .result-name,.result-row.is-target .result-pos{color:#4a7c00}
+label,.hint,.logo,.subtitle,.keyword-label,.biz-index,.result-rating,.rank-meta .rank-desc,.result-pos,.comparison-title{color:#555}
+.comparison-table thead tr,.checklist-table thead tr{background:#f5f5f5}
+.comparison-table th,.checklist-table th{color:#888;border-color:#ddd}
+.comparison-table td,.checklist-table td{border-color:#eee;color:#000}
+.badge-good{background:#f0ffe0;color:#4a7c00}.badge-bad{background:#fff0f0;color:#c00}.badge-ok{background:#fff8ec;color:#b36200}.badge-neutral{background:#f5f5f5;color:#666}
+.biz-block{border-top-color:#ddd}
 }
 </style>
 </head>
@@ -114,10 +141,10 @@ th{background:#f5f5f5;color:#777;border-color:#ddd}td{border-color:#eee;color:#0
         <button class="btn-add" onclick="addKeyword()">+ Add</button>
       </div>
       <div class="hint">// add only keyword here. If city mode is used, city is added automatically.</div>
-      <div class="keyword-tags" id="keywordTags"></div>
+      <div class="keywords-grid" id="keywordTags"></div>
     </div>
 
-    <div class="field">
+    <div class="field" style="margin-top:20px;">
       <label>Search From</label>
       <select id="searchFrom" onchange="toggleCityField()">
         <option value="pin">PIN — search from business location</option>
@@ -129,7 +156,7 @@ th{background:#f5f5f5;color:#777;border-color:#ddd}td{border-color:#eee;color:#0
       </div>
     </div>
 
-    <div class="field">
+    <div class="field" style="margin-top:20px;">
       <label>Report Language</label>
       <select id="reportLang">
         <option value="en">English</option>
@@ -137,7 +164,14 @@ th{background:#f5f5f5;color:#777;border-color:#ddd}td{border-color:#eee;color:#0
         <option value="sv" selected>Svenska</option>
       </select>
     </div>
-  </div>
+
+<div class="field" style="margin-top:20px;">
+  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+    <input type="checkbox" id="advancedAudit">
+    <span>Advanced Audit</span>
+  </label>
+  <div class="hint">// adds full profile optimization checklist in selected report language</div>
+</div>
 
   <button class="btn-run" id="runBtn" onclick="runCheck()">▶ Run Rank Check</button>
 </div>
@@ -160,231 +194,389 @@ const ACTOR='compass~crawler-google-places';
 let keywords=[];
 
 const T={
-en:{keyword:kw=>`// keyword: "${kw}"`,ranked:(p,t,kw)=>`Ranked ${p} out of ${t} results for "${kw}"`,invisible:(t,kw)=>`Not visible in the top ${t} results for "${kw}"`,notFound:n=>`${n} — not found in top results`,you:'◀ YOU',bizOf:(i,t)=>`// business ${i} of ${t}`,summary:(n,k,ts)=>`// ${n} businesses · ${k} keywords · ${ts}`,yes:'Yes',no:'No',noRating:'No rating',reviews:'Reviews',rating:'Rating',website:'Website',phone:'Phone',hours:'Hours',categories:'Categories',metric:'Metric',vsTitle:'Your profile vs #1',checklist:'Profile Optimization Checklist',step:'Step',item:'Item',status:'Status',action:'Action required',cl:{phone:'Phone',address:'Address',hours:'Opening hours',description:'Business description',openingDate:'Opening date',serviceAreas:'Service areas',photos:'Photos (minimum 10)',logo:'Logo',services:'Services / Products',posts:'Posts / Updates',primaryCategory:'Primary category',secondaryCategories:'Secondary categories (min 3)',titleKeywords:'Keywords in title',reviews:'Reviews count',configured:'Configured',missing:'MISSING',empty:'EMPTY',none:'NONE',noAddress:'NO ADDRESS',noDate:'NOT CONFIGURED',noAreas:'NO AREAS',noLogo:'NO LOGO',noPosts:'NO POSTS',noSecondary:'NONE',titleNoKeyword:'No category or area in title',addPhone:'Add phone number to profile',addAddress:'Add correct address',addHours:'Set opening hours',addDescription:'Write description of at least 200 characters',addDate:'Add opening date — Google shows “X years in business”',addAreas:'Add service areas where you work',addPhotos:'Upload more photos — competitors often have 30+',addLogo:'Add professional logo — 720×720px PNG',addServices:'Add services/products',addPosts:'Add regular posts with photos and updates',addSecondary:'Add 3–5 relevant secondary categories',addTitleKeywords:'Consider adding specialty or area to the title',moreReviews:'Need 10+ reviews — set up review request system',reviewsLow:'(low)'}},
-es:{keyword:kw=>`// palabra clave: "${kw}"`,ranked:(p,t,kw)=>`Posición ${p} de ${t} resultados para "${kw}"`,invisible:(t,kw)=>`No visible en el top ${t} para "${kw}"`,notFound:n=>`${n} — no encontrado en los resultados`,you:'◀ USTED',bizOf:(i,t)=>`// negocio ${i} de ${t}`,summary:(n,k,ts)=>`// ${n} negocios · ${k} palabras clave · ${ts}`,yes:'Sí',no:'No',noRating:'Sin calificación',reviews:'Reseñas',rating:'Calificación',website:'Sitio web',phone:'Teléfono',hours:'Horarios',categories:'Categorías',metric:'Métrica',vsTitle:'Tu perfil vs #1',checklist:'Checklist de optimización del perfil',step:'Paso',item:'Ítem',status:'Estado',action:'Acción requerida',cl:{phone:'Teléfono',address:'Dirección',hours:'Horarios de atención',description:'Descripción del negocio',openingDate:'Fecha de apertura',serviceAreas:'Áreas de servicio',photos:'Fotos (mínimo 10)',logo:'Logo',services:'Servicios / Productos',posts:'Publicaciones / Actualizaciones',primaryCategory:'Categoría principal',secondaryCategories:'Categorías secundarias (mín 3)',titleKeywords:'Keywords en el título',reviews:'Cantidad de reseñas',configured:'Configurado',missing:'VACÍA',empty:'VACÍA',none:'NINGUNA',noAddress:'SIN DIRECCIÓN',noDate:'NO CONFIGURADA',noAreas:'SIN ÁREAS',noLogo:'SIN LOGO',noPosts:'SIN PUBLICACIONES',noSecondary:'NINGUNA',titleNoKeyword:'Ni categoría ni barrio en título',addPhone:'Agregar teléfono al perfil',addAddress:'Agregar dirección correcta',addHours:'Configurar horarios de atención',addDescription:'Escribir descripción de mín 200 caracteres',addDate:'Agregar fecha — Google muestra “X años en el negocio”',addAreas:'Agregar áreas de servicio donde atendés',addPhotos:'Subir más fotos — competidores tienen 30+',addLogo:'Agregar logo profesional — 720×720px PNG',addServices:'Agregar servicios/productos',addPosts:'Agregar publicaciones regulares con fotos y novedades',addSecondary:'Agregar 3–5 categorías secundarias relevantes',addTitleKeywords:'Considerar agregar especialidad o barrio al título',moreReviews:'Configurar sistema de solicitud automática de reseñas',reviewsLow:'(pocas)'}},
-sv:{keyword:kw=>`// sökord: "${kw}"`,ranked:(p,t,kw)=>`Placering ${p} av ${t} resultat för "${kw}"`,invisible:(t,kw)=>`Inte synlig i topp ${t} för "${kw}"`,notFound:n=>`${n} — hittades inte i resultaten`,you:'◀ DU',bizOf:(i,t)=>`// företag ${i} av ${t}`,summary:(n,k,ts)=>`// ${n} företag · ${k} sökord · ${ts}`,yes:'Ja',no:'Nej',noRating:'Inget betyg',reviews:'Recensioner',rating:'Betyg',website:'Hemsida',phone:'Telefon',hours:'Öppettider',categories:'Kategorier',metric:'Mätvärde',vsTitle:'Din profil vs #1',checklist:'Checklista för profiloptimering',step:'Steg',item:'Punkt',status:'Status',action:'Åtgärd krävs',cl:{phone:'Telefon',address:'Adress',hours:'Öppettider',description:'Företagsbeskrivning',openingDate:'Öppningsdatum',serviceAreas:'Serviceområden',photos:'Foton (minst 10)',logo:'Logotyp',services:'Tjänster / Produkter',posts:'Inlägg / Uppdateringar',primaryCategory:'Primär kategori',secondaryCategories:'Sekundära kategorier (minst 3)',titleKeywords:'Sökord i titeln',reviews:'Antal recensioner',configured:'Konfigurerat',missing:'SAKNAS',empty:'TOM',none:'INGEN',noAddress:'INGEN ADRESS',noDate:'EJ KONFIGURERAT',noAreas:'INGA OMRÅDEN',noLogo:'INGEN LOGO',noPosts:'INGA INLÄGG',noSecondary:'INGEN',titleNoKeyword:'Varken kategori eller område i titel',addPhone:'Lägg till telefonnummer',addAddress:'Lägg till korrekt adress',addHours:'Ange öppettider',addDescription:'Skriv en beskrivning på minst 200 tecken',addDate:'Lägg till öppningsdatum — Google visar “X år i branschen”',addAreas:'Lägg till serviceområden där ni arbetar',addPhotos:'Ladda upp fler foton — konkurrenter har ofta 30+',addLogo:'Lägg till professionell logotyp — 720×720px PNG',addServices:'Lägg till tjänster/produkter',addPosts:'Lägg till regelbundna inlägg med bilder och nyheter',addSecondary:'Lägg till 3–5 relevanta sekundära kategorier',addTitleKeywords:'Överväg att lägga till specialitet eller område i titeln',moreReviews:'Sätt upp automatiskt system för recensionsförfrågningar',reviewsLow:'(få)'}}
+  en:{keyword:kw=>`// keyword: "${kw}"`,ranked:(pos,total,kw)=>`Ranked ${pos} out of ${total} results for "${kw}"`,invisible:(total,kw)=>`Not visible in the top ${total} results for "${kw}"`,notFound:name=>`${name} — not found in top results`,you:'◀ YOU',vsTitle:'Your profile vs #1',vsSub:(you,num1)=>`// ${you} vs ${num1}`,metric:'Metric',youCol:name=>`You — ${name}`,num1Col:name=>`#1 — ${name}`,rating:'Rating',reviews:'Reviews',website:'Website',phone:'Phone',hours:'Hours listed',categories:'Categories',yes:'Yes',no:'No',noRating:'No rating',bizOf:(i,total)=>`// business ${i} of ${total}`,summary:(n,k,ts)=>`// ${n} businesses · ${k} keywords · ${ts}`,openPdf:'⬇ Open as PDF',checklistTitle:'Profile Optimization Checklist',checklistStep:'Step',checklistItem:'Item',checklistStatus:'Status',checklistAction:'Action required',cl:{phone:'Phone',address:'Address',hours:'Opening hours',description:'Business description',openingDate:'Opening date',serviceAreas:'Service areas',photos:'Photos (minimum 10)',logo:'Logo',services:'Services / Products',posts:'Posts / Updates',primaryCategory:'Primary category',secondaryCategories:'Secondary categories (min 3)',titleKeywords:'Keywords in title',reviews:'Reviews count',categories:'Categories',rating:'Rating',website:'Website',configured:'Configured',missing:'MISSING',empty:'EMPTY',none:'NONE',noRating:'No rating',noAddress:'NO ADDRESS',noDate:'NOT CONFIGURED',noAreas:'NO AREAS',noLogo:'NO LOGO',noPosts:'NO POSTS',noSecondary:'NONE',titleNoKeyword:'No category or area in title',addPhone:'Add phone number to profile',addAddress:'Add correct address',addHours:'Set opening hours',addDescription:'Write description of at least 200 characters',addDate:'Add opening date — Google shows “X years in business”',addAreas:'Add service areas where you work',addPhotos:'Upload more photos — competitors often have 30+; photo size 1024×576px',addLogo:'Add professional logo — 720×720px PNG',addServices:'Add services/products',addPosts:'Add regular posts with photos and updates',addSecondary:'Add 3–5 relevant secondary categories',addTitleKeywords:'Consider adding specialty or area to the title',getReviews:'Get first reviews',moreReviews:'Need 10+ reviews — set up review request system',reviewsLow:'(low)'}},
+  es:{keyword:kw=>`// palabra clave: "${kw}"`,ranked:(pos,total,kw)=>`Posición ${pos} de ${total} resultados para "${kw}"`,invisible:(total,kw)=>`No visible en el top ${total} para "${kw}"`,notFound:name=>`${name} — no encontrado en los resultados`,you:'◀ USTED',vsTitle:'Tu perfil vs #1',vsSub:(you,num1)=>`// ${you} vs ${num1}`,metric:'Métrica',youCol:name=>`Usted — ${name}`,num1Col:name=>`#1 — ${name}`,rating:'Calificación',reviews:'Reseñas',website:'Sitio web',phone:'Teléfono',hours:'Horarios',categories:'Categorías',yes:'Sí',no:'No',noRating:'Sin calificación',bizOf:(i,total)=>`// negocio ${i} de ${total}`,summary:(n,k,ts)=>`// ${n} negocios · ${k} palabras clave · ${ts}`,openPdf:'⬇ Abrir como PDF',checklistTitle:'Checklist de optimización del perfil',checklistStep:'Paso',checklistItem:'Ítem',checklistStatus:'Estado',checklistAction:'Acción requerida',cl:{phone:'Teléfono',address:'Dirección',hours:'Horarios de atención',description:'Descripción del negocio',openingDate:'Fecha de apertura',serviceAreas:'Áreas de servicio',photos:'Fotos (mínimo 10)',logo:'Logo',services:'Servicios / Productos',posts:'Publicaciones / Actualizaciones',primaryCategory:'Categoría principal',secondaryCategories:'Categorías secundarias (mín 3)',titleKeywords:'Keywords en el título',reviews:'Cantidad de reseñas',categories:'Categorías',rating:'Calificación',website:'Sitio web',configured:'Configurado',missing:'VACÍA',empty:'VACÍA',none:'NINGUNA',noRating:'Sin calificación',noAddress:'SIN DIRECCIÓN',noDate:'NO CONFIGURADA',noAreas:'SIN ÁREAS',noLogo:'SIN LOGO',noPosts:'SIN PUBLICACIONES',noSecondary:'NINGUNA',titleNoKeyword:'Ni categoría ni barrio en título',addPhone:'Agregar teléfono al perfil',addAddress:'Agregar dirección correcta',addHours:'Configurar horarios de atención',addDescription:'Escribir descripción de mín 200 caracteres',addDate:'Agregar fecha — Google muestra “X años en el negocio”',addAreas:'Agregar áreas de servicio donde atendés',addPhotos:'Subir más fotos — competidores tienen 30+; foto de portada: 1024×576px',addLogo:'Agregar logo profesional — 720×720px PNG',addServices:'Agregar servicios/productos',addPosts:'Agregar publicaciones regulares con fotos y novedades',addSecondary:'Agregar 3–5 categorías secundarias relevantes',addTitleKeywords:'Considerar agregar especialidad o barrio al título',getReviews:'Conseguir primeras reseñas',moreReviews:'Configurar sistema de solicitud automática de reseñas',reviewsLow:'(pocas)'}},
+  sv:{keyword:kw=>`// sökord: "${kw}"`,ranked:(pos,total,kw)=>`Placering ${pos} av ${total} resultat för "${kw}"`,invisible:(total,kw)=>`Inte synlig i topp ${total} för "${kw}"`,notFound:name=>`${name} — hittades inte i resultaten`,you:'◀ DU',vsTitle:'Din profil vs #1',vsSub:(you,num1)=>`// ${you} vs ${num1}`,metric:'Mätvärde',youCol:name=>`Du — ${name}`,num1Col:name=>`#1 — ${name}`,rating:'Betyg',reviews:'Recensioner',website:'Hemsida',phone:'Telefon',hours:'Öppettider',categories:'Kategorier',yes:'Ja',no:'Nej',noRating:'Inget betyg',bizOf:(i,total)=>`// företag ${i} av ${total}`,summary:(n,k,ts)=>`// ${n} företag · ${k} sökord · ${ts}`,openPdf:'⬇ Öppna som PDF',checklistTitle:'Checklista för profiloptimering',checklistStep:'Steg',checklistItem:'Punkt',checklistStatus:'Status',checklistAction:'Åtgärd krävs',cl:{phone:'Telefon',address:'Adress',hours:'Öppettider',description:'Företagsbeskrivning',openingDate:'Öppningsdatum',serviceAreas:'Serviceområden',photos:'Foton (minst 10)',logo:'Logotyp',services:'Tjänster / Produkter',posts:'Inlägg / Uppdateringar',primaryCategory:'Primär kategori',secondaryCategories:'Sekundära kategorier (minst 3)',titleKeywords:'Sökord i titeln',reviews:'Antal recensioner',categories:'Kategorier',rating:'Betyg',website:'Hemsida',configured:'Konfigurerat',missing:'SAKNAS',empty:'TOM',none:'INGEN',noRating:'Inget betyg',noAddress:'INGEN ADRESS',noDate:'EJ KONFIGURERAT',noAreas:'INGA OMRÅDEN',noLogo:'INGEN LOGO',noPosts:'INGA INLÄGG',noSecondary:'INGEN',titleNoKeyword:'Varken kategori eller område i titel',addPhone:'Lägg till telefonnummer',addAddress:'Lägg till korrekt adress',addHours:'Ange öppettider',addDescription:'Skriv en beskrivning på minst 200 tecken',addDate:'Lägg till öppningsdatum — Google visar “X år i branschen”',addAreas:'Lägg till serviceområden där ni arbetar',addPhotos:'Ladda upp fler foton — konkurrenter har ofta 30+; omslagsfoto: 1024×576px',addLogo:'Lägg till professionell logotyp — 720×720px PNG',addServices:'Lägg till tjänster/produkter',addPosts:'Lägg till regelbundna inlägg med bilder och nyheter',addSecondary:'Lägg till 3–5 relevanta sekundära kategorier',addTitleKeywords:'Överväg att lägga till specialitet eller område i titeln',getReviews:'Få första recensionerna',moreReviews:'Sätt upp automatiskt system för recensionsförfrågningar',reviewsLow:'(få)'}}
 };
 
-function getLang(){return T[document.getElementById('reportLang').value]||T.sv}
+function getLang(){return T[document.getElementById('reportLang').value]||T.en}
+function toggleCityField(){const mode=document.getElementById('searchFrom').value;document.getElementById('cityField').style.display=mode==='pin'?'none':'block'}
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function normalize(s){return String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'')}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 function setStatus(msg){document.getElementById('statusBar').classList.add('visible');document.getElementById('statusText').textContent=msg}
 function hideStatus(){document.getElementById('statusBar').classList.remove('visible')}
 function showError(msg){const b=document.getElementById('errorBox');b.textContent='⚠ '+msg;b.classList.add('visible')}
 function clearError(){document.getElementById('errorBox').classList.remove('visible')}
-function toggleCityField(){document.getElementById('cityField').style.display=document.getElementById('searchFrom').value==='city'?'block':'none'}
-
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function normalize(s){return String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'')}
 function parseUrls(raw){return raw.split('\n').map(u=>u.trim()).filter(u=>u.includes('google.com/maps')||u.includes('maps.app.goo.gl')||u.includes('goo.gl/maps'))}
-document.getElementById('mapsUrls').addEventListener('input',function(){const urls=parseUrls(this.value);document.getElementById('urlCounter').innerHTML=`<span>${urls.length}</span> / 30 URLs`});
+
+document.getElementById('mapsUrls').addEventListener('input',function(){
+  const urls=parseUrls(this.value);
+  const counter=document.getElementById('urlCounter');
+  counter.innerHTML=`<span>${urls.length}</span> / 30 URLs`;
+  counter.style.color=urls.length>30?'var(--rank-bad)':'var(--muted)';
+});
 
 function extractCoords(url){
-  let m=url.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/); if(m)return{lat:+m[1],lng:+m[2]};
-  m=url.match(/!3d(-?\d{1,3}\.\d+).*?!4d(-?\d{1,3}\.\d+)/); if(m)return{lat:+m[1],lng:+m[2]};
-  m=url.match(/[?&]ll=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/); if(m)return{lat:+m[1],lng:+m[2]};
+  let m=url.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if(m)return{lat:parseFloat(m[1]),lng:parseFloat(m[2])};
+  m=url.match(/!3d(-?\d{1,3}\.\d+).*?!4d(-?\d{1,3}\.\d+)/);
+  if(m)return{lat:parseFloat(m[1]),lng:parseFloat(m[2])};
+  m=url.match(/[?&]ll=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if(m)return{lat:parseFloat(m[1]),lng:parseFloat(m[2])};
   return null;
 }
-function extractNameFromUrl(url){const m=url.match(/maps\/place\/([^/@?]+)/);return m?decodeURIComponent(m[1].replace(/\+/g,' ')):null}
+
+function extractNameFromUrl(url){
+  const m=url.match(/maps\/place\/([^/@?]+)/);
+  if(!m)return null;
+  return decodeURIComponent(m[1].replace(/\+/g,' '));
+}
 
 document.getElementById('keywordInput').addEventListener('keydown',e=>{if(e.key==='Enter')addKeyword()});
 function addKeyword(){const input=document.getElementById('keywordInput');const val=input.value.trim();if(!val||keywords.includes(val)){input.value='';return}keywords.push(val);input.value='';renderTags()}
-function removeKeyword(i){keywords.splice(i,1);renderTags()}
-function renderTags(){document.getElementById('keywordTags').innerHTML=keywords.map((kw,i)=>`<span class="tag">${esc(kw)}<button onclick="removeKeyword(${i})">×</button></span>`).join('')}
+function removeKeyword(idx){keywords.splice(idx,1);renderTags()}
+function renderTags(){document.getElementById('keywordTags').innerHTML=keywords.map((kw,i)=>`<div class="keyword-tag">${esc(kw)}<button onclick="removeKeyword(${i})">×</button></div>`).join('')}
 
-async function geocodeCity(city){
-  const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
-  const d=await r.json();
-  if(d&&d[0])return{lat:+d[0].lat,lng:+d[0].lon};
-  throw new Error('Could not find location: '+city);
+async function geocodeCity(cityName){
+  const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1`);
+  const data=await res.json();
+  if(data&&data[0])return{lat:parseFloat(data[0].lat),lng:parseFloat(data[0].lon)};
+  throw new Error(`Could not find location: ${cityName}`);
 }
+
+function isRealWebsite(url){
+  if(!url||typeof url!=='string'||!url.trim())return false;
+  const social=['facebook.com','fb.com','instagram.com','twitter.com','x.com','tiktok.com','youtube.com','linkedin.com','yelp.com','tripadvisor.com','google.com','goo.gl','maps.app','linktr.ee','wa.me','whatsapp.com'];
+  try{const host=new URL(url).hostname.replace('www.','');return !social.some(s=>host.includes(s))}catch{return false}
+}
+
 async function startActor(token,input){
   const res=await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/acts/${ACTOR}/runs?token=${token}`)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
   if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`Apify HTTP ${res.status}`)}
-  return (await res.json()).data;
+  const {data:run}=await res.json();
+  return run;
 }
-async function pollUntilDone(token,id,label){
+
+async function pollUntilDone(token,runId,label){
   for(let i=0;i<72;i++){
     await sleep(5000);
-    const r=await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/actor-runs/${id}?token=${token}`)}`);
-    const d=await r.json(); const s=d.data.status;
+    const res=await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/actor-runs/${runId}?token=${token}`)}`);
+    const data=await res.json();
+    const s=data.data.status;
     setStatus(`${label} — ${s} (${(i+1)*5}s)…`);
     if(s==='SUCCEEDED')return;
     if(['FAILED','ABORTED','TIMED-OUT'].includes(s))throw new Error(`Apify run ${s}`);
   }
   throw new Error('Timed out waiting for Apify run.');
 }
-async function fetchDataset(token,id,limit=500){
-  const r=await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/datasets/${id}/items?token=${token}&limit=${limit}`)}`);
-  return r.json();
+
+async function fetchDataset(token,datasetId,limit=500){
+  const res=await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/datasets/${datasetId}/items?token=${token}&limit=${limit}`)}`);
+  return res.json();
 }
-function isRealWebsite(url){
-  if(!url||typeof url!=='string')return false;
-  const bad=['facebook.com','instagram.com','x.com','twitter.com','youtube.com','linkedin.com','yelp.com','tripadvisor.com','google.com','goo.gl','maps.app','linktr.ee','wa.me','whatsapp.com'];
-  try{const host=new URL(url).hostname.replace('www.','');return !bad.some(x=>host.includes(x))}catch{return false}
-}
-function getCategories(item){
-  const out=[]; const add=c=>{if(!c)return;if(typeof c==='string')out.push(c.trim());else if(typeof c==='object')out.push(String(c.name||c.title||c.label||c.categoryName||'').trim())};
-  if(Array.isArray(item.categories))item.categories.forEach(add);
-  if(Array.isArray(item.additionalCategories))item.additionalCategories.forEach(add);
-  add(item.categoryName); add(item.category);
-  return [...new Set(out.filter(Boolean))];
-}
-function badgeOk(v){return `<span class="cl-ok">✓ ${v}</span>`}
-function badgeBad(v){return `<span class="cl-bad">✗ ${v}</span>`}
 
 function buildChecklist(you,t,place){
-  const cats=you.categories||[];
-  const title=String(place?.title||place?.name||you.name||'');
-  const titleHasCat=cats.some(c=>normalize(title).includes(normalize(c)));
-  const photos=place?.imageUrls?.length??place?.imagesCount??place?.photosCount??0;
+  const advanced=document.getElementById('advancedAudit')?.checked;
+  const ok=label=>`<span class="cl-ok">✓ ${label}</span>`;
+  const bad=label=>`<span class="cl-bad">✗ ${label}</span>`;
+
+  if(!advanced){
+    const rows=[
+      {step:'A1',item:t.cl.phone,status:you.phone?ok(t.cl.configured):bad(t.cl.missing),action:you.phone?'—':t.cl.addPhone},
+      {step:'A2',item:t.cl.hours,status:you.hours?ok(t.cl.configured):bad(t.cl.missing),action:you.hours?'—':t.cl.addHours},
+      {step:'A3',item:t.cl.categories,status:you.categories?.length?ok(esc(you.categories.join(', '))):bad(t.cl.none),action:you.categories?.length?'—':t.cl.addSecondary},
+      {step:'A4',item:t.cl.rating,status:you.rating?ok('★ '+Number(you.rating).toFixed(1)):bad(t.cl.noRating),action:you.rating?'—':t.cl.getReviews},
+      {step:'A5',item:t.cl.reviews,status:(you.reviews>=10)?ok(you.reviews):bad((you.reviews||0)+' '+t.cl.reviewsLow),action:(!you.reviews||you.reviews<10)?t.cl.moreReviews:'—'}
+    ];
+    return rows.map(r=>`<tr><td>${r.step}</td><td>${r.item}</td><td>${r.status}</td><td class="cl-action">${r.action}</td></tr>`).join('');
+  }
+
+  const title=String(place?.name||you.name||'');
+  const categories=you.categories||[];
+  const catText=categories.join(', ');
+  const titleHasCategory=categories.some(c=>normalize(title).includes(normalize(c)));
+  const photoCount=place?.imagesCount??place?.imageUrls?.length??place?.photosCount??0;
+  const hasLogo=!!(place?.logoUrl||place?.imageUrl);
+  const hasDescription=!!(place?.description&&String(place.description).trim().length>=120);
+  const hasAddress=!!(place?.address||place?.street||place?.location);
+  const hasOpeningDate=!!(place?.locatedIn||place?.openingDate||place?.yearsInBusiness);
+  const hasServiceAreas=!!(place?.serviceArea||place?.serviceAreas?.length);
+  const hasServices=!!(place?.services?.length||place?.menu?.length||place?.additionalInfo?.Services);
+  const hasPosts=!!(place?.updatesFromCustomers?.length||place?.posts?.length);
+  const secondaryCount=Math.max(0,categories.length-1);
+
   const rows=[
-    ['A1',t.cl.phone,you.phone?badgeOk(place?.phone||t.cl.configured):badgeBad(t.cl.missing),you.phone?'—':t.cl.addPhone],
-    ['A2',t.cl.address,(place?.address||place?.street)?badgeOk(esc(place.address||place.street)):badgeBad(t.cl.noAddress),(place?.address||place?.street)?'—':t.cl.addAddress],
-    ['A3',t.cl.hours,you.hours?badgeOk(t.cl.configured):badgeBad(t.cl.missing),you.hours?'—':t.cl.addHours],
-    ['A4',t.cl.description,(place?.description&&place.description.length>=120)?badgeOk(t.cl.configured):badgeBad(t.cl.empty),(place?.description&&place.description.length>=120)?'—':t.cl.addDescription],
-    ['A5',t.cl.openingDate,(place?.openingDate||place?.yearsInBusiness)?badgeOk(t.cl.configured):badgeBad(t.cl.noDate),(place?.openingDate||place?.yearsInBusiness)?'—':t.cl.addDate],
-    ['A6',t.cl.serviceAreas,(place?.serviceArea||place?.serviceAreas?.length)?badgeOk(t.cl.configured):badgeBad(t.cl.noAreas),(place?.serviceArea||place?.serviceAreas?.length)?'—':t.cl.addAreas],
-    ['A7',t.cl.photos,photos>=10?badgeOk(photos+' photos'):badgeBad(photos+' photos'),photos>=10?'—':t.cl.addPhotos],
-    ['A8',t.cl.logo,(place?.logoUrl||place?.imageUrl)?badgeOk(t.cl.configured):badgeBad(t.cl.noLogo),(place?.logoUrl||place?.imageUrl)?'—':t.cl.addLogo],
-    ['A9',t.cl.services,(place?.services?.length||place?.additionalInfo?.Services)?badgeOk(t.cl.configured):badgeBad(t.cl.none),(place?.services?.length||place?.additionalInfo?.Services)?'—':t.cl.addServices],
-    ['A10',t.cl.posts,(place?.posts?.length||place?.updatesFromCustomers?.length)?badgeOk(t.cl.configured):badgeBad(t.cl.noPosts),(place?.posts?.length||place?.updatesFromCustomers?.length)?'—':t.cl.addPosts],
-    ['B1',t.cl.primaryCategory,cats[0]?badgeOk(esc(cats[0])):badgeBad(t.cl.none),cats[0]?'—':t.cl.addSecondary],
-    ['B2',t.cl.secondaryCategories,cats.length>3?badgeOk(esc(cats.slice(1).join(', '))):badgeBad(t.cl.noSecondary),cats.length>3?'—':t.cl.addSecondary],
-    ['B3',t.cl.titleKeywords,titleHasCat?badgeOk(t.cl.configured):badgeBad(t.cl.titleNoKeyword),titleHasCat?'—':t.cl.addTitleKeywords],
-    ['C1',t.cl.reviews,(you.reviews>=10)?badgeOk(you.reviews):badgeBad((you.reviews||0)+' '+t.cl.reviewsLow),(you.reviews>=10)?'—':t.cl.moreReviews]
+    {step:'A1',item:t.cl.phone,status:you.phone?ok(place?.phone||t.cl.configured):bad(t.cl.missing),action:you.phone?'—':t.cl.addPhone},
+    {step:'A2',item:t.cl.address,status:hasAddress?ok(esc(place?.address||t.cl.configured)):bad(t.cl.noAddress),action:hasAddress?'—':t.cl.addAddress},
+    {step:'A3',item:t.cl.hours,status:you.hours?ok(t.cl.configured):bad(t.cl.missing),action:you.hours?'—':t.cl.addHours},
+    {step:'A4',item:t.cl.description,status:hasDescription?ok(t.cl.configured):bad(t.cl.empty),action:hasDescription?'—':t.cl.addDescription},
+    {step:'A5',item:t.cl.openingDate,status:hasOpeningDate?ok(t.cl.configured):bad(t.cl.noDate),action:hasOpeningDate?'—':t.cl.addDate},
+    {step:'A6',item:t.cl.serviceAreas,status:hasServiceAreas?ok(t.cl.configured):bad(t.cl.noAreas),action:hasServiceAreas?'—':t.cl.addAreas},
+    {step:'A7',item:t.cl.photos,status:photoCount>=10?ok(photoCount+' photos'):bad(photoCount+' photos'),action:photoCount>=10?'—':t.cl.addPhotos},
+    {step:'A8',item:t.cl.logo,status:hasLogo?ok(t.cl.configured):bad(t.cl.noLogo),action:hasLogo?'—':t.cl.addLogo},
+    {step:'A9',item:t.cl.services,status:hasServices?ok(t.cl.configured):bad(t.cl.none),action:hasServices?'—':t.cl.addServices},
+    {step:'A10',item:t.cl.posts,status:hasPosts?ok(t.cl.configured):bad(t.cl.noPosts),action:hasPosts?'—':t.cl.addPosts},
+    {step:'B1',item:t.cl.primaryCategory,status:categories[0]?ok(esc(categories[0])):bad(t.cl.none),action:categories[0]?'—':t.cl.addSecondary},
+    {step:'B2',item:t.cl.secondaryCategories,status:secondaryCount>=3?ok(esc(categories.slice(1).join(', '))):bad(t.cl.noSecondary),action:secondaryCount>=3?'—':t.cl.addSecondary},
+    {step:'B3',item:t.cl.titleKeywords,status:titleHasCategory?ok(t.cl.configured):bad(t.cl.titleNoKeyword),action:titleHasCategory?'—':t.cl.addTitleKeywords},
+    {step:'C1',item:t.cl.reviews,status:(you.reviews>=10)?ok(you.reviews):bad((you.reviews||0)+' '+t.cl.reviewsLow),action:(you.reviews>=10)?'—':t.cl.moreReviews}
   ];
-  return rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="cl-action">${r[3]}</td></tr>`).join('');
+
+  return rows.map(r=>`<tr><td>${r.step}</td><td>${r.item}</td><td>${r.status}</td><td class="cl-action">${r.action}</td></tr>`).join('');
 }
 
 async function runCheck(){
-  clearError(); document.getElementById('results').style.display='none';
+  clearError();
+  document.getElementById('results').style.display='none';
+
   const token=document.getElementById('apifyToken').value.trim();
-  const urls=parseUrls(document.getElementById('mapsUrls').value).slice(0,30);
+  const rawUrls=document.getElementById('mapsUrls').value;
   const searchFrom=document.getElementById('searchFrom').value;
   const cityName=document.getElementById('cityName').value.trim();
+
   if(!token)return showError('Apify token is required.');
   if(!keywords.length)return showError('Add at least one keyword.');
+
+  const urls=parseUrls(rawUrls).slice(0,30);
   if(!urls.length)return showError('Paste at least one valid Google Maps URL.');
-  if(searchFrom==='city'&&!cityName)return showError('Enter a city name or switch back to PIN.');
+  if(searchFrom==='city'&&!cityName)return showError('Enter a city name or switch Search From back to PIN.');
 
   const businesses=[];
   for(const url of urls){
     const coords=extractCoords(url);
-    if(!coords)return showError('Could not read coordinates from URL. Use full Google Maps URL with @lat,lng.');
-    businesses.push({url,coords,name:extractNameFromUrl(url)||'Business'});
+    if(!coords)return showError(`Could not read coordinates from: ${url.substring(0,80)}… Use a full Google Maps URL with @lat,lng.`);
+    const name=extractNameFromUrl(url)||'Business';
+    businesses.push({url,coords,name});
   }
 
-  const btn=document.getElementById('runBtn'); btn.disabled=true;
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true;
+
   try{
     const allResults=[];
-    let cityCoords=null;
-    if(searchFrom==='city'){setStatus(`Geocoding "${cityName}"…`); cityCoords=await geocodeCity(cityName)}
-    const searchQueries=keywords.map(kw=>searchFrom==='city'?`${kw} ${cityName}`:kw);
-    const mapQuery={}; keywords.forEach((kw,i)=>mapQuery[normalize(searchQueries[i])]=kw);
+    let sharedCityCoords=null;
+
+    if(searchFrom==='city'&&cityName){
+      setStatus(`Geocoding "${cityName}"…`);
+      sharedCityCoords=await geocodeCity(cityName);
+    }
+
+    const searchQueries=keywords.map(kw=>searchFrom==='city'&&cityName?`${kw} ${cityName}`:kw);
+    const queryToKeyword={};
+    keywords.forEach((kw,idx)=>{queryToKeyword[normalize(searchQueries[idx])]=kw});
 
     for(let i=0;i<businesses.length;i++){
       const biz=businesses[i];
-      const lat=cityCoords?cityCoords.lat:biz.coords.lat;
-      const lng=cityCoords?cityCoords.lng:biz.coords.lng;
+      let searchLat=biz.coords.lat;
+      let searchLng=biz.coords.lng;
+      let useZoom=12;
+
+      if(sharedCityCoords){
+        searchLat=sharedCityCoords.lat;
+        searchLng=sharedCityCoords.lng;
+        useZoom=null;
+      }
 
       setStatus(`Business ${i+1}/${businesses.length}: searching ${searchQueries.length} queries…`);
 
-      const input={
+      const actorInput={
         searchStringsArray:searchQueries,
-        lat,
-        lng,
+        lat:searchLat,
+        lng:searchLng,
         maxCrawledPlacesPerSearch:20,
         language:document.getElementById('reportLang').value==='sv'?'sv':'en',
-        maxImages:0,
+        maxImages:document.getElementById('advancedAudit')?.checked?20:0,
         maxReviews:0,
         exportPlaceUrls:false,
         scrapeContacts:false,
         scrapeDirections:false,
-        additionalInfo:false
+        additionalInfo:document.getElementById('advancedAudit')?.checked?true:false
       };
-      if(!cityCoords)input.zoom=12;
 
-      const run=await startActor(token,input);
+      if(useZoom!==null)actorInput.zoom=useZoom;
+
+      const run=await startActor(token,actorInput);
       await pollUntilDone(token,run.id,`Business ${i+1}/${businesses.length}`);
+
       const items=await fetchDataset(token,run.defaultDatasetId,500);
       items.sort((a,b)=>(a.rank??999)-(b.rank??999));
 
-      const byKeyword={}; keywords.forEach(kw=>byKeyword[kw]=[]);
+      const byKeyword={};
+      for(const kw of keywords)byKeyword[kw]=[];
+
       for(const item of items){
-        const ss=normalize(item.searchString||'');
-        let kw=mapQuery[ss];
-        if(!kw){
-          for(let qi=0;qi<searchQueries.length;qi++){
-            const qn=normalize(searchQueries[qi]);
-            const kn=normalize(keywords[qi]);
-            if(ss.includes(qn)||qn.includes(ss)||ss.includes(kn)){kw=keywords[qi];break}
+        const ssNorm=normalize(item.searchString||'');
+        const mapped=queryToKeyword[ssNorm];
+
+        if(mapped){
+          byKeyword[mapped].push(item);
+          continue;
+        }
+
+        for(let qi=0;qi<searchQueries.length;qi++){
+          const query=searchQueries[qi];
+          const kw=keywords[qi];
+          const qn=normalize(query);
+          const kn=normalize(kw);
+          if(ssNorm===qn||ssNorm.includes(qn)||qn.includes(ssNorm)||ssNorm.includes(kn)){
+            byKeyword[kw].push(item);
+            break;
           }
         }
-        if(kw){
-          byKeyword[kw].push(item);
-        } else if(keywords.length===1){
-          byKeyword[keywords[0]].push(item);
-        }
       }
+
       allResults.push({business:biz,byKeyword});
     }
-    hideStatus(); renderResults(allResults);
-  }catch(e){hideStatus();showError(e.message)}
-  finally{btn.disabled=false}
+
+    hideStatus();
+    renderResults(allResults);
+  }catch(err){
+    hideStatus();
+    showError(err.message);
+  }finally{
+    btn.disabled=false;
+  }
 }
 
 function openBizWindow(bi){
-  const el=document.getElementById(`biz-block-${bi}`); if(!el)return;
+  const el=document.getElementById(`biz-block-${bi}`);
+  if(!el)return;
+  const bizName=el.dataset.bizname||'report';
+  const content=el.innerHTML;
   const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rank Report</title><style>body{font-family:Arial,sans-serif;padding:24px;max-width:850px;margin:auto;color:#111}.biz-pdf-btn{display:none}.rank-hero{border:1px solid #ddd;padding:16px;margin:10px 0;display:flex;gap:20px}.rank-number{font-size:48px;font-weight:bold}.good{color:#4a7c00}.mid{color:#b36200}.bad{color:#c00}.result-row{display:flex;gap:12px;border-bottom:1px solid #eee;padding:7px}.result-name{flex:1}.is-target{background:#f5ffe0}.result-pos{width:30px}table{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px}th,td{border-bottom:1px solid #eee;padding:7px;text-align:left}th{background:#f5f5f5}.cl-ok{color:#4a7c00}.cl-bad{color:#c00}</style></head><body>${el.innerHTML}</body></html>`);
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(bizName)} — Rank Report</title><link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"><style>body{font-family:'Syne',sans-serif;background:#fff;color:#111;padding:24px;max-width:780px;margin:0 auto}.biz-pdf-btn{display:none}.biz-index,.keyword-label{font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:#888;margin-bottom:8px}.biz-title{font-size:22px;font-weight:800;margin-bottom:20px}.rank-hero{border:1px solid #ddd;border-radius:4px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;gap:20px}.rank-number{font-size:52px;font-weight:800;min-width:95px}.good{color:#4a7c00}.mid{color:#b36200}.bad{color:#c00}.rank-meta .biz-name{font-weight:700}.rank-desc,.result-rating,.result-pos{font-family:'DM Mono',monospace;font-size:11px;color:#777}.results-list{border:1px solid #ddd;border-radius:4px;overflow:hidden}.result-row{display:flex;gap:14px;padding:7px 12px;border-bottom:1px solid #eee}.result-row:last-child{border-bottom:none}.result-row.is-target{background:#f5ffe0;border-left:3px solid #4a7c00}.result-pos{width:26px;text-align:right}.result-name{flex:1;font-size:12px;font-weight:600}.invisible-row{padding:10px 12px;background:#fff0f0;color:#c00;font-family:'DM Mono',monospace;font-size:12px}.comparison-wrap{page-break-before:always;margin-top:24px}.comparison-table,.checklist-table{width:100%;border-collapse:collapse;border:1px solid #ddd;font-family:'DM Mono',monospace;font-size:11px;margin-top:8px}.comparison-table th,.checklist-table th{background:#f5f5f5;padding:7px 10px;text-align:left;font-size:9px;color:#888}.comparison-table td,.checklist-table td{padding:6px 10px;border-top:1px solid #eee}.badge{display:inline-block;padding:2px 7px;border-radius:2px;font-size:10px;font-weight:600}.badge-good{background:#f0ffe0;color:#4a7c00}.badge-bad{background:#fff0f0;color:#c00}.badge-ok{background:#fff8ec;color:#b36200}.badge-neutral{background:#f5f5f5;color:#666}.checklist-title,.comparison-title{font-weight:800;margin-top:18px}.cl-ok{color:#4a7c00;font-weight:600}.cl-bad{color:#c00;font-weight:600}</style></head><body>${content}</body></html>`);
   win.document.close();
 }
 
 function renderResults(allResults){
-  const t=getLang(); const ts=new Date().toLocaleString();
+  const t=getLang();
+  const ts=new Date().toLocaleString();
   let html=`<p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:32px;">${t.summary(allResults.length,keywords.length,ts)}</p>`;
 
   for(let bi=0;bi<allResults.length;bi++){
-    const {business,byKeyword}=allResults[bi]; const normBiz=normalize(business.name);
-    html+=`<div class="biz-block" id="biz-block-${bi}"><div style="display:flex;justify-content:space-between;align-items:center"><div class="biz-index">${t.bizOf(bi+1,allResults.length)}</div><button class="biz-pdf-btn" onclick="openBizWindow(${bi})">⬇ PDF</button></div><div class="biz-title">${esc(business.name)}</div>`;
+    const {business,byKeyword}=allResults[bi];
+    const normBiz=normalize(business.name);
+
+    html+=`<div class="biz-block" id="biz-block-${bi}" data-bizname="${esc(business.name)}">
+      <div class="biz-header">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div class="biz-index">${t.bizOf(bi+1,allResults.length)}</div>
+          <button class="biz-pdf-btn" onclick="openBizWindow(${bi})">${t.openPdf}</button>
+        </div>
+        <div class="biz-title">${esc(business.name)}</div>
+      </div>`;
 
     for(const kw of keywords){
       const items=byKeyword[kw]||[];
+
       const ranked=items.map((item,i)=>{
         const name=item.title||item.name||'(unknown)';
-        const isTarget=normalize(name)===normBiz||normalize(name).startsWith(normBiz)||normBiz.startsWith(normalize(name));
-        return{pos:i+1,name,rating:item.totalScore??item.rating??null,reviews:item.reviewsCount??item.reviewCount??null,categories:getCategories(item),website:isRealWebsite(item.website),phone:!!(item.phone||item.phoneUnformatted),hours:!!(item.openingHours?.length),isTarget,raw:item};
+        const normName=normalize(name);
+        const isTarget=normName===normBiz||normName.startsWith(normBiz)||normBiz.startsWith(normName);
+        return{
+          pos:i+1,
+          name,
+          rating:item.totalScore??item.rating??null,
+          reviews:item.reviewsCount??item.reviewCount??null,
+          categories:item.categories??(item.categoryName?[item.categoryName]:[]),
+          website:isRealWebsite(item.website??null),
+          phone:!!(item.phone??item.phoneUnformatted??null),
+          hours:!!(item.openingHours?.length),
+          isTarget,
+          raw:item
+        };
       });
-      let found=false; for(const r of ranked){if(r.isTarget&&!found)found=true;else if(r.isTarget)r.isTarget=false}
-      const target=ranked.find(r=>r.isTarget), number1=ranked[0], pos=target?.pos??null, total=ranked.length;
-      const rankClass=!pos?'bad':pos<=5?'good':pos<=12?'mid':'bad';
-      const rankDisplay=pos?`#${pos}`:'20+';
 
-      let comp='';
-      if(number1){
-        const you=target||{name:business.name,rating:null,reviews:null,website:false,phone:false,hours:false,categories:[],raw:{}};
-        const val=(ok,text)=>`<span class="${ok?'badge badge-good':'badge badge-bad'}">${text}</span>`;
-        comp=`<div class="section-title">${t.checklist}</div><table><thead><tr><th>${t.step}</th><th>${t.item}</th><th>${t.status}</th><th>${t.action}</th></tr></thead><tbody>${buildChecklist(you,t,you.raw)}</tbody></table>
-        <div class="comparison-title">${t.vsTitle}</div><table><thead><tr><th>${t.metric}</th><th>Du / You</th><th>#1</th></tr></thead><tbody>
-        <tr><td>${t.rating}</td><td>${you.rating?val(true,'★ '+Number(you.rating).toFixed(1)):val(false,t.noRating)}</td><td>${number1.rating?'★ '+Number(number1.rating).toFixed(1):'—'}</td></tr>
-        <tr><td>${t.reviews}</td><td>${you.reviews??0}</td><td>${number1.reviews??'—'}</td></tr>
-        <tr><td>${t.website}</td><td>${you.website?t.yes:t.no}</td><td>${number1.website?t.yes:t.no}</td></tr>
-        <tr><td>${t.phone}</td><td>${you.phone?t.yes:t.no}</td><td>${number1.phone?t.yes:t.no}</td></tr>
-        <tr><td>${t.hours}</td><td>${you.hours?t.yes:t.no}</td><td>${number1.hours?t.yes:t.no}</td></tr>
-        <tr><td>${t.categories}</td><td>${esc(you.categories.join(', ')||'—')}</td><td>${esc(number1.categories.join(', ')||'—')}</td></tr>
-        </tbody></table>`;
+      let found=false;
+      for(const r of ranked){
+        if(r.isTarget&&!found)found=true;
+        else if(r.isTarget)r.isTarget=false;
       }
 
-      html+=`<div class="keyword-section"><div class="keyword-label">${t.keyword(kw)}</div>
-      <div class="rank-hero"><div class="rank-number ${rankClass}">${rankDisplay}</div><div><div class="rank-name">${esc(business.name)}</div><div class="rank-desc">${pos?t.ranked(pos,total,kw):t.invisible(total,kw)}</div></div></div>
-      <div class="results-list">${ranked.map(r=>`<div class="result-row${r.isTarget?' is-target':''}"><span class="result-pos">${r.pos}</span><span class="result-name">${esc(r.name)}${r.isTarget?' '+t.you:''}</span><span class="result-rating">${r.rating?'★ '+Number(r.rating).toFixed(1)+(r.reviews?' ('+r.reviews+')':''):''}</span></div>`).join('')}${!target?`<div class="invisible">✕ ${esc(t.notFound(business.name))}</div>`:''}</div>
-      ${comp}</div>`;
+      const target=ranked.find(r=>r.isTarget);
+      const number1=ranked[0];
+      const pos=target?.pos??null;
+      const total=ranked.length;
+      const rankClass=!pos?'bad':pos<=5?'good':pos<=12?'mid':'bad';
+      const rankDisplay=pos?`#${pos}`:'20+';
+      const rankDesc=pos?t.ranked(pos,total,kw):t.invisible(total,kw);
+
+      let compHtml='';
+      if(number1&&(!target||target.pos!==1)){
+        const you=target??{name:business.name,rating:null,reviews:null,website:false,phone:false,hours:false,categories:[],raw:{}};
+        const num1=number1;
+
+        const ratingBadge=(youVal,num1Val)=>{
+          if(youVal==null)return `<span class="badge badge-bad">${t.noRating}</span>`;
+          const y=Number(youVal).toFixed(1);
+          if(num1Val==null||youVal>=num1Val)return `<span class="badge badge-good">★ ${y}</span>`;
+          if(youVal>=num1Val-.5)return `<span class="badge badge-ok">★ ${y}</span>`;
+          return `<span class="badge badge-bad">★ ${y}</span>`;
+        };
+
+        const reviewBadge=(youVal,num1Val)=>{
+          if(!youVal)return `<span class="badge badge-bad">0</span>`;
+          if(!num1Val||youVal>=num1Val)return `<span class="badge badge-good">${youVal}</span>`;
+          if(youVal>=num1Val*.5)return `<span class="badge badge-ok">${youVal}</span>`;
+          return `<span class="badge badge-bad">${youVal}</span>`;
+        };
+
+        const yesNoBadge=(youVal,num1Val)=>{
+          const cls=youVal?'badge-good':(num1Val?'badge-bad':'badge-neutral');
+          return `<span class="badge ${cls}">${youVal?t.yes:t.no}</span>`;
+        };
+
+        compHtml=`<div class="comparison-wrap">
+          <div class="checklist-title">${t.checklistTitle}</div>
+          <table class="checklist-table">
+            <thead><tr><th>${t.checklistStep}</th><th>${t.checklistItem}</th><th>${t.checklistStatus}</th><th>${t.checklistAction}</th></tr></thead>
+            <tbody>${buildChecklist(you,t,you.raw)}</tbody>
+          </table>
+
+          <div class="comparison-title" style="margin-top:24px">${t.vsTitle}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:8px;">${t.vsSub(esc(business.name),esc(num1.name))}</div>
+          <table class="comparison-table">
+            <thead><tr><th>${t.metric}</th><th>${t.youCol(esc(business.name))}</th><th>${t.num1Col(esc(num1.name))}</th></tr></thead>
+            <tbody>
+              <tr><td>${t.rating}</td><td>${ratingBadge(you.rating,num1.rating)}</td><td>${num1.rating!=null?'★ '+Number(num1.rating).toFixed(1):'—'}</td></tr>
+              <tr><td>${t.reviews}</td><td>${reviewBadge(you.reviews,num1.reviews)}</td><td>${num1.reviews??'—'}</td></tr>
+              <tr><td>${t.website}</td><td>${yesNoBadge(you.website,num1.website)}</td><td>${num1.website?t.yes:t.no}</td></tr>
+              <tr><td>${t.phone}</td><td>${yesNoBadge(you.phone,num1.phone)}</td><td>${num1.phone?t.yes:t.no}</td></tr>
+              <tr><td>${t.hours}</td><td>${yesNoBadge(you.hours,num1.hours)}</td><td>${num1.hours?t.yes:t.no}</td></tr>
+              <tr><td>${t.categories}</td><td><span class="badge badge-neutral">${esc(you.categories?.join(', ')||'—')}</span></td><td>${esc(num1.categories?.join(', ')||'—')}</td></tr>
+            </tbody>
+          </table>
+        </div>`;
+      }
+
+      html+=`<div class="keyword-section">
+        <div class="keyword-label">${t.keyword(kw)}</div>
+        <div class="rank-hero">
+          <div class="rank-number ${rankClass}">${rankDisplay}</div>
+          <div class="rank-meta">
+            <div class="biz-name">${esc(business.name)}</div>
+            <div class="rank-desc">${rankDesc}</div>
+          </div>
+        </div>
+        <div class="results-list">
+          ${ranked.map(r=>`<div class="result-row${r.isTarget?' is-target':''}">
+            <span class="result-pos">${r.pos}</span>
+            <span class="result-name">${esc(r.name)}${r.isTarget?' '+t.you:''}</span>
+            <span class="result-rating">${r.rating!=null?'★ '+Number(r.rating).toFixed(1)+(r.reviews?' ('+r.reviews+')':''):''}</span>
+          </div>`).join('')}
+          ${!target?`<div class="invisible-row">✕ &nbsp;${esc(t.notFound(business.name))}</div>`:''}
+        </div>
+        ${compHtml}
+      </div>`;
     }
-    html+='</div>';
+
+    html+=`</div>`;
   }
+
   document.getElementById('resultsBody').innerHTML=html;
   document.getElementById('results').style.display='block';
-  document.getElementById('results').scrollIntoView({behavior:'smooth'});
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
 }
 </script>
 </body>
