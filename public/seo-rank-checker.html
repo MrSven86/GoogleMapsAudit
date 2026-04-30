@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SEO Rank Checker</title>
+<title>SEO Top 20 Checker</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -246,6 +246,34 @@
   }
   .btn-pdf:hover { background: var(--accent); color: #0a0a0a; }
 
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .summary-card .num {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .summary-card .label {
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
   .keyword-section { margin-bottom: 32px; }
 
   .keyword-label {
@@ -273,7 +301,7 @@
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.04em;
-    min-width: 110px;
+    min-width: 130px;
   }
   .rank-number.good { color: var(--rank-good); }
   .rank-number.mid  { color: var(--rank-mid); }
@@ -357,7 +385,7 @@
 
   @media print {
     body { background: #fff; color: #000; padding: 20px; }
-    .card, .rank-hero, .results-list { border-color: #ddd; background: #fff; }
+    .card, .rank-hero, .results-list, .summary-card { border-color: #ddd; background: #fff; }
     .btn-pdf, .btn-run, #inputSection { display: none !important; }
     #results { display: block !important; }
     .rank-number.good { color: #4a7c00; }
@@ -367,7 +395,7 @@
     .result-row.is-target { background: #f5ffe0; }
     .result-row.is-target .result-title,
     .result-row.is-target .result-pos { color: #4a7c00; }
-    .result-url, .rank-meta .rank-desc, .result-pos, .keyword-label { color: #555; }
+    .result-url, .rank-meta .rank-desc, .result-pos, .keyword-label, .summary-card .label { color: #555; }
     .invisible-row { background: #fff0f0; color: #c00; }
   }
 </style>
@@ -378,10 +406,10 @@
   <header>
     <div class="logo">
       <a href="/index.html">← Maps Rank Checker</a>
-      &nbsp;/&nbsp; SEO Rank Checker
+      &nbsp;/&nbsp; SEO Top 20 Checker
     </div>
-    <h1>Where do you rank<br>on <span>Google?</span></h1>
-    <p class="subtitle">// check organic search position for any website</p>
+    <h1>Are you in the<br><span>Top 20?</span></h1>
+    <p class="subtitle">// paste a website, add keywords, check if the domain appears in Google top 20</p>
   </header>
 
   <div id="inputSection">
@@ -396,18 +424,18 @@
     <div class="card">
       <div class="two-col">
         <div class="field">
-          <label>Website URL</label>
-          <input type="text" id="websiteUrl" placeholder="e.g. raelectricista.com">
-          <div class="hint">// domain only, no https://</div>
+          <label>Website / Domain</label>
+          <input type="text" id="websiteUrl" placeholder="e.g. rediviva.se">
+          <div class="hint">// accepts https://, www, or domain only</div>
         </div>
         <div class="field">
           <label>Country</label>
-          <select id="countryCode">
+          <select id="countryCode" onchange="syncSearchEngine()">
             <option value="ar">🇦🇷 Argentina</option>
             <option value="es">🇪🇸 Spain</option>
             <option value="mx">🇲🇽 Mexico</option>
             <option value="us">🇺🇸 United States</option>
-            <option value="se">🇸🇪 Sweden</option>
+            <option value="se" selected>🇸🇪 Sweden</option>
             <option value="gb">🇬🇧 United Kingdom</option>
             <option value="cl">🇨🇱 Chile</option>
             <option value="co">🇨🇴 Colombia</option>
@@ -415,27 +443,32 @@
         </div>
       </div>
       <div class="field">
-        <label>City</label>
-        <input type="text" id="cityName" placeholder="e.g. Buenos Aires, Stockholm, Madrid">
-        <div class="hint">// geographic restriction for search results</div>
+        <label>City / Local modifier</label>
+        <input type="text" id="cityName" placeholder="e.g. Uppsala">
+        <div class="hint">// if filled, searches become “keyword + city”, e.g. “optiker Uppsala”</div>
       </div>
-      <div class="field">
-        <label>Search Engine</label>
-        <select id="searchEngine">
-          <option value="google.com">google.com</option>
-          <option value="google.com.ar">google.com.ar 🇦🇷</option>
-          <option value="google.se">google.se 🇸🇪</option>
-          <option value="google.es">google.es 🇪🇸</option>
-          <option value="google.com.mx">google.com.mx 🇲🇽</option>
-          <option value="google.co.uk">google.co.uk 🇬🇧</option>
-          <option value="google.cl">google.cl 🇨🇱</option>
-          <option value="google.com.co">google.com.co 🇨🇴</option>
-          <option value="google.com.br">google.com.br 🇧🇷</option>
-          <option value="google.de">google.de 🇩🇪</option>
-          <option value="google.fr">google.fr 🇫🇷</option>
-          <option value="google.it">google.it 🇮🇹</option>
-          <option value="google.com.au">google.com.au 🇦🇺</option>
-        </select>
+      <div class="two-col">
+        <div class="field">
+          <label>Search Engine</label>
+          <select id="searchEngine">
+            <option value="google.com">google.com</option>
+            <option value="google.com.ar">google.com.ar 🇦🇷</option>
+            <option value="google.se" selected>google.se 🇸🇪</option>
+            <option value="google.es">google.es 🇪🇸</option>
+            <option value="google.com.mx">google.com.mx 🇲🇽</option>
+            <option value="google.co.uk">google.co.uk 🇬🇧</option>
+            <option value="google.cl">google.cl 🇨🇱</option>
+            <option value="google.com.co">google.com.co 🇨🇴</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Language</label>
+          <select id="languageCode">
+            <option value="sv" selected>sv Svenska</option>
+            <option value="en">en English</option>
+            <option value="es">es Español</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -443,15 +476,15 @@
       <div class="field">
         <label>Keywords</label>
         <div class="keyword-input-row">
-          <input type="text" id="keywordInput" placeholder="e.g. electricista palermo, electricista buenos aires…">
+          <input type="text" id="keywordInput" placeholder="e.g. optiker, synundersökning, glasögon">
           <button class="btn-add" onclick="addKeyword()">+ Add</button>
         </div>
-        <div class="hint">// press Enter or click Add</div>
+        <div class="hint">// add one keyword at a time — city is added automatically if filled</div>
         <div class="keywords-grid" id="keywordTags"></div>
       </div>
     </div>
 
-    <button class="btn-run" id="runBtn" onclick="runCheck()">▶ Run SEO Check</button>
+    <button class="btn-run" id="runBtn" onclick="runCheck()">▶ Run Top 20 Check</button>
 
   </div>
 
@@ -478,9 +511,37 @@
 
   let keywords = [];
 
+  const engineByCountry = {
+    ar: 'google.com.ar',
+    es: 'google.es',
+    mx: 'google.com.mx',
+    us: 'google.com',
+    se: 'google.se',
+    gb: 'google.co.uk',
+    cl: 'google.cl',
+    co: 'google.com.co'
+  };
+
+  const langByCountry = {
+    ar: 'es',
+    es: 'es',
+    mx: 'es',
+    us: 'en',
+    se: 'sv',
+    gb: 'en',
+    cl: 'es',
+    co: 'es'
+  };
+
   document.getElementById('keywordInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') addKeyword();
   });
+
+  function syncSearchEngine() {
+    const country = document.getElementById('countryCode').value;
+    document.getElementById('searchEngine').value = engineByCountry[country] || 'google.com';
+    document.getElementById('languageCode').value = langByCountry[country] || 'en';
+  }
 
   function addKeyword() {
     const input = document.getElementById('keywordInput');
@@ -491,7 +552,10 @@
     renderTags();
   }
 
-  function removeKeyword(idx) { keywords.splice(idx, 1); renderTags(); }
+  function removeKeyword(idx) {
+    keywords.splice(idx, 1);
+    renderTags();
+  }
 
   function renderTags() {
     document.getElementById('keywordTags').innerHTML = keywords.map((kw, i) => `
@@ -500,24 +564,68 @@
   }
 
   function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function setStatus(msg) {
     document.getElementById('statusBar').classList.add('visible');
     document.getElementById('statusText').textContent = msg;
   }
-  function hideStatus() { document.getElementById('statusBar').classList.remove('visible'); }
+
+  function hideStatus() {
+    document.getElementById('statusBar').classList.remove('visible');
+  }
+
   function showError(msg) {
     const b = document.getElementById('errorBox');
     b.textContent = '⚠ ' + msg;
     b.classList.add('visible');
   }
-  function clearError() { document.getElementById('errorBox').classList.remove('visible'); }
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  function cleanDomain(url) {
-    return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].toLowerCase().trim();
+  function clearError() {
+    document.getElementById('errorBox').classList.remove('visible');
+  }
+
+  function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  function cleanDomain(input) {
+    return String(input || '')
+      .toLowerCase()
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .split('/')[0]
+      .split('?')[0]
+      .trim();
+  }
+
+  function getHost(url) {
+    try {
+      return new URL(url).hostname.toLowerCase().replace(/^www\./i, '');
+    } catch {
+      return cleanDomain(url);
+    }
+  }
+
+  function isTargetUrl(url, domain) {
+    const host = getHost(url);
+    const target = cleanDomain(domain);
+    return host === target || host.endsWith('.' + target);
+  }
+
+  function buildQuery(keyword, city) {
+    const kw = keyword.trim();
+    const c = city.trim();
+    if (!c) return kw;
+
+    const kwNorm = kw.toLowerCase();
+    const cNorm = c.toLowerCase();
+
+    // Avoid turning “optiker uppsala” into “optiker uppsala uppsala”.
+    if (kwNorm.includes(cNorm)) return kw;
+
+    return `${kw} ${c}`;
   }
 
   async function startActor(token, input) {
@@ -526,10 +634,12 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     });
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error?.message || `Apify HTTP ${res.status}`);
     }
+
     const { data: run } = await res.json();
     return run;
   }
@@ -537,13 +647,18 @@
   async function pollUntilDone(token, runId, label) {
     for (let i = 0; i < 72; i++) {
       await sleep(5000);
-      const res  = await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/actor-runs/${runId}?token=${token}`)}`);
+
+      const res = await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/actor-runs/${runId}?token=${token}`)}`);
       const data = await res.json();
-      const s    = data.data.status;
-      setStatus(`${label} — ${s} (${(i+1)*5}s)…`);
-      if (s === 'SUCCEEDED') break;
-      if (['FAILED','ABORTED','TIMED-OUT'].includes(s)) throw new Error(`Apify run ${s}`);
+      const s = data.data.status;
+
+      setStatus(`${label} — ${s} (${(i + 1) * 5}s)…`);
+
+      if (s === 'SUCCEEDED') return;
+      if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(s)) throw new Error(`Apify run ${s}`);
     }
+
+    throw new Error('Timed out waiting for Apify run.');
   }
 
   async function fetchDataset(token, datasetId) {
@@ -551,30 +666,66 @@
     return res.json();
   }
 
-  // Generate Google UULE location code from city name
-  function generateUule(location) {
-    const secret = 'AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY';
-    const str = 'role::1\nproducer::12\nprovenance::6\ntimestamp::' + 
-      (Date.now() * 1000) + '\nlatlng{\nlatitude_e7::0\nlongitude_e7::0\n}\nradius::-1\nfulladdress::' + location + '\n';
-    // Simple base64 UULE
-    return 'w+CAIQICIa' + btoa(location);
+  function extractOrganic(items) {
+    const organic = [];
+
+    for (const item of items || []) {
+      // Common Apify shape: one dataset item per query/page, with organicResults array.
+      if (Array.isArray(item.organicResults)) {
+        for (const r of item.organicResults) {
+          organic.push({
+            pos: Number(r.position ?? r.rank ?? organic.length + 1),
+            title: r.title || r.name || '',
+            url: r.url || r.link || '',
+            desc: r.description || r.snippet || '',
+          });
+        }
+      }
+
+      // Fallback shape: direct organic result rows.
+      if ((item.url || item.link) && (item.title || item.name)) {
+        organic.push({
+          pos: Number(item.position ?? item.rank ?? organic.length + 1),
+          title: item.title || item.name || '',
+          url: item.url || item.link || '',
+          desc: item.description || item.snippet || '',
+        });
+      }
+    }
+
+    // Remove duplicates by URL, keep first/best position.
+    const seen = new Set();
+    return organic
+      .filter(r => r.url)
+      .sort((a, b) => a.pos - b.pos)
+      .filter(r => {
+        const key = r.url.split('#')[0];
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 20)
+      .map((r, i) => ({ ...r, pos: i + 1 }));
   }
 
   async function runCheck() {
     clearError();
     document.getElementById('results').style.display = 'none';
 
-    const token   = document.getElementById('apifyToken').value.trim();
+    const token = document.getElementById('apifyToken').value.trim();
     const website = document.getElementById('websiteUrl').value.trim();
     const country = document.getElementById('countryCode').value;
-    const city    = document.getElementById('cityName').value.trim();
-    const engine  = document.getElementById('searchEngine').value;
+    const city = document.getElementById('cityName').value.trim();
+    const engine = document.getElementById('searchEngine').value;
+    const language = document.getElementById('languageCode').value;
 
-    if (!token)           return showError('Apify token is required.');
-    if (!website)         return showError('Website URL is required.');
+    if (!token) return showError('Apify token is required.');
+    if (!website) return showError('Website/domain is required.');
     if (!keywords.length) return showError('Add at least one keyword.');
 
     const domain = cleanDomain(website);
+    if (!domain) return showError('Enter a valid website/domain.');
+
     const btn = document.getElementById('runBtn');
     btn.disabled = true;
 
@@ -582,23 +733,32 @@
       const allResults = {};
 
       for (let i = 0; i < keywords.length; i++) {
-        const kw = keywords[i];
-        setStatus(`Searching "${kw}" in ${city || country} (${i+1}/${keywords.length})…`);
+        const originalKeyword = keywords[i];
+        const query = buildQuery(originalKeyword, city);
 
-        const langCode = country === 'se' ? 'sv' : country === 'us' || country === 'gb' ? 'en' : 'es';
-        const query = city ? `${kw} ${city}` : kw;
+        setStatus(`Checking top 20 for "${query}" (${i + 1}/${keywords.length})…`);
 
         const run = await startActor(token, {
           queries: query,
-          maxPagesPerQuery: 3,
+          maxPagesPerQuery: 2,
+          resultsPerPage: 10,
           countryCode: country,
-          languageCode: langCode,
+          languageCode: language,
+          googleDomain: engine,
           mobileResults: false,
+          includeUnfilteredResults: false,
+          saveHtml: false,
+          saveHtmlToKeyValueStore: false,
         });
 
-        await pollUntilDone(token, run.id, `"${kw}"`);
+        await pollUntilDone(token, run.id, `"${query}"`);
+
         const items = await fetchDataset(token, run.defaultDatasetId);
-        allResults[kw] = items;
+        allResults[originalKeyword] = {
+          query,
+          items,
+          organic: extractOrganic(items),
+        };
       }
 
       hideStatus();
@@ -613,42 +773,56 @@
   }
 
   function renderResults(allResults, domain) {
-    const ts  = new Date().toLocaleString();
-    let html  = `<p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:32px;">// ${esc(domain)} · ${ts}</p>`;
+    const ts = new Date().toLocaleString();
 
-    for (const [kw, pages] of Object.entries(allResults)) {
-      // Flatten all organic results
-      const organic = [];
-      for (const page of pages) {
-        if (page.organicResults) {
-          for (const r of page.organicResults) {
-            organic.push({
-              pos:   r.position ?? (organic.length + 1),
-              title: r.title || '',
-              url:   r.url || '',
-              desc:  r.description || '',
-            });
-          }
-        }
-      }
+    const resultEntries = Object.entries(allResults).map(([kw, data]) => {
+      const targetRows = data.organic.filter(r => isTargetUrl(r.url, domain));
+      const best = targetRows[0] || null;
+      return { kw, query: data.query, organic: data.organic, targetRows, best };
+    });
 
-      // Find our domain
-      const target = organic.find(r => {
-        const rDomain = cleanDomain(r.url);
-        return rDomain === domain || rDomain.endsWith('.' + domain);
-      });
+    const totalKeywords = resultEntries.length;
+    const foundCount = resultEntries.filter(r => !!r.best).length;
+    const bestPositions = resultEntries.filter(r => !!r.best).map(r => r.best.pos);
+    const avgPos = bestPositions.length
+      ? (bestPositions.reduce((a, b) => a + b, 0) / bestPositions.length).toFixed(1)
+      : '—';
 
-      const pos         = target?.pos ?? null;
-      const total       = organic.length;
-      const rankClass   = !pos ? 'bad' : pos <= 3 ? 'good' : pos <= 10 ? 'mid' : 'bad';
-      const rankDisplay = pos ? `#${pos}` : '100+';
-      const rankDesc    = pos
-        ? `Position ${pos} out of ${total} results for "${kw}"`
-        : `Not found in top ${total} results for "${kw}"`;
+    let html = `
+      <p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:20px;">
+        // ${esc(domain)} · top 20 check · ${ts}
+      </p>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="num">${foundCount}/${totalKeywords}</div>
+          <div class="label">keywords found in top 20</div>
+        </div>
+        <div class="summary-card">
+          <div class="num">${avgPos}</div>
+          <div class="label">avg position when found</div>
+        </div>
+        <div class="summary-card">
+          <div class="num">${totalKeywords - foundCount}</div>
+          <div class="label">not in top 20</div>
+        </div>
+      </div>
+    `;
+
+    for (const entry of resultEntries) {
+      const { kw, query, organic, targetRows, best } = entry;
+
+      const pos = best?.pos ?? null;
+      const total = organic.length;
+      const rankClass = !pos ? 'bad' : pos <= 3 ? 'good' : pos <= 10 ? 'mid' : 'bad';
+      const rankDisplay = pos ? `#${pos}` : 'NO';
+      const rankDesc = pos
+        ? `${domain} is in top 20 for "${query}" — best position #${pos}`
+        : `${domain} is NOT in top 20 for "${query}"`;
 
       html += `
         <div class="keyword-section">
-          <div class="keyword-label">// keyword: "${esc(kw)}"</div>
+          <div class="keyword-label">// keyword: "${esc(kw)}" → searched: "${esc(query)}"</div>
           <div class="rank-hero">
             <div class="rank-number ${rankClass}">${rankDisplay}</div>
             <div class="rank-meta">
@@ -657,19 +831,19 @@
             </div>
           </div>
           <div class="results-list">
-            ${organic.slice(0, 20).map(r => {
-              const isTarget = cleanDomain(r.url) === domain || cleanDomain(r.url).endsWith('.' + domain);
+            ${organic.map(r => {
+              const isTarget = isTargetUrl(r.url, domain);
               return `
                 <div class="result-row${isTarget ? ' is-target' : ''}">
                   <span class="result-pos">${r.pos}</span>
                   <div class="result-info">
                     <div class="result-title">${esc(r.title)}</div>
-                    <div class="result-url">${esc(cleanDomain(r.url))}</div>
+                    <div class="result-url">${esc(getHost(r.url))}</div>
                   </div>
                   ${isTarget ? `<span class="result-you">◀ YOU</span>` : ''}
                 </div>`;
             }).join('')}
-            ${!target ? `<div class="invisible-row">✕ &nbsp;${esc(domain)} — not found in top ${total} results</div>` : ''}
+            ${!best ? `<div class="invisible-row">✕ &nbsp;${esc(domain)} — not found in top 20</div>` : ''}
           </div>
         </div>`;
     }
@@ -678,6 +852,8 @@
     document.getElementById('results').style.display = 'block';
     document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  syncSearchEngine();
 </script>
 </body>
 </html>
