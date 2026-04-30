@@ -36,8 +36,6 @@ textarea{resize:vertical;line-height:1.6}
 .btn-run{width:100%;background:var(--accent);border:none;border-radius:3px;color:#0a0a0a;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:.05em;padding:16px;cursor:pointer;margin-top:8px}
 .btn-run:hover{opacity:.9}
 .btn-run:disabled{opacity:.4;cursor:not-allowed}
-.checkbox-label{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;letter-spacing:.12em}
-.checkbox-label input{width:auto;accent-color:var(--accent)}
 .status-bar{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:16px;font-family:'DM Mono',monospace;font-size:13px;color:var(--muted);align-items:center;gap:10px;display:none}
 .status-bar.visible{display:flex}
 .spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
@@ -149,6 +147,7 @@ label,.hint,.logo,.subtitle,.keyword-label,.biz-index,.result-rating,.rank-meta 
       <select id="searchFrom" onchange="toggleCityField()">
         <option value="pin">PIN — search from business location</option>
         <option value="city">City — search city query, e.g. optiker Uppsala</option>
+        <option value="neighborhood">Neighborhood — search neighborhood query</option>
       </select>
       <div id="cityField" style="display:none;margin-top:8px;">
         <input type="text" id="cityName" placeholder="e.g. Uppsala">
@@ -164,14 +163,7 @@ label,.hint,.logo,.subtitle,.keyword-label,.biz-index,.result-rating,.rank-meta 
         <option value="sv" selected>Svenska</option>
       </select>
     </div>
-
-<div class="field" style="margin-top:20px;">
-  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-    <input type="checkbox" id="advancedAudit">
-    <span>Advanced Audit</span>
-  </label>
-  <div class="hint">// adds full profile optimization checklist in selected report language</div>
-</div>
+  </div>
 
   <button class="btn-run" id="runBtn" onclick="runCheck()">▶ Run Rank Check</button>
 </div>
@@ -194,9 +186,9 @@ const ACTOR='compass~crawler-google-places';
 let keywords=[];
 
 const T={
-  en:{keyword:kw=>`// keyword: "${kw}"`,ranked:(pos,total,kw)=>`Ranked ${pos} out of ${total} results for "${kw}"`,invisible:(total,kw)=>`Not visible in the top ${total} results for "${kw}"`,notFound:name=>`${name} — not found in top results`,you:'◀ YOU',vsTitle:'Your profile vs #1',vsSub:(you,num1)=>`// ${you} vs ${num1}`,metric:'Metric',youCol:name=>`You — ${name}`,num1Col:name=>`#1 — ${name}`,rating:'Rating',reviews:'Reviews',website:'Website',phone:'Phone',hours:'Hours listed',categories:'Categories',yes:'Yes',no:'No',noRating:'No rating',bizOf:(i,total)=>`// business ${i} of ${total}`,summary:(n,k,ts)=>`// ${n} businesses · ${k} keywords · ${ts}`,openPdf:'⬇ Open as PDF',checklistTitle:'Profile Optimization Checklist',checklistStep:'Step',checklistItem:'Item',checklistStatus:'Status',checklistAction:'Action required',cl:{phone:'Phone',address:'Address',hours:'Opening hours',description:'Business description',openingDate:'Opening date',serviceAreas:'Service areas',photos:'Photos (minimum 10)',logo:'Logo',services:'Services / Products',posts:'Posts / Updates',primaryCategory:'Primary category',secondaryCategories:'Secondary categories (min 3)',titleKeywords:'Keywords in title',reviews:'Reviews count',categories:'Categories',rating:'Rating',website:'Website',configured:'Configured',missing:'MISSING',empty:'EMPTY',none:'NONE',noRating:'No rating',noAddress:'NO ADDRESS',noDate:'NOT CONFIGURED',noAreas:'NO AREAS',noLogo:'NO LOGO',noPosts:'NO POSTS',noSecondary:'NONE',titleNoKeyword:'No category or area in title',addPhone:'Add phone number to profile',addAddress:'Add correct address',addHours:'Set opening hours',addDescription:'Write description of at least 200 characters',addDate:'Add opening date — Google shows “X years in business”',addAreas:'Add service areas where you work',addPhotos:'Upload more photos — competitors often have 30+; photo size 1024×576px',addLogo:'Add professional logo — 720×720px PNG',addServices:'Add services/products',addPosts:'Add regular posts with photos and updates',addSecondary:'Add 3–5 relevant secondary categories',addTitleKeywords:'Consider adding specialty or area to the title',getReviews:'Get first reviews',moreReviews:'Need 10+ reviews — set up review request system',reviewsLow:'(low)'}},
-  es:{keyword:kw=>`// palabra clave: "${kw}"`,ranked:(pos,total,kw)=>`Posición ${pos} de ${total} resultados para "${kw}"`,invisible:(total,kw)=>`No visible en el top ${total} para "${kw}"`,notFound:name=>`${name} — no encontrado en los resultados`,you:'◀ USTED',vsTitle:'Tu perfil vs #1',vsSub:(you,num1)=>`// ${you} vs ${num1}`,metric:'Métrica',youCol:name=>`Usted — ${name}`,num1Col:name=>`#1 — ${name}`,rating:'Calificación',reviews:'Reseñas',website:'Sitio web',phone:'Teléfono',hours:'Horarios',categories:'Categorías',yes:'Sí',no:'No',noRating:'Sin calificación',bizOf:(i,total)=>`// negocio ${i} de ${total}`,summary:(n,k,ts)=>`// ${n} negocios · ${k} palabras clave · ${ts}`,openPdf:'⬇ Abrir como PDF',checklistTitle:'Checklist de optimización del perfil',checklistStep:'Paso',checklistItem:'Ítem',checklistStatus:'Estado',checklistAction:'Acción requerida',cl:{phone:'Teléfono',address:'Dirección',hours:'Horarios de atención',description:'Descripción del negocio',openingDate:'Fecha de apertura',serviceAreas:'Áreas de servicio',photos:'Fotos (mínimo 10)',logo:'Logo',services:'Servicios / Productos',posts:'Publicaciones / Actualizaciones',primaryCategory:'Categoría principal',secondaryCategories:'Categorías secundarias (mín 3)',titleKeywords:'Keywords en el título',reviews:'Cantidad de reseñas',categories:'Categorías',rating:'Calificación',website:'Sitio web',configured:'Configurado',missing:'VACÍA',empty:'VACÍA',none:'NINGUNA',noRating:'Sin calificación',noAddress:'SIN DIRECCIÓN',noDate:'NO CONFIGURADA',noAreas:'SIN ÁREAS',noLogo:'SIN LOGO',noPosts:'SIN PUBLICACIONES',noSecondary:'NINGUNA',titleNoKeyword:'Ni categoría ni barrio en título',addPhone:'Agregar teléfono al perfil',addAddress:'Agregar dirección correcta',addHours:'Configurar horarios de atención',addDescription:'Escribir descripción de mín 200 caracteres',addDate:'Agregar fecha — Google muestra “X años en el negocio”',addAreas:'Agregar áreas de servicio donde atendés',addPhotos:'Subir más fotos — competidores tienen 30+; foto de portada: 1024×576px',addLogo:'Agregar logo profesional — 720×720px PNG',addServices:'Agregar servicios/productos',addPosts:'Agregar publicaciones regulares con fotos y novedades',addSecondary:'Agregar 3–5 categorías secundarias relevantes',addTitleKeywords:'Considerar agregar especialidad o barrio al título',getReviews:'Conseguir primeras reseñas',moreReviews:'Configurar sistema de solicitud automática de reseñas',reviewsLow:'(pocas)'}},
-  sv:{keyword:kw=>`// sökord: "${kw}"`,ranked:(pos,total,kw)=>`Placering ${pos} av ${total} resultat för "${kw}"`,invisible:(total,kw)=>`Inte synlig i topp ${total} för "${kw}"`,notFound:name=>`${name} — hittades inte i resultaten`,you:'◀ DU',vsTitle:'Din profil vs #1',vsSub:(you,num1)=>`// ${you} vs ${num1}`,metric:'Mätvärde',youCol:name=>`Du — ${name}`,num1Col:name=>`#1 — ${name}`,rating:'Betyg',reviews:'Recensioner',website:'Hemsida',phone:'Telefon',hours:'Öppettider',categories:'Kategorier',yes:'Ja',no:'Nej',noRating:'Inget betyg',bizOf:(i,total)=>`// företag ${i} av ${total}`,summary:(n,k,ts)=>`// ${n} företag · ${k} sökord · ${ts}`,openPdf:'⬇ Öppna som PDF',checklistTitle:'Checklista för profiloptimering',checklistStep:'Steg',checklistItem:'Punkt',checklistStatus:'Status',checklistAction:'Åtgärd krävs',cl:{phone:'Telefon',address:'Adress',hours:'Öppettider',description:'Företagsbeskrivning',openingDate:'Öppningsdatum',serviceAreas:'Serviceområden',photos:'Foton (minst 10)',logo:'Logotyp',services:'Tjänster / Produkter',posts:'Inlägg / Uppdateringar',primaryCategory:'Primär kategori',secondaryCategories:'Sekundära kategorier (minst 3)',titleKeywords:'Sökord i titeln',reviews:'Antal recensioner',categories:'Kategorier',rating:'Betyg',website:'Hemsida',configured:'Konfigurerat',missing:'SAKNAS',empty:'TOM',none:'INGEN',noRating:'Inget betyg',noAddress:'INGEN ADRESS',noDate:'EJ KONFIGURERAT',noAreas:'INGA OMRÅDEN',noLogo:'INGEN LOGO',noPosts:'INGA INLÄGG',noSecondary:'INGEN',titleNoKeyword:'Varken kategori eller område i titel',addPhone:'Lägg till telefonnummer',addAddress:'Lägg till korrekt adress',addHours:'Ange öppettider',addDescription:'Skriv en beskrivning på minst 200 tecken',addDate:'Lägg till öppningsdatum — Google visar “X år i branschen”',addAreas:'Lägg till serviceområden där ni arbetar',addPhotos:'Ladda upp fler foton — konkurrenter har ofta 30+; omslagsfoto: 1024×576px',addLogo:'Lägg till professionell logotyp — 720×720px PNG',addServices:'Lägg till tjänster/produkter',addPosts:'Lägg till regelbundna inlägg med bilder och nyheter',addSecondary:'Lägg till 3–5 relevanta sekundära kategorier',addTitleKeywords:'Överväg att lägga till specialitet eller område i titeln',getReviews:'Få första recensionerna',moreReviews:'Sätt upp automatiskt system för recensionsförfrågningar',reviewsLow:'(få)'}}
+  en:{keyword:kw=>`// keyword: "${kw}"`,ranked:(pos,total,kw)=>`Ranked ${pos} out of ${total} results for "${kw}"`,invisible:(total,kw)=>`Not visible in the top ${total} results for "${kw}"`,notFound:name=>`${name} — not found in top results`,you:'◀ YOU',vsTitle:'Your profile vs #1',vsSub:(you,num1)=>`// ${you} vs ${num1}`,metric:'Metric',youCol:name=>`You — ${name}`,num1Col:name=>`#1 — ${name}`,rating:'Rating',reviews:'Reviews',website:'Website',phone:'Phone',hours:'Hours listed',categories:'Categories',yes:'Yes',no:'No',noRating:'No rating',bizOf:(i,total)=>`// business ${i} of ${total}`,summary:(n,k,ts)=>`// ${n} businesses · ${k} keywords · ${ts}`,openPdf:'⬇ Open as PDF',checklistTitle:'Profile Optimization Checklist',checklistStep:'Step',checklistItem:'Item',checklistStatus:'Status',checklistAction:'Action required',cl:{phone:'Phone',hours:'Opening hours',categories:'Categories',rating:'Rating',reviews:'Reviews',configured:'Configured',missing:'MISSING',none:'NONE',noRating:'No rating',addPhone:'Add phone number to profile',addHours:'Set up opening hours',addCats:'Add 3-5 relevant categories',getReviews:'Get first reviews',moreReviews:'Need 10+ reviews — set up review request system',reviewsLow:'(low)'}},
+  es:{keyword:kw=>`// palabra clave: "${kw}"`,ranked:(pos,total,kw)=>`Posición ${pos} de ${total} resultados para "${kw}"`,invisible:(total,kw)=>`No visible en el top ${total} para "${kw}"`,notFound:name=>`${name} — no encontrado en los resultados`,you:'◀ USTED',vsTitle:'Tu perfil vs #1',vsSub:(you,num1)=>`// ${you} vs ${num1}`,metric:'Métrica',youCol:name=>`Usted — ${name}`,num1Col:name=>`#1 — ${name}`,rating:'Calificación',reviews:'Reseñas',website:'Sitio web',phone:'Teléfono',hours:'Horarios',categories:'Categorías',yes:'Sí',no:'No',noRating:'Sin calificación',bizOf:(i,total)=>`// negocio ${i} de ${total}`,summary:(n,k,ts)=>`// ${n} negocios · ${k} palabras clave · ${ts}`,openPdf:'⬇ Abrir como PDF',checklistTitle:'Checklist de optimización del perfil',checklistStep:'Paso',checklistItem:'Ítem',checklistStatus:'Estado',checklistAction:'Acción requerida',cl:{phone:'Teléfono',hours:'Horarios',categories:'Categorías',rating:'Calificación',reviews:'Reseñas',configured:'Configurado',missing:'VACÍO',none:'NINGUNA',noRating:'Sin calificación',addPhone:'Agregar teléfono al perfil',addHours:'Configurar horarios',addCats:'Agregar 3-5 categorías relevantes',getReviews:'Conseguir primeras reseñas',moreReviews:'Necesita 10+ reseñas',reviewsLow:'(pocas)'}},
+  sv:{keyword:kw=>`// sökord: "${kw}"`,ranked:(pos,total,kw)=>`Placering ${pos} av ${total} resultat för "${kw}"`,invisible:(total,kw)=>`Inte synlig i topp ${total} för "${kw}"`,notFound:name=>`${name} — hittades inte i resultaten`,you:'◀ DU',vsTitle:'Din profil vs #1',vsSub:(you,num1)=>`// ${you} vs ${num1}`,metric:'Mätvärde',youCol:name=>`Du — ${name}`,num1Col:name=>`#1 — ${name}`,rating:'Betyg',reviews:'Recensioner',website:'Hemsida',phone:'Telefon',hours:'Öppettider',categories:'Kategorier',yes:'Ja',no:'Nej',noRating:'Inget betyg',bizOf:(i,total)=>`// företag ${i} av ${total}`,summary:(n,k,ts)=>`// ${n} företag · ${k} sökord · ${ts}`,openPdf:'⬇ Öppna som PDF',checklistTitle:'Checklista för profiloptimering',checklistStep:'Steg',checklistItem:'Punkt',checklistStatus:'Status',checklistAction:'Åtgärd krävs',cl:{phone:'Telefon',hours:'Öppettider',categories:'Kategorier',rating:'Betyg',reviews:'Recensioner',configured:'Konfigurerat',missing:'SAKNAS',none:'INGEN',noRating:'Inget betyg',addPhone:'Lägg till telefonnummer',addHours:'Ange öppettider',addCats:'Lägg till 3-5 relevanta kategorier',getReviews:'Få första recensionerna',moreReviews:'Behöver 10+ recensioner — sätt upp system',reviewsLow:'(få)'}}
 };
 
 function getLang(){return T[document.getElementById('reportLang').value]||T.en}
@@ -276,53 +268,16 @@ async function fetchDataset(token,datasetId,limit=500){
   return res.json();
 }
 
-function buildChecklist(you,t,place){
-  const advanced=document.getElementById('advancedAudit')?.checked;
+function buildChecklist(you,t){
   const ok=label=>`<span class="cl-ok">✓ ${label}</span>`;
   const bad=label=>`<span class="cl-bad">✗ ${label}</span>`;
-
-  if(!advanced){
-    const rows=[
-      {step:'A1',item:t.cl.phone,status:you.phone?ok(t.cl.configured):bad(t.cl.missing),action:you.phone?'—':t.cl.addPhone},
-      {step:'A2',item:t.cl.hours,status:you.hours?ok(t.cl.configured):bad(t.cl.missing),action:you.hours?'—':t.cl.addHours},
-      {step:'A3',item:t.cl.categories,status:you.categories?.length?ok(esc(you.categories.join(', '))):bad(t.cl.none),action:you.categories?.length?'—':t.cl.addSecondary},
-      {step:'A4',item:t.cl.rating,status:you.rating?ok('★ '+Number(you.rating).toFixed(1)):bad(t.cl.noRating),action:you.rating?'—':t.cl.getReviews},
-      {step:'A5',item:t.cl.reviews,status:(you.reviews>=10)?ok(you.reviews):bad((you.reviews||0)+' '+t.cl.reviewsLow),action:(!you.reviews||you.reviews<10)?t.cl.moreReviews:'—'}
-    ];
-    return rows.map(r=>`<tr><td>${r.step}</td><td>${r.item}</td><td>${r.status}</td><td class="cl-action">${r.action}</td></tr>`).join('');
-  }
-
-  const title=String(place?.name||you.name||'');
-  const categories=you.categories||[];
-  const catText=categories.join(', ');
-  const titleHasCategory=categories.some(c=>normalize(title).includes(normalize(c)));
-  const photoCount=place?.imagesCount??place?.imageUrls?.length??place?.photosCount??0;
-  const hasLogo=!!(place?.logoUrl||place?.imageUrl);
-  const hasDescription=!!(place?.description&&String(place.description).trim().length>=120);
-  const hasAddress=!!(place?.address||place?.street||place?.location);
-  const hasOpeningDate=!!(place?.locatedIn||place?.openingDate||place?.yearsInBusiness);
-  const hasServiceAreas=!!(place?.serviceArea||place?.serviceAreas?.length);
-  const hasServices=!!(place?.services?.length||place?.menu?.length||place?.additionalInfo?.Services);
-  const hasPosts=!!(place?.updatesFromCustomers?.length||place?.posts?.length);
-  const secondaryCount=Math.max(0,categories.length-1);
-
   const rows=[
-    {step:'A1',item:t.cl.phone,status:you.phone?ok(place?.phone||t.cl.configured):bad(t.cl.missing),action:you.phone?'—':t.cl.addPhone},
-    {step:'A2',item:t.cl.address,status:hasAddress?ok(esc(place?.address||t.cl.configured)):bad(t.cl.noAddress),action:hasAddress?'—':t.cl.addAddress},
-    {step:'A3',item:t.cl.hours,status:you.hours?ok(t.cl.configured):bad(t.cl.missing),action:you.hours?'—':t.cl.addHours},
-    {step:'A4',item:t.cl.description,status:hasDescription?ok(t.cl.configured):bad(t.cl.empty),action:hasDescription?'—':t.cl.addDescription},
-    {step:'A5',item:t.cl.openingDate,status:hasOpeningDate?ok(t.cl.configured):bad(t.cl.noDate),action:hasOpeningDate?'—':t.cl.addDate},
-    {step:'A6',item:t.cl.serviceAreas,status:hasServiceAreas?ok(t.cl.configured):bad(t.cl.noAreas),action:hasServiceAreas?'—':t.cl.addAreas},
-    {step:'A7',item:t.cl.photos,status:photoCount>=10?ok(photoCount+' photos'):bad(photoCount+' photos'),action:photoCount>=10?'—':t.cl.addPhotos},
-    {step:'A8',item:t.cl.logo,status:hasLogo?ok(t.cl.configured):bad(t.cl.noLogo),action:hasLogo?'—':t.cl.addLogo},
-    {step:'A9',item:t.cl.services,status:hasServices?ok(t.cl.configured):bad(t.cl.none),action:hasServices?'—':t.cl.addServices},
-    {step:'A10',item:t.cl.posts,status:hasPosts?ok(t.cl.configured):bad(t.cl.noPosts),action:hasPosts?'—':t.cl.addPosts},
-    {step:'B1',item:t.cl.primaryCategory,status:categories[0]?ok(esc(categories[0])):bad(t.cl.none),action:categories[0]?'—':t.cl.addSecondary},
-    {step:'B2',item:t.cl.secondaryCategories,status:secondaryCount>=3?ok(esc(categories.slice(1).join(', '))):bad(t.cl.noSecondary),action:secondaryCount>=3?'—':t.cl.addSecondary},
-    {step:'B3',item:t.cl.titleKeywords,status:titleHasCategory?ok(t.cl.configured):bad(t.cl.titleNoKeyword),action:titleHasCategory?'—':t.cl.addTitleKeywords},
-    {step:'C1',item:t.cl.reviews,status:(you.reviews>=10)?ok(you.reviews):bad((you.reviews||0)+' '+t.cl.reviewsLow),action:(you.reviews>=10)?'—':t.cl.moreReviews}
+    {step:'A1',item:t.cl.phone,status:you.phone?ok(t.cl.configured):bad(t.cl.missing),action:you.phone?'—':t.cl.addPhone},
+    {step:'A2',item:t.cl.hours,status:you.hours?ok(t.cl.configured):bad(t.cl.missing),action:you.hours?'—':t.cl.addHours},
+    {step:'A3',item:t.cl.categories,status:you.categories?.length?ok(esc(you.categories.join(', '))):bad(t.cl.none),action:you.categories?.length?'—':t.cl.addCats},
+    {step:'A4',item:t.cl.rating,status:you.rating?ok('★ '+Number(you.rating).toFixed(1)):bad(t.cl.noRating),action:you.rating?'—':t.cl.getReviews},
+    {step:'A5',item:t.cl.reviews,status:(you.reviews>=10)?ok(you.reviews):bad((you.reviews||0)+' '+t.cl.reviewsLow),action:(!you.reviews||you.reviews<10)?t.cl.moreReviews:'—'}
   ];
-
   return rows.map(r=>`<tr><td>${r.step}</td><td>${r.item}</td><td>${r.status}</td><td class="cl-action">${r.action}</td></tr>`).join('');
 }
 
@@ -340,7 +295,8 @@ async function runCheck(){
 
   const urls=parseUrls(rawUrls).slice(0,30);
   if(!urls.length)return showError('Paste at least one valid Google Maps URL.');
-  if(searchFrom==='city'&&!cityName)return showError('Enter a city name or switch Search From back to PIN.');
+
+  if(searchFrom!=='pin'&&!cityName)return showError('Enter a city/neighborhood name or switch Search From back to PIN.');
 
   const businesses=[];
   for(const url of urls){
@@ -357,17 +313,22 @@ async function runCheck(){
     const allResults=[];
     let sharedCityCoords=null;
 
-    if(searchFrom==='city'&&cityName){
+    if(searchFrom!=='pin'&&cityName){
       setStatus(`Geocoding "${cityName}"…`);
       sharedCityCoords=await geocodeCity(cityName);
     }
 
-    const searchQueries=keywords.map(kw=>searchFrom==='city'&&cityName?`${kw} ${cityName}`:kw);
+    const searchQueries=keywords.map(kw=>{
+      if(searchFrom!=='pin'&&cityName)return `${kw} ${cityName}`;
+      return kw;
+    });
+
     const queryToKeyword={};
     keywords.forEach((kw,idx)=>{queryToKeyword[normalize(searchQueries[idx])]=kw});
 
     for(let i=0;i<businesses.length;i++){
       const biz=businesses[i];
+
       let searchLat=biz.coords.lat;
       let searchLng=biz.coords.lng;
       let useZoom=12;
@@ -386,12 +347,12 @@ async function runCheck(){
         lng:searchLng,
         maxCrawledPlacesPerSearch:20,
         language:document.getElementById('reportLang').value==='sv'?'sv':'en',
-        maxImages:document.getElementById('advancedAudit')?.checked?20:0,
+        maxImages:0,
         maxReviews:0,
         exportPlaceUrls:false,
         scrapeContacts:false,
         scrapeDirections:false,
-        additionalInfo:document.getElementById('advancedAudit')?.checked?true:false
+        additionalInfo:false
       };
 
       if(useZoom!==null)actorInput.zoom=useZoom;
@@ -419,6 +380,7 @@ async function runCheck(){
           const kw=keywords[qi];
           const qn=normalize(query);
           const kn=normalize(kw);
+
           if(ssNorm===qn||ssNorm.includes(qn)||qn.includes(ssNorm)||ssNorm.includes(kn)){
             byKeyword[kw].push(item);
             break;
@@ -483,8 +445,7 @@ function renderResults(allResults){
           website:isRealWebsite(item.website??null),
           phone:!!(item.phone??item.phoneUnformatted??null),
           hours:!!(item.openingHours?.length),
-          isTarget,
-          raw:item
+          isTarget
         };
       });
 
@@ -504,7 +465,7 @@ function renderResults(allResults){
 
       let compHtml='';
       if(number1&&(!target||target.pos!==1)){
-        const you=target??{name:business.name,rating:null,reviews:null,website:false,phone:false,hours:false,categories:[],raw:{}};
+        const you=target??{rating:null,reviews:null,website:false,phone:false,hours:false,categories:[]};
         const num1=number1;
 
         const ratingBadge=(youVal,num1Val)=>{
@@ -531,7 +492,7 @@ function renderResults(allResults){
           <div class="checklist-title">${t.checklistTitle}</div>
           <table class="checklist-table">
             <thead><tr><th>${t.checklistStep}</th><th>${t.checklistItem}</th><th>${t.checklistStatus}</th><th>${t.checklistAction}</th></tr></thead>
-            <tbody>${buildChecklist(you,t,you.raw)}</tbody>
+            <tbody>${buildChecklist(you,t)}</tbody>
           </table>
 
           <div class="comparison-title" style="margin-top:24px">${t.vsTitle}</div>
