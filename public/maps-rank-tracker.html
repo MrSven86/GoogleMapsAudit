@@ -657,7 +657,16 @@
           const normName = normalize(name);
           const isUs = normName.includes(normBiz) || normBiz.includes(normName);
           if (isUs && rank === null) rank = item.rank ?? (idx + 1);
-          return { name, rank: item.rank ?? (idx + 1), isUs };
+          const cats = item.categories || (item.categoryName ? [item.categoryName] : []);
+
+          return {
+            name,
+            rank: item.rank ?? (idx + 1),
+            isUs,
+            rating: item.totalScore ?? item.rating ?? null,
+            reviews: item.reviewsCount ?? item.reviewCount ?? null,
+            categories: cats,
+          };
         });
 
         results.push({ ...pt, rank, places });
@@ -752,7 +761,10 @@
         const bg = rankColor(p.rank);
         return `<li>
           <div class="popup-num" style="background:${bg};color:${rankTextColor(p.rank)}">${p.rank}</div>
-          <span class="${p.isUs ? 'popup-you' : ''}">${p.name.substring(0, 35)}${p.isUs ? ' ◀' : ''}</span>
+          <span class="${p.isUs ? 'popup-you' : ''}">
+            ${p.name.substring(0, 35)}${p.isUs ? ' ◀' : ''}
+            <br><small style="color:#888">${(p.categories || []).join(', ')}</small>
+          </span>
         </li>`;
       }).join('');
 
