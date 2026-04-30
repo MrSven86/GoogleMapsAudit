@@ -424,7 +424,7 @@ async function fetchDataset(token, datasetId){
 }
 
 function buildActorInput(query){
-  const country = document.getElementById('country').value;
+  const country = document.getElementById('country').value.toLowerCase();
   const lang = document.getElementById('language').value;
   const searchEngine = document.getElementById('searchEngine').value;
 
