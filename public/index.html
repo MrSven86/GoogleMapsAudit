@@ -164,6 +164,49 @@
   }
   .btn-add:hover { background: #2a2a2a; }
 
+  /* ── ADVANCED TOGGLE ── */
+  .adv-toggle-card {
+    background: #0d1400;
+    border: 1px solid #1e2e00;
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    user-select: none;
+  }
+  .adv-toggle-card:hover { border-color: #3a5500; }
+  .adv-toggle-card.on { border-color: var(--accent); }
+
+  .adv-box {
+    width: 16px; height: 16px;
+    border: 2px solid #444;
+    border-radius: 2px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .adv-toggle-card.on .adv-box { background: var(--accent); border-color: var(--accent); }
+  .adv-tick { display: none; font-size: 11px; color: #000; font-weight: 900; }
+  .adv-toggle-card.on .adv-tick { display: block; }
+
+  .adv-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .adv-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
   .btn-run {
     width: 100%;
     background: var(--accent);
@@ -221,7 +264,6 @@
   }
   .error-box.visible { display: block; }
 
-  /* ── RESULTS ── */
   #results { display: none; }
 
   .results-header {
@@ -247,7 +289,6 @@
   }
   .btn-pdf:hover { background: var(--accent); color: #0a0a0a; }
 
-  /* Business block */
   .biz-block {
     margin-bottom: 48px;
     border-top: 1px solid var(--border);
@@ -269,9 +310,7 @@
   }
   .biz-pdf-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  .biz-header {
-    margin-bottom: 20px;
-  }
+  .biz-header { margin-bottom: 20px; }
 
   .biz-index {
     font-family: 'DM Mono', monospace;
@@ -282,11 +321,7 @@
     margin-bottom: 4px;
   }
 
-  .biz-title {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
+  .biz-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
 
   .keyword-section { margin-bottom: 28px; }
 
@@ -325,11 +360,7 @@
   .rank-meta .biz-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
   .rank-meta .rank-desc { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
 
-  .results-list {
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    overflow: hidden;
-  }
+  .results-list { border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
 
   .result-row {
     display: flex;
@@ -340,10 +371,7 @@
     transition: background 0.1s;
   }
   .result-row:last-child { border-bottom: none; }
-  .result-row.is-target {
-    background: rgba(200,241,53,0.07);
-    border-left: 3px solid var(--accent);
-  }
+  .result-row.is-target { background: rgba(200,241,53,0.07); border-left: 3px solid var(--accent); }
   .result-row:hover:not(.is-target) { background: #111; }
 
   .result-pos {
@@ -359,12 +387,7 @@
   .result-name { flex: 1; font-size: 13px; font-weight: 600; }
   .result-row.is-target .result-name { color: var(--accent); }
 
-  .result-rating {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    flex-shrink: 0;
-  }
+  .result-rating { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); flex-shrink: 0; }
 
   .invisible-row {
     padding: 12px 14px;
@@ -379,15 +402,7 @@
   }
 
   .comparison-wrap { margin-top: 10px; }
-
-  .comparison-title {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
+  .comparison-title { font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 
   .comparison-table {
     width: 100%;
@@ -398,26 +413,10 @@
     font-family: 'DM Mono', monospace;
     font-size: 12px;
   }
-
   .comparison-table thead tr { background: #1a1a1a; }
-
-  .comparison-table th {
-    padding: 9px 12px;
-    text-align: left;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-weight: 500;
-    border-bottom: 1px solid var(--border);
-  }
+  .comparison-table th { padding: 9px 12px; text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); }
   .comparison-table th:nth-child(2) { color: var(--accent); }
-
-  .comparison-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-  }
+  .comparison-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   .comparison-table tr:last-child td { border-bottom: none; }
   .comparison-table tr:hover td { background: #111; }
   .comparison-table td:first-child { color: var(--muted); font-size: 11px; }
@@ -425,42 +424,23 @@
   .cmp-you  { color: var(--text); font-weight: 500; }
   .cmp-num1 { color: #888; }
 
-  .badge {
-    display: inline-block;
-    padding: 2px 7px;
-    border-radius: 2px;
-    font-size: 10px;
-    font-weight: 600;
-  }
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 2px; font-size: 10px; font-weight: 600; }
   .badge-good    { background: rgba(200,241,53,0.15); color: var(--accent); }
   .badge-bad     { background: rgba(255,77,77,0.12);  color: var(--rank-bad); }
   .badge-ok      { background: rgba(255,179,71,0.15); color: var(--rank-mid); }
   .badge-neutral { background: #1e1e1e; color: #888; }
 
-  .coords-pill {
-    display: none;
-    margin-top: 6px;
-    align-items: center;
-    gap: 6px;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--accent);
-  }
-  .coords-pill.visible { display: inline-flex; }
-
-  /* ── PRINT ── */
   @media print {
     body { background: #fff; color: #000; padding: 20px; }
     .card, .rank-hero, .results-list, .comparison-table { border-color: #ddd; background: #fff; }
-    .btn-pdf, .btn-run, #inputSection { display: none !important; }
+    .btn-pdf, .btn-run, #inputSection, .adv-toggle-card { display: none !important; }
     #results { display: block !important; }
     .rank-number.good { color: #4a7c00; }
     .rank-number.mid  { color: #b36200; }
     .rank-number.bad  { color: #c00; }
     h1, .results-header h2, .rank-meta .biz-name, .result-name, .biz-title { color: #000; }
     .result-row.is-target { background: #f5ffe0; }
-    .result-row.is-target .result-name,
-    .result-row.is-target .result-pos { color: #4a7c00; }
+    .result-row.is-target .result-name, .result-row.is-target .result-pos { color: #4a7c00; }
     label, .hint, .logo, .subtitle, .keyword-label, .biz-index,
     .result-rating, .rank-meta .rank-desc, .result-pos, .comparison-title { color: #555; }
     .comparison-table thead tr { background: #f5f5f5; }
@@ -536,6 +516,15 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
       </div>
     </div>
 
+    <!-- ADVANCED TOGGLE -->
+    <div class="adv-toggle-card" id="advToggle" onclick="toggleAdv()">
+      <div class="adv-box"><span class="adv-tick">✓</span></div>
+      <div>
+        <div class="adv-label">⚡ Advanced Audit</div>
+        <div class="adv-desc">// full 13-step checklist (A1–A10, B1–B3, C1) — scrapes deep profile — for client meetings</div>
+      </div>
+    </div>
+
     <button class="btn-run" id="runBtn" onclick="runCheck()">▶ Run Rank Check</button>
 
   </div>
@@ -558,12 +547,17 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 </div>
 
 <script>
-  const BASE = 'https://api.apify.com/v2';
+  const BASE  = 'https://api.apify.com/v2';
   const ACTOR = 'compass~crawler-google-places';
 
-  let keywords = [];
+  let keywords   = [];
+  let advancedOn = false;
 
-  // ── Translations ──
+  function toggleAdv() {
+    advancedOn = !advancedOn;
+    document.getElementById('advToggle').classList.toggle('on', advancedOn);
+  }
+
   const T = {
     en: {
       keyword:       kw => `// keyword: "${kw}"`,
@@ -663,9 +657,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     },
   };
 
-  function getLang() {
-    return T[document.getElementById('reportLang').value] || T.en;
-  }
+  function getLang() { return T[document.getElementById('reportLang').value] || T.en; }
 
   function toggleCityField() {
     const mode = document.getElementById('searchFrom').value;
@@ -673,53 +665,112 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   }
 
   async function geocodeCity(cityName) {
-    const token = document.getElementById('apifyToken').value.trim();
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cityName)}&key=${token}`;
-    // Use Google Geocoding via proxy — but we don't have key here
-    // Fallback: use Nominatim (OpenStreetMap) — free, no key needed
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1`);
+    const res  = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1`);
     const data = await res.json();
-    if (data && data[0]) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-    }
+    if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
     throw new Error(`Could not find location: ${cityName}`);
   }
 
-  function buildChecklist(you, t) {
-    const ok  = (label) => `<span class="cl-ok">✓ ${label}</span>`;
-    const bad = (label) => `<span class="cl-bad">✗ ${label}</span>`;
+  // ── buildChecklist ──
+  // normal mode: original 5 rows using data from rank results
+  // advanced mode: 13 rows using deep-scraped profile
+  function buildChecklist(you, t, profile) {
+    const ok  = label => `<span class="cl-ok">✓ ${label}</span>`;
+    const bad = label => `<span class="cl-bad">✗ ${label}</span>`;
+
+    if (!advancedOn || !profile) {
+      // NORMAL — unchanged original 5 rows
+      const rows = [
+        { step: 'A1', item: t.cl.phone,      status: you.phone      ? ok(t.cl.configured) : bad(t.cl.missing),   action: you.phone      ? '—' : t.cl.addPhone },
+        { step: 'A2', item: t.cl.hours,      status: you.hours      ? ok(t.cl.configured) : bad(t.cl.missing),   action: you.hours      ? '—' : t.cl.addHours },
+        { step: 'A3', item: t.cl.categories, status: you.categories?.length ? ok(you.categories.join(', ')) : bad(t.cl.none), action: you.categories?.length ? '—' : t.cl.addCats },
+        { step: 'A4', item: t.cl.rating,     status: you.rating     ? ok('★ ' + Number(you.rating).toFixed(1)) : bad(t.cl.noRating), action: you.rating ? '—' : t.cl.getReviews },
+        { step: 'A5', item: t.cl.reviews,    status: (you.reviews >= 10) ? ok(you.reviews) : bad((you.reviews || 0) + ' ' + t.cl.reviewsLow), action: (!you.reviews || you.reviews < 10) ? t.cl.moreReviews : '—' },
+      ];
+      return rows.map(r => `<tr><td>${r.step}</td><td>${r.item}</td><td>${r.status}</td><td class="cl-action">${r.action}</td></tr>`).join('');
+    }
+
+    // ADVANCED — 13 rows from deep profile
+    const lang  = document.getElementById('reportLang').value;
+    const isES  = lang === 'es';
+    const isSV  = lang === 'sv';
+
+    const cats     = profile.categories || (profile.categoryName ? [profile.categoryName] : []);
+    const photos   = profile.imageCount || profile.imagesCount || 0;
+    const reviews  = profile.reviewsCount || 0;
+    const descLen  = (profile.description || '').length;
+    const hasDesc  = descLen >= 200;
+    const hasHours = !!(profile.openingHours && profile.openingHours.length);
+    const hasPhone = !!(profile.phone || profile.phoneUnformatted);
+    const hasAddr  = !!(profile.address);
+    const hasLogo  = !!(profile.logoUrl || profile.logo);
+    const hasSvc   = !!(profile.additionalInfo || profile.services);
+    const hasPosts = !!(profile.posts || profile.updatesCount);
+    const hasYears = !!(profile.yearsInBusiness || profile.openingDate);
+    const hasAreas = !!(profile.serviceArea || profile.serviceAreas);
+    const titleLow = (profile.title || '').toLowerCase();
+    const catLow   = (profile.categoryName || '').toLowerCase();
+    const catInTitle = catLow && titleLow.includes(catLow);
+
     const rows = [
-      { step: 'A1', item: t.cl.phone,      status: you.phone      ? ok(t.cl.configured) : bad(t.cl.missing),   action: you.phone      ? '—' : t.cl.addPhone },
-      { step: 'A2', item: t.cl.hours,      status: you.hours      ? ok(t.cl.configured) : bad(t.cl.missing),   action: you.hours      ? '—' : t.cl.addHours },
-      { step: 'A3', item: t.cl.categories, status: you.categories?.length ? ok(you.categories.join(', ')) : bad(t.cl.none), action: you.categories?.length ? '—' : t.cl.addCats },
-      { step: 'A4', item: t.cl.rating,     status: you.rating     ? ok('★ ' + Number(you.rating).toFixed(1)) : bad(t.cl.noRating), action: you.rating ? '—' : t.cl.getReviews },
-      { step: 'A5', item: t.cl.reviews,    status: (you.reviews >= 10) ? ok(you.reviews) : bad((you.reviews || 0) + ' ' + t.cl.reviewsLow), action: (!you.reviews || you.reviews < 10) ? t.cl.moreReviews : '—' },
+      { step:'A1', item: isES?'Teléfono':isSV?'Telefon':'Phone',
+        status: hasPhone ? ok(profile.phone||'✓') : bad(isES?'FALTA':isSV?'SAKNAS':'MISSING'),
+        action: hasPhone ? '—' : (isES?'Agregar número de teléfono':'Add phone number') },
+      { step:'A2', item: isES?'Dirección':isSV?'Adress':'Address',
+        status: hasAddr ? ok(profile.address||'✓') : bad(isES?'FALTA':isSV?'SAKNAS':'MISSING'),
+        action: hasAddr ? '—' : (isES?'Agregar dirección':'Add address') },
+      { step:'A3', item: isES?'Horarios de atención':isSV?'Öppettider':'Opening hours',
+        status: hasHours ? ok(isES?'Configurados':isSV?'Konfigurerade':'Configured') : bad(isES?'NO CONFIGURADOS':isSV?'EJ SATTA':'NOT SET'),
+        action: hasHours ? '—' : (isES?'Configurar horarios de atención':isSV?'Ange öppettider':'Set opening hours') },
+      { step:'A4', item: isES?'Descripción del negocio':isSV?'Beskrivning':'Business description',
+        status: hasDesc ? ok(descLen+' chars ✓') : (descLen>0 ? bad(descLen+(isES?' chars — muy corta':' chars — too short')) : bad(isES?'VACÍA':isSV?'TOM':'EMPTY')),
+        action: hasDesc ? '—' : (isES?'Escribir descripción de mín 200 caracteres':'Write description of min 200 chars') },
+      { step:'A5', item: isES?'Fecha de apertura':isSV?'Öppningsdatum':'Opening date',
+        status: hasYears ? ok(isES?'Configurada':isSV?'Konfigurerat':'Set') : bad(isES?'NO CONFIGURADA':isSV?'EJ SATT':'NOT SET'),
+        action: hasYears ? '—' : (isES?'Agregar fecha — Google muestra "X años en el negocio"':'Add date — Google shows "X years in business"') },
+      { step:'A6', item: isES?'Áreas de servicio':isSV?'Serviceområden':'Service areas',
+        status: hasAreas ? ok(isES?'Configuradas':'Set') : bad(isES?'SIN ÁREAS':isSV?'INGA OMRÅDEN':'NO SERVICE AREAS'),
+        action: hasAreas ? '—' : (isES?'Agregar áreas de servicio donde atendés':'Add service areas') },
+      { step:'A7', item: isES?'Fotos (mínimo 10)':isSV?'Foton (minst 10)':'Photos (minimum 10)',
+        status: photos>=10 ? ok(photos+(isES?' fotos':' photos')) : bad(photos+(isES?' fotos':' photos')),
+        action: photos>=10 ? '—' : (isES?'Subir más fotos — competidores tienen 30+. Foto de portada: 1024×576px':'Upload more photos — competitors have 30+. Cover photo: 1024×576px') },
+      { step:'A8', item: 'Logo',
+        status: hasLogo ? ok('✓') : bad(isES?'SIN LOGO':isSV?'INGEN LOGOTYP':'NO LOGO'),
+        action: hasLogo ? '—' : (isES?'Agregar logo profesional — 720×720px PNG':'Add professional logo — 720×720px PNG') },
+      { step:'A9', item: isES?'Servicios / Productos':isSV?'Tjänster / Produkter':'Services / Products',
+        status: hasSvc ? ok(isES?'Configurados':'Configured') : bad(isES?'SIN SERVICIOS':isSV?'INGA TJÄNSTER':'NO SERVICES'),
+        action: hasSvc ? '—' : (isES?'Agregar servicios con descripción y productos con precio':'Add services with descriptions and products with price') },
+      { step:'A10', item: isES?'Publicaciones / Actualizaciones':isSV?'Inlägg / Uppdateringar':'Posts / Updates',
+        status: hasPosts ? ok(isES?'Tiene publicaciones':'Has posts') : bad(isES?'SIN PUBLICACIONES':isSV?'INGA INLÄGG':'NO POSTS'),
+        action: hasPosts ? '—' : (isES?'Agregar publicaciones regulares con fotos y novedades':'Add regular posts with photos and updates') },
+      { step:'B1', item: isES?'Categoría principal':isSV?'Primär kategori':'Primary category',
+        status: profile.categoryName ? ok(profile.categoryName) : bad(isES?'NO CONFIGURADA':'NOT SET'),
+        action: profile.categoryName ? '—' : (isES?'Configurar categoría principal':'Set primary category') },
+      { step:'B2', item: isES?'Categorías secundarias (mín 3)':isSV?'Sekundära kategorier (min 3)':'Secondary categories (min 3)',
+        status: cats.length>=4 ? ok((cats.length-1)+(isES?' secundarias':' secondary')) : bad(cats.length<=1?(isES?'NINGUNA':'NONE'):(cats.length-1)+(isES?' — necesita más':' — needs more')),
+        action: cats.length>=4 ? cats.join(', ') : (isES?'Agregar 3-5 categorías secundarias relevantes':'Add 3-5 relevant secondary categories') },
+      { step:'B3', item: isES?'Keywords en el título':isSV?'Nyckelord i titeln':'Keywords in business title',
+        status: catInTitle ? ok(isES?'Categoría en título ✓':'Category in title ✓') : bad(isES?'Ni categoría ni barrio en título':'No category or neighborhood in title'),
+        action: catInTitle ? '—' : (isES?'Considerar agregar especialidad o barrio al título':'Consider adding specialty or neighborhood to title') },
+      { step:'C1', item: isES?'Cantidad de reseñas':isSV?'Antal recensioner':'Number of reviews',
+        status: reviews>=10 ? ok(reviews+(isES?' reseñas':' reviews')) : bad(reviews+(isES?' reseñas':isSV?' recensioner':' reviews')),
+        action: reviews>=10 ? '—' : (isES?'Configurar sistema de solicitud automática de reseñas':'Set up automatic review request system') },
     ];
-    return rows.map(r => `
-      <tr>
-        <td>${r.step}</td>
-        <td>${r.item}</td>
-        <td>${r.status}</td>
-        <td class="cl-action">${r.action}</td>
-      </tr>`).join('');
+
+    return rows.map(r => `<tr><td>${r.step}</td><td>${esc(r.item)}</td><td>${r.status}</td><td class="cl-action">${r.action}</td></tr>`).join('');
   }
 
-  // ── URL counter ──
   document.getElementById('mapsUrls').addEventListener('input', function() {
     const urls = parseUrls(this.value);
     const counter = document.getElementById('urlCounter');
     counter.innerHTML = `<span>${urls.length}</span> / 30 URLs`;
-    if (urls.length > 30) counter.style.color = 'var(--rank-bad)';
-    else counter.style.color = 'var(--muted)';
+    counter.style.color = urls.length > 30 ? 'var(--rank-bad)' : 'var(--muted)';
   });
 
   function parseUrls(raw) {
-    return raw.split('\n')
-      .map(u => u.trim())
-      .filter(u => u.includes('google.com/maps') || u.includes('goo.gl'));
+    return raw.split('\n').map(u => u.trim()).filter(u => u.includes('google.com/maps') || u.includes('goo.gl'));
   }
 
-  // ── Coord extraction ──
   function extractCoords(url) {
     let m = url.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
     if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
@@ -736,35 +787,25 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     return decodeURIComponent(m[1].replace(/\+/g, ' '));
   }
 
-  // ── Keywords ──
-  document.getElementById('keywordInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addKeyword();
-  });
+  document.getElementById('keywordInput').addEventListener('keydown', e => { if (e.key === 'Enter') addKeyword(); });
 
   function addKeyword() {
     const input = document.getElementById('keywordInput');
-    const val = input.value.trim();
+    const val   = input.value.trim();
     if (!val || keywords.includes(val)) { input.value = ''; return; }
     keywords.push(val);
     input.value = '';
     renderTags();
   }
 
-  function removeKeyword(idx) {
-    keywords.splice(idx, 1);
-    renderTags();
-  }
+  function removeKeyword(idx) { keywords.splice(idx, 1); renderTags(); }
 
   function renderTags() {
     document.getElementById('keywordTags').innerHTML = keywords.map((kw, i) => `
-      <div class="keyword-tag">
-        ${esc(kw)}
-        <button onclick="removeKeyword(${i})" title="Remove">×</button>
-      </div>
+      <div class="keyword-tag">${esc(kw)}<button onclick="removeKeyword(${i})" title="Remove">×</button></div>
     `).join('');
   }
 
-  // ── Utils ──
   function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -774,9 +815,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     document.getElementById('statusText').textContent = msg;
   }
 
-  function hideStatus() {
-    document.getElementById('statusBar').classList.remove('visible');
-  }
+  function hideStatus() { document.getElementById('statusBar').classList.remove('visible'); }
 
   function showError(msg) {
     const b = document.getElementById('errorBox');
@@ -784,15 +823,9 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     b.classList.add('visible');
   }
 
-  function clearError() {
-    document.getElementById('errorBox').classList.remove('visible');
-  }
-
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-  function normalize(s) {
-    return String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
-  }
+  function clearError() { document.getElementById('errorBox').classList.remove('visible'); }
+  function sleep(ms)    { return new Promise(r => setTimeout(r, ms)); }
+  function normalize(s) { return String(s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
   function isRealWebsite(url) {
     if (!url) return false;
@@ -808,22 +841,16 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     } catch { return false; }
   }
 
-  // ── Apify: start actor and poll ──
   async function startActor(token, input) {
-    // Route through our proxy to avoid CORS
-    const res = await fetch(`/api/proxy?url=${encodeURIComponent(
-      `${BASE}/acts/${ACTOR}/runs?token=${token}`
-    )}`, {
+    const res = await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/acts/${ACTOR}/runs?token=${token}`)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     });
-
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error?.message || `Apify HTTP ${res.status}`);
     }
-
     const { data: run } = await res.json();
     return run;
   }
@@ -841,27 +868,26 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   }
 
   async function fetchDataset(token, datasetId, limit = 25) {
-    const res   = await fetch(`/api/proxy?url=${encodeURIComponent(
-      `${BASE}/datasets/${datasetId}/items?token=${token}&limit=${limit}`
-    )}`);
+    const res = await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/datasets/${datasetId}/items?token=${token}&limit=${limit}`)}`);
     return res.json();
   }
 
-  // ── Main ──
   async function runCheck() {
     clearError();
     document.getElementById('results').style.display = 'none';
 
-    const token  = document.getElementById('apifyToken').value.trim();
+    const token   = document.getElementById('apifyToken').value.trim();
     const rawUrls = document.getElementById('mapsUrls').value;
 
     if (!token)           return showError('Apify token is required.');
     if (!keywords.length) return showError('Add at least one keyword.');
 
-    const urls = parseUrls(rawUrls).slice(0, 30);
-    if (!urls.length) return showError('Paste at least one valid Google Maps URL.');
+    const allUrls = parseUrls(rawUrls);
+    if (!allUrls.length) return showError('Paste at least one valid Google Maps URL.');
 
-    // Parse all URLs
+    // Advanced uses only first URL
+    const urls = advancedOn ? allUrls.slice(0, 1) : allUrls.slice(0, 30);
+
     const businesses = [];
     for (const url of urls) {
       const coords = extractCoords(url);
@@ -877,11 +903,10 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     btn.disabled = true;
 
     try {
-      // ── One Apify run per business, ALL keywords batched in one call ──
-      const allResults = []; // [{ business, keywordResults: { kw: [...items] } }]
+      const allResults = [];
 
       for (let i = 0; i < businesses.length; i++) {
-        const biz = businesses[i];
+        const biz        = businesses[i];
         const searchFrom = document.getElementById('searchFrom').value;
         let searchLat    = biz.coords.lat;
         let searchLng    = biz.coords.lng;
@@ -894,7 +919,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
             const cityCoords = await geocodeCity(cityName);
             searchLat = cityCoords.lat;
             searchLng = cityCoords.lng;
-            useZoom   = null; // let Apify decide
+            useZoom   = null;
           }
         }
 
@@ -916,25 +941,18 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         if (useZoom !== null) actorInput.zoom = useZoom;
 
         const run = await startActor(token, actorInput);
-
         await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
-
         const items = await fetchDataset(token, run.defaultDatasetId, 500);
-
-        // Sort by Apify's rank field — items come back in wrong order
         items.sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
 
-        // Group items by searchString
         const byKeyword = {};
         for (const kw of keywords) byKeyword[kw] = [];
 
         for (const item of items) {
           const ss = (item.searchString || '').toLowerCase().trim();
-          // Match exact first
           if (byKeyword[ss] !== undefined) {
             byKeyword[ss].push(item);
           } else {
-            // Fuzzy match
             for (const kw of keywords) {
               if (ss.includes(kw.toLowerCase()) || kw.toLowerCase().includes(ss)) {
                 byKeyword[kw].push(item);
@@ -947,8 +965,25 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         allResults.push({ business: biz, byKeyword });
       }
 
+      // ADVANCED: extra profile scrape for first business only
+      let advProfile = null;
+      if (advancedOn && businesses.length === 1) {
+        setStatus('Advanced — scraping full profile…');
+        const profRun = await startActor(token, {
+          startUrls: [{ url: businesses[0].url }],
+          maxCrawledPlacesPerSearch: 1,
+          language: 'en',
+          maxReviews: 0,
+          maxImages: 0,
+          scrapeReviewerInfo: false,
+        });
+        await pollUntilDone(token, profRun.id, 'Advanced profile');
+        const profItems = await fetchDataset(token, profRun.defaultDatasetId, 5);
+        advProfile = profItems[0] || null;
+      }
+
       hideStatus();
-      renderResults(allResults);
+      renderResults(allResults, advProfile);
 
     } catch (err) {
       hideStatus();
@@ -958,14 +993,11 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     }
   }
 
-  // ── Open single business in new window for PDF saving ──
   function openBizWindow(bi) {
     const el = document.getElementById(`biz-block-${bi}`);
     if (!el) return;
-
     const bizName = el.dataset.bizname || 'report';
     const content = el.innerHTML;
-
     const win = window.open('', '_blank');
     win.document.write(`<!DOCTYPE html>
 <html>
@@ -982,9 +1014,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   .keyword-label { font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
   .rank-hero { border: 1px solid #ddd; border-radius: 4px; padding: 20px 24px; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; }
   .rank-number { font-size: 56px; font-weight: 800; line-height: 1; letter-spacing: -0.04em; min-width: 110px; }
-  .rank-number.good { color: #4a7c00; }
-  .rank-number.mid  { color: #b36200; }
-  .rank-number.bad  { color: #c00; }
+  .rank-number.good { color: #4a7c00; } .rank-number.mid { color: #b36200; } .rank-number.bad { color: #c00; }
   .rank-meta .biz-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
   .rank-meta .rank-desc { font-family: 'DM Mono', monospace; font-size: 11px; color: #888; }
   .results-list { border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
@@ -1005,28 +1035,12 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   .checklist-table td { padding: 5px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
   .checklist-table tr:last-child td { border-bottom: none; }
   .checklist-table td:first-child { color: #aaa; font-size: 10px; }
-  .cl-ok { color: #4a7c00; font-weight: 600; }
-  .cl-bad { color: #c00; font-weight: 600; }
+  .cl-ok { color: #4a7c00; font-weight: 600; } .cl-bad { color: #c00; font-weight: 600; }
   .cl-action { color: #555; font-size: 10px; }
   .comparison-title { font-size: 18px; font-family: 'Syne', sans-serif; font-weight: 800; letter-spacing: -0.01em; color: #111; margin-bottom: 4px; }
   .comparison-subtitle { font-size: 11px; font-family: 'DM Mono', monospace; color: #888; margin-bottom: 14px; }
-  /* Squeeze result rows so 20 fit on page 1 */
-  @media print {
-    body { padding: 16px; }
-    .biz-title { font-size: 18px; margin-bottom: 12px; }
-    .rank-hero { padding: 14px 18px; margin-bottom: 8px; }
-    .rank-number { font-size: 48px; min-width: 90px; }
-    .rank-meta .biz-name { font-size: 13px; }
-    .rank-meta .rank-desc { font-size: 11px; }
-    .keyword-section { margin-bottom: 14px; }
-    .keyword-label { margin-bottom: 7px; }
-    .result-row { padding: 6px 12px; }
-    .result-name { font-size: 12px; }
-    .result-rating { font-size: 11px; }
-    .result-pos { font-size: 11px; }
-    .print-hint { display: none; }
-  }
-  .comparison-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; font-family: 'DM Mono', monospace; font-size: 12px; }
+  @media print { body { padding: 16px; } .rank-hero { padding: 14px 18px; } .rank-number { font-size: 48px; min-width: 90px; } .result-row { padding: 6px 12px; } .print-hint { display: none; } }
+  .comparison-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; font-family: 'DM Mono', monospace; font-size: 12px; }
   .comparison-table thead tr { background: #f5f5f5; }
   .comparison-table th { padding: 9px 12px; text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; font-weight: 500; border-bottom: 1px solid #ddd; }
   .comparison-table th:nth-child(2) { color: #4a7c00; }
@@ -1034,22 +1048,8 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
   .comparison-table tr:last-child td { border-bottom: none; }
   .comparison-table td:first-child { color: #888; font-size: 11px; }
   .badge { display: inline-block; padding: 2px 7px; border-radius: 2px; font-size: 10px; font-weight: 600; }
-  .badge-good { background: #f0ffe0; color: #4a7c00; }
-  .badge-bad  { background: #fff0f0; color: #c00; }
-  .badge-ok   { background: #fff8ec; color: #b36200; }
-  .badge-neutral { background: #f5f5f5; color: #666; }
-  .print-hint { font-family: 'DM Mono', monospace; font-size: 12px; color: #888; margin-bottom: 24px; padding: 10px 14px; border: 1px solid #eee; border-radius: 4px; } border-collapse: collapse; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; font-family: 'DM Mono', monospace; font-size: 12px; }
-  .comparison-table thead tr { background: #f5f5f5; }
-  .comparison-table th { padding: 9px 12px; text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; font-weight: 500; border-bottom: 1px solid #ddd; }
-  .comparison-table th:nth-child(2) { color: #4a7c00; }
-  .comparison-table td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
-  .comparison-table tr:last-child td { border-bottom: none; }
-  .comparison-table td:first-child { color: #888; font-size: 11px; }
-  .badge { display: inline-block; padding: 2px 7px; border-radius: 2px; font-size: 10px; font-weight: 600; }
-  .badge-good { background: #f0ffe0; color: #4a7c00; }
-  .badge-bad  { background: #fff0f0; color: #c00; }
-  .badge-ok   { background: #fff8ec; color: #b36200; }
-  .badge-neutral { background: #f5f5f5; color: #666; }
+  .badge-good { background: #f0ffe0; color: #4a7c00; } .badge-bad { background: #fff0f0; color: #c00; }
+  .badge-ok { background: #fff8ec; color: #b36200; } .badge-neutral { background: #f5f5f5; color: #666; }
   .print-hint { font-family: 'DM Mono', monospace; font-size: 12px; color: #888; margin-bottom: 24px; padding: 10px 14px; border: 1px solid #eee; border-radius: 4px; }
   @media print { .print-hint { display: none; } }
 </style>
@@ -1062,8 +1062,7 @@ ${content}
     win.document.close();
   }
 
-  // ── Render ──
-  function renderResults(allResults) {
+  function renderResults(allResults, advProfile) {
     const t   = getLang();
     const ts  = new Date().toLocaleString();
     let html  = `<p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:32px;">${t.summary(allResults.length, keywords.length, ts)}</p>`;
@@ -1102,7 +1101,6 @@ ${content}
           };
         });
 
-        // Only first match is target
         let found = false;
         for (const r of ranked) {
           if (r.isTarget && !found) { found = true; }
@@ -1115,11 +1113,8 @@ ${content}
         const total       = ranked.length;
         const rankClass   = !pos ? 'bad' : pos <= 5 ? 'good' : pos <= 12 ? 'mid' : 'bad';
         const rankDisplay = pos ? `#${pos}` : '20+';
-        const rankDesc    = pos
-          ? t.ranked(pos, total, kw)
-          : t.invisible(total, kw);
+        const rankDesc    = pos ? t.ranked(pos, total, kw) : t.invisible(total, kw);
 
-        // Comparison table
         let compHtml = '';
         if (number1 && (!target || target.pos !== 1)) {
           const you  = target ?? { rating: null, reviews: null, website: false, phone: false, hours: false, categories: [] };
@@ -1145,6 +1140,9 @@ ${content}
             return `<span class="badge ${cls}">${youVal ? t.yes : t.no}</span>`;
           };
 
+          // Pass advProfile to buildChecklist — if advanced, uses deep profile for 13 rows
+          const checklistRows = buildChecklist(you, t, advancedOn ? advProfile : null);
+
           compHtml = `
             <div class="comparison-wrap">
               <div class="checklist-wrap">
@@ -1156,7 +1154,7 @@ ${content}
                     <th style="width:130px">${t.checklistStatus}</th>
                     <th>${t.checklistAction}</th>
                   </tr></thead>
-                  <tbody>${buildChecklist(you, t)}</tbody>
+                  <tbody>${checklistRows}</tbody>
                 </table>
               </div>
               <div class="comparison-title" style="margin-top:24px">${t.vsTitle}</div>
@@ -1226,7 +1224,7 @@ ${content}
           </div>`;
       }
 
-      html += `</div>`; // end biz-block
+      html += `</div>`;
     }
 
     document.getElementById('resultsBody').innerHTML = html;
