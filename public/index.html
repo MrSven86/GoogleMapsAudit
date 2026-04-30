@@ -514,7 +514,18 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         <div class="hint">// all keywords run in one batch — much faster</div>
         <div class="keywords-grid" id="keywordTags"></div>
       </div>
-
+      <div class="field" style="margin-top:20px;">
+        <label>Search From (optional)</label>
+        <select id="searchFrom" onchange="toggleCityField()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
+          <option value="pin">📍 PIN — search from business location</option>
+          <option value="city">🏙 City — search from city center</option>
+          <option value="neighborhood">🏘 Neighborhood — search from neighborhood</option>
+        </select>
+        <div id="cityField" style="display:none;margin-top:8px;">
+          <input type="text" id="cityName" placeholder="e.g. Spokane, Buenos Aires, Palermo…">
+          <div class="hint">// we'll geocode this and search from there</div>
+        </div>
+      </div>
       <div class="field" style="margin-top:20px;">
         <label>Report Language</label>
         <select id="reportLang" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
@@ -656,6 +667,23 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     return T[document.getElementById('reportLang').value] || T.en;
   }
 
+  function toggleCityField() {
+    const mode = document.getElementById('searchFrom').value;
+    document.getElementById('cityField').style.display = mode === 'pin' ? 'none' : 'block';
+  }
+
+  async function geocodeCity(cityName) {
+    const token = document.getElementById('apifyToken').value.trim();
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cityName)}&key=${token}`;
+    // Use Google Geocoding via proxy — but we don't have key here
+    // Fallback: use Nominatim (OpenStreetMap) — free, no key needed
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1`);
+    const data = await res.json();
+    if (data && data[0]) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+    throw new Error(`Could not find location: ${cityName}`);
+  }
 
   function buildChecklist(you, t) {
     const ok  = (label) => `<span class="cl-ok">✓ ${label}</span>`;
@@ -706,12 +734,6 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
     const m = url.match(/maps\/place\/([^/@]+)/);
     if (!m) return null;
     return decodeURIComponent(m[1].replace(/\+/g, ' '));
-  }
-
-  function extractPlaceIdFromUrl(url) {
-    const m = url.match(/!1s(0x[0-9a-f]+:[0-9a-fx]+)/i);
-    if (m) return m[1];
-    return null;
   }
 
   // ── Keywords ──
@@ -847,24 +869,23 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         showError(`Could not read coordinates from: ${url.substring(0, 60)}… — make sure it's a full Google Maps URL, not a short link.`);
         return;
       }
-      const name    = extractNameFromUrl(url) || 'Business';
-      const placeId = extractPlaceIdFromUrl(url);
-      businesses.push({ url, coords, name, placeId });
+      const name = extractNameFromUrl(url) || 'Business';
+      businesses.push({ url, coords, name });
     }
 
     const btn = document.getElementById('runBtn');
     btn.disabled = true;
 
     try {
-      const allResults = [];
+      // ── One Apify run per business, ALL keywords batched in one call ──
+      const allResults = []; // [{ business, keywordResults: { kw: [...items] } }]
 
       for (let i = 0; i < businesses.length; i++) {
         const biz = businesses[i];
-
-        // ── Step 1: Profile scrape to get real name + coordinates ──
+        // Step 1: Profile scrape to get real name + exact coordinates (same as velocity scraper)
         setStatus(`Business ${i+1}/${businesses.length}: fetching profile…`);
         const profRun = await startActor(token, {
-          startUrls: [{ url: biz.url.startsWith('http') ? biz.url : 'https://' + biz.url }],
+          startUrls: [{ url: biz.url }],
           maxCrawledPlacesPerSearch: 1,
           maxReviews: 0,
           maxImages: 0,
@@ -874,17 +895,17 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         const profItems = await fetchDataset(token, profRun.defaultDatasetId, 5);
         const profile   = profItems[0] || null;
 
-        const realName = (profile && profile.title) ? profile.title : biz.name;
-        const searchLat = (profile && profile.location) ? profile.location.lat : biz.coords.lat;
-        const searchLng = (profile && profile.location) ? profile.location.lng : biz.coords.lng;
+        const realName  = (profile && profile.title) ? profile.title : biz.name;
+        const searchLat = (profile && profile.location && profile.location.lat) ? profile.location.lat : biz.coords.lat;
+        const searchLng = (profile && profile.location && profile.location.lng) ? profile.location.lng : biz.coords.lng;
 
-        // ── Step 2: Search keywords from real coordinates ──
+        // Step 2: Search from real coordinates with zoom 15 (same as velocity scraper)
         setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords…`);
 
         const run = await startActor(token, {
           searchStringsArray: keywords,
-          lat: searchLat,
-          lng: searchLng,
+          lat: String(searchLat),
+          lng: String(searchLng),
           zoom: 15,
           maxCrawledPlacesPerSearch: 20,
           maxImages: 0,
@@ -896,17 +917,23 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         });
 
         await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
+
         const items = await fetchDataset(token, run.defaultDatasetId, 500);
+
+        // Sort by Apify's rank field — items come back in wrong order
         items.sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
 
+        // Group items by searchString
         const byKeyword = {};
         for (const kw of keywords) byKeyword[kw] = [];
 
         for (const item of items) {
           const ss = (item.searchString || '').toLowerCase().trim();
+          // Match exact first
           if (byKeyword[ss] !== undefined) {
             byKeyword[ss].push(item);
           } else {
+            // Fuzzy match
             for (const kw of keywords) {
               if (ss.includes(kw.toLowerCase()) || kw.toLowerCase().includes(ss)) {
                 byKeyword[kw].push(item);
@@ -1043,7 +1070,6 @@ ${content}
     for (let bi = 0; bi < allResults.length; bi++) {
       const { business, byKeyword } = allResults[bi];
       const normBiz = normalize(business.name);
-      const bizPlaceId = business.placeId;
 
       html += `<div class="biz-block" id="biz-block-${bi}" data-bizname="${esc(business.name)}">
         <div class="biz-header">
@@ -1060,16 +1086,17 @@ ${content}
         const ranked = items.map((item, i) => {
           const name     = item.title || item.name || '(unknown)';
           const normName = normalize(name);
-          const isTarget = (bizPlaceId && item.placeId && item.placeId === bizPlaceId) ||
-                           normName === normBiz ||
-                           normName.includes(normBiz) ||
-                           normBiz.includes(normName) ||
-                           (() => {
-                             const bizWords = normBiz.split(/\s+/).filter(w => w.length > 2);
-                             if (bizWords.length <= 1) return false;
-                             const mc = bizWords.filter(w => normName.includes(w)).length;
+          const bizNameLower = normalize(business.name);
+          const bizWords = business.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+          const normNameLower = name.toLowerCase();
+          const isTarget = normNameLower === business.name.toLowerCase() ||
+                           normNameLower.includes(business.name.toLowerCase()) ||
+                           business.name.toLowerCase().includes(normNameLower) ||
+                           (bizWords.length > 1 && (() => {
+                             let mc = 0;
+                             for (const w of bizWords) { if (normNameLower.includes(w)) mc++; }
                              return mc >= bizWords.length * 0.6;
-                           })();
+                           })());
           return {
             pos: i + 1, name,
             rating:     item.totalScore ?? item.rating ?? null,
