@@ -421,6 +421,15 @@
           </select>
         </div>
       </div>
+      <div class="field" style="margin-top:20px;">
+        <label>Language</label>
+        <select id="reportLang">
+          <option value="en">English</option>
+          <option value="sv" selected>Svenska</option>
+          <option value="es">Español</option>
+        </select>
+        <div class="hint">// used for Apify results and category language where available</div>
+      </div>
     </div>
 
     <button class="btn-run" id="runBtn" onclick="runTracker()">▶ Run Grid Tracker</button>
@@ -530,6 +539,20 @@
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   function normalize(s) { return String(s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
+  function getCategories(item) {
+    const out = [];
+    const add = c => {
+      if (!c) return;
+      if (typeof c === 'string') out.push(c.trim());
+      else if (typeof c === 'object') out.push(String(c.name || c.title || c.label || c.categoryName || '').trim());
+    };
+    if (Array.isArray(item.categories)) item.categories.forEach(add);
+    if (Array.isArray(item.additionalCategories)) item.additionalCategories.forEach(add);
+    add(item.categoryName);
+    add(item.category);
+    return [...new Set(out.filter(Boolean))];
+  }
+
   // ── Rank color ──
   function rankColor(rank) {
     if (!rank || rank > 20) return '#333';
@@ -637,7 +660,7 @@
           lng: pt.lng,
           zoom: 14,
           maxCrawledPlacesPerSearch: maxRes,
-          language: 'en',
+          language: document.getElementById('reportLang').value,
           maxImages: 0,
           maxReviews: 0,
           exportPlaceUrls: false,
@@ -657,15 +680,13 @@
           const normName = normalize(name);
           const isUs = normName.includes(normBiz) || normBiz.includes(normName);
           if (isUs && rank === null) rank = item.rank ?? (idx + 1);
-          const cats = item.categories || (item.categoryName ? [item.categoryName] : []);
-
           return {
             name,
             rank: item.rank ?? (idx + 1),
             isUs,
             rating: item.totalScore ?? item.rating ?? null,
             reviews: item.reviewsCount ?? item.reviewCount ?? null,
-            categories: cats,
+            categories: getCategories(item),
           };
         });
 
