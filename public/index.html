@@ -514,7 +514,18 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         <div class="hint">// all keywords run in one batch — much faster</div>
         <div class="keywords-grid" id="keywordTags"></div>
       </div>
-
+      <div class="field" style="margin-top:20px;">
+        <label>Search From (optional)</label>
+        <select id="searchFrom" onchange="toggleCityField()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
+          <option value="pin">📍 PIN — search from business location</option>
+          <option value="city">🏙 City — search from city center</option>
+          <option value="neighborhood">🏘 Neighborhood — search from neighborhood</option>
+        </select>
+        <div id="cityField" style="display:none;margin-top:8px;">
+          <input type="text" id="cityName" placeholder="e.g. Spokane, Buenos Aires, Palermo…">
+          <div class="hint">// we'll geocode this and search from there</div>
+        </div>
+      </div>
       <div class="field" style="margin-top:20px;">
         <label>Report Language</label>
         <select id="reportLang" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
@@ -871,39 +882,40 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
 
       for (let i = 0; i < businesses.length; i++) {
         const biz = businesses[i];
-        // Step 1: Profile scrape to get real name + exact coordinates (same as velocity scraper)
-        setStatus(`Business ${i+1}/${businesses.length}: fetching profile…`);
-        const profRun = await startActor(token, {
-          startUrls: [{ url: biz.url }],
-          maxCrawledPlacesPerSearch: 1,
-          maxReviews: 0,
-          maxImages: 0,
-          scrapeReviewerInfo: false,
-        });
-        await pollUntilDone(token, profRun.id, `Profile ${i+1}/${businesses.length}`);
-        const profItems = await fetchDataset(token, profRun.defaultDatasetId, 5);
-        const profile   = profItems[0] || null;
+        const searchFrom = document.getElementById('searchFrom').value;
+        let searchLat    = biz.coords.lat;
+        let searchLng    = biz.coords.lng;
+        let useZoom      = 12;
 
-        const realName  = (profile && profile.title) ? profile.title : biz.name;
-        const searchLat = (profile && profile.location && profile.location.lat) ? profile.location.lat : biz.coords.lat;
-        const searchLng = (profile && profile.location && profile.location.lng) ? profile.location.lng : biz.coords.lng;
+        if (searchFrom !== 'pin') {
+          const cityName = document.getElementById('cityName').value.trim();
+          if (cityName) {
+            setStatus(`Geocoding "${cityName}"…`);
+            const cityCoords = await geocodeCity(cityName);
+            searchLat = cityCoords.lat;
+            searchLng = cityCoords.lng;
+            useZoom   = null; // let Apify decide
+          }
+        }
 
-        // Step 2: Search from real coordinates with zoom 15 (same as velocity scraper)
-        setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords…`);
+        setStatus(`Business ${i+1}/${businesses.length}: searching ${keywords.length} keywords in one batch…`);
 
-        const run = await startActor(token, {
+        const actorInput = {
           searchStringsArray: keywords,
-          lat: String(searchLat),
-          lng: String(searchLng),
-          zoom: 15,
+          lat: searchLat,
+          lng: searchLng,
           maxCrawledPlacesPerSearch: 20,
+          language: 'en',
           maxImages: 0,
           maxReviews: 0,
           exportPlaceUrls: false,
           scrapeContacts: false,
           scrapeDirections: false,
           additionalInfo: false,
-        });
+        };
+        if (useZoom !== null) actorInput.zoom = useZoom;
+
+        const run = await startActor(token, actorInput);
 
         await pollUntilDone(token, run.id, `Business ${i+1}/${businesses.length}`);
 
@@ -932,7 +944,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
           }
         }
 
-        allResults.push({ business: { ...biz, name: realName }, byKeyword });
+        allResults.push({ business: biz, byKeyword });
       }
 
       hideStatus();
@@ -1075,17 +1087,9 @@ ${content}
         const ranked = items.map((item, i) => {
           const name     = item.title || item.name || '(unknown)';
           const normName = normalize(name);
-          const bizNameLower = normalize(business.name);
-          const bizWords = business.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-          const normNameLower = name.toLowerCase();
-          const isTarget = normNameLower === business.name.toLowerCase() ||
-                           normNameLower.includes(business.name.toLowerCase()) ||
-                           business.name.toLowerCase().includes(normNameLower) ||
-                           (bizWords.length > 1 && (() => {
-                             let mc = 0;
-                             for (const w of bizWords) { if (normNameLower.includes(w)) mc++; }
-                             return mc >= bizWords.length * 0.6;
-                           })());
+          const isTarget = normName === normBiz ||
+                           normName.startsWith(normBiz) ||
+                           normBiz.startsWith(normName);
           return {
             pos: i + 1, name,
             rating:     item.totalScore ?? item.rating ?? null,
