@@ -11,7 +11,7 @@
 body{background:var(--bg);color:var(--text);font-family:Syne,sans-serif;min-height:100vh;padding:40px 20px}
 .container{max-width:860px;margin:0 auto}
 header{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:36px}
-.logo,label,.hint,.url-counter,.status-bar,.error-box,.keyword-label,.biz-index,.rank-desc,.result-pos,.result-rating,table,.reco{font-family:'DM Mono',monospace}
+.logo,label,.hint,.url-counter,.status-bar,.error-box,.keyword-label,.biz-index,.rank-desc,.result-pos,.result-rating,table{font-family:'DM Mono',monospace}
 .logo{font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
 h1{font-size:clamp(32px,6vw,56px);font-weight:800;line-height:.95;letter-spacing:-.04em}
 h1 span{color:var(--accent)}
@@ -30,8 +30,6 @@ textarea{resize:vertical;line-height:1.55}
 .keyword-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .tag{background:#1a1a1a;border:1px solid var(--border);border-radius:2px;padding:5px 10px;font-family:'DM Mono',monospace;font-size:12px}
 .tag button{background:none;border:0;color:var(--muted);cursor:pointer;margin-left:8px}
-.checkrow{display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text);cursor:pointer}
-.checkrow input{width:auto;accent-color:var(--accent)}
 .btn-run{width:100%;background:var(--accent);border:0;border-radius:3px;color:#0a0a0a;font-family:Syne,sans-serif;font-weight:800;font-size:16px;letter-spacing:.05em;padding:16px;cursor:pointer;margin-top:8px}
 .btn-run:disabled{opacity:.45;cursor:not-allowed}
 .status-bar{display:none;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--muted)}
@@ -75,14 +73,11 @@ tr:last-child td{border-bottom:0}
 .badge-ok{background:rgba(255,179,71,.15);color:var(--orange)}
 .badge-neutral{background:#1e1e1e;color:#888}
 .cl-ok{color:var(--accent);font-weight:700}.cl-bad{color:var(--red);font-weight:700}.cl-action{color:var(--muted);font-size:10px}
-.reco{background:rgba(200,241,53,.08);border:1px solid rgba(200,241,53,.22);border-radius:4px;padding:14px 16px;font-size:12px;line-height:1.7;margin-top:10px}
-.reco strong{color:var(--accent)}
-.empty-note{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);padding:10px 12px;border:1px dashed var(--border);margin-top:8px}
 @media print{
 body{background:#fff;color:#000;padding:20px}.card,#inputSection,.btn-run,.btn-pdf,.biz-pdf-btn{display:none!important}
-#results{display:block!important}.rank-hero,.results-list,table,.reco{background:#fff;border-color:#ddd}.good{color:#4a7c00}.mid{color:#b36200}.bad{color:#c00}
+#results{display:block!important}.rank-hero,.results-list,table{background:#fff;border-color:#ddd}.good{color:#4a7c00}.mid{color:#b36200}.bad{color:#c00}
 .result-row.is-target{background:#f5ffe0}.result-row.is-target .result-pos,.result-row.is-target .result-name{color:#4a7c00}
-th{background:#f5f5f5;color:#777;border-color:#ddd}td{border-color:#eee;color:#000}.cl-ok,.reco strong{color:#4a7c00}.cl-bad{color:#c00}
+th{background:#f5f5f5;color:#777;border-color:#ddd}td{border-color:#eee;color:#000}.cl-ok{color:#4a7c00}.cl-bad{color:#c00}
 }
 </style>
 </head>
@@ -142,14 +137,6 @@ th{background:#f5f5f5;color:#777;border-color:#ddd}td{border-color:#eee;color:#0
         <option value="sv" selected>Svenska</option>
       </select>
     </div>
-
-    <div class="field">
-      <label class="checkrow">
-        <input type="checkbox" id="advancedAudit">
-        <span>Advanced Audit</span>
-      </label>
-      <div class="hint">// toggles full checklist + category scan only. It does NOT change the Apify crawl.</div>
-    </div>
   </div>
 
   <button class="btn-run" id="runBtn" onclick="runCheck()">▶ Run Rank Check</button>
@@ -173,9 +160,9 @@ const ACTOR='compass~crawler-google-places';
 let keywords=[];
 
 const T={
-en:{keyword:kw=>`// keyword: "${kw}"`,ranked:(p,t,kw)=>`Ranked ${p} out of ${t} results for "${kw}"`,invisible:(t,kw)=>`Not visible in the top ${t} results for "${kw}"`,notFound:n=>`${n} — not found in top results`,you:'◀ YOU',bizOf:(i,t)=>`// business ${i} of ${t}`,summary:(n,k,ts)=>`// ${n} businesses · ${k} keywords · ${ts}`,yes:'Yes',no:'No',noRating:'No rating',reviews:'Reviews',rating:'Rating',website:'Website',phone:'Phone',hours:'Hours',categories:'Categories',metric:'Metric',vsTitle:'Your profile vs #1',catScan:'Business category scan',catMissing:'Categories competitors use but you do not have',catTop:'Top competitors in the area',catAll:'Available categories in the area',cat:'Category',usedBy:'Used by',youHave:'You have?',primary:'Primary cat.',secondary:'Secondary cats.',photos:'Photos',web:'Web',reco:'Recommendation',recPrimary:'Recommended primary category',recSecondary:'Suggested secondary categories',recTitle:'Title keyword',recText:'Consider adding specialty or local area to title if appropriate',competitors:'competitor(s)',noCatData:'No category data returned from the normal result set. Ranking is still valid.',checklist:'Profile Optimization Checklist',step:'Step',item:'Item',status:'Status',action:'Action required',cl:{phone:'Phone',address:'Address',hours:'Opening hours',description:'Business description',openingDate:'Opening date',serviceAreas:'Service areas',photos:'Photos (minimum 10)',logo:'Logo',services:'Services / Products',posts:'Posts / Updates',primaryCategory:'Primary category',secondaryCategories:'Secondary categories (min 3)',titleKeywords:'Keywords in title',reviews:'Reviews count',configured:'Configured',missing:'MISSING',empty:'EMPTY',none:'NONE',noAddress:'NO ADDRESS',noDate:'NOT CONFIGURED',noAreas:'NO AREAS',noLogo:'NO LOGO',noPosts:'NO POSTS',noSecondary:'NONE',titleNoKeyword:'No category or area in title',addPhone:'Add phone number to profile',addAddress:'Add correct address',addHours:'Set opening hours',addDescription:'Write description of at least 200 characters',addDate:'Add opening date — Google shows “X years in business”',addAreas:'Add service areas where you work',addPhotos:'Upload more photos — competitors often have 30+',addLogo:'Add professional logo — 720×720px PNG',addServices:'Add services/products',addPosts:'Add regular posts with photos and updates',addSecondary:'Add 3–5 relevant secondary categories',addTitleKeywords:'Consider adding specialty or area to the title',moreReviews:'Need 10+ reviews — set up review request system',reviewsLow:'(low)'}},
-es:{keyword:kw=>`// palabra clave: "${kw}"`,ranked:(p,t,kw)=>`Posición ${p} de ${t} resultados para "${kw}"`,invisible:(t,kw)=>`No visible en el top ${t} para "${kw}"`,notFound:n=>`${n} — no encontrado en los resultados`,you:'◀ USTED',bizOf:(i,t)=>`// negocio ${i} de ${t}`,summary:(n,k,ts)=>`// ${n} negocios · ${k} palabras clave · ${ts}`,yes:'Sí',no:'No',noRating:'Sin calificación',reviews:'Reseñas',rating:'Calificación',website:'Sitio web',phone:'Teléfono',hours:'Horarios',categories:'Categorías',metric:'Métrica',vsTitle:'Tu perfil vs #1',catScan:'Análisis de categorías comerciales',catMissing:'Categorías que usan competidores y vos no tenés',catTop:'Top competidores en el área',catAll:'Categorías disponibles en el área',cat:'Categoría',usedBy:'La usan',youHave:'¿La tenés?',primary:'Cat. principal',secondary:'Cat. secundarias',photos:'Fotos',web:'Web',reco:'Recomendación',recPrimary:'Categoría principal recomendada',recSecondary:'Categorías secundarias sugeridas',recTitle:'Keyword en el título',recText:'Considerar agregar especialidad o barrio al título si corresponde',competitors:'competidor(es)',noCatData:'No se devolvieron categorías en el set normal de resultados. El ranking sigue siendo válido.',checklist:'Checklist de optimización del perfil',step:'Paso',item:'Ítem',status:'Estado',action:'Acción requerida',cl:{phone:'Teléfono',address:'Dirección',hours:'Horarios de atención',description:'Descripción del negocio',openingDate:'Fecha de apertura',serviceAreas:'Áreas de servicio',photos:'Fotos (mínimo 10)',logo:'Logo',services:'Servicios / Productos',posts:'Publicaciones / Actualizaciones',primaryCategory:'Categoría principal',secondaryCategories:'Categorías secundarias (mín 3)',titleKeywords:'Keywords en el título',reviews:'Cantidad de reseñas',configured:'Configurado',missing:'VACÍA',empty:'VACÍA',none:'NINGUNA',noAddress:'SIN DIRECCIÓN',noDate:'NO CONFIGURADA',noAreas:'SIN ÁREAS',noLogo:'SIN LOGO',noPosts:'SIN PUBLICACIONES',noSecondary:'NINGUNA',titleNoKeyword:'Ni categoría ni barrio en título',addPhone:'Agregar teléfono al perfil',addAddress:'Agregar dirección correcta',addHours:'Configurar horarios de atención',addDescription:'Escribir descripción de mín 200 caracteres',addDate:'Agregar fecha — Google muestra “X años en el negocio”',addAreas:'Agregar áreas de servicio donde atendés',addPhotos:'Subir más fotos — competidores tienen 30+',addLogo:'Agregar logo profesional — 720×720px PNG',addServices:'Agregar servicios/productos',addPosts:'Agregar publicaciones regulares con fotos y novedades',addSecondary:'Agregar 3–5 categorías secundarias relevantes',addTitleKeywords:'Considerar agregar especialidad o barrio al título',moreReviews:'Configurar sistema de solicitud automática de reseñas',reviewsLow:'(pocas)'}},
-sv:{keyword:kw=>`// sökord: "${kw}"`,ranked:(p,t,kw)=>`Placering ${p} av ${t} resultat för "${kw}"`,invisible:(t,kw)=>`Inte synlig i topp ${t} för "${kw}"`,notFound:n=>`${n} — hittades inte i resultaten`,you:'◀ DU',bizOf:(i,t)=>`// företag ${i} av ${t}`,summary:(n,k,ts)=>`// ${n} företag · ${k} sökord · ${ts}`,yes:'Ja',no:'Nej',noRating:'Inget betyg',reviews:'Recensioner',rating:'Betyg',website:'Hemsida',phone:'Telefon',hours:'Öppettider',categories:'Kategorier',metric:'Mätvärde',vsTitle:'Din profil vs #1',catScan:'Analys av affärskategorier',catMissing:'Kategorier konkurrenter använder men du saknar',catTop:'Toppkonkurrenter i området',catAll:'Tillgängliga kategorier i området',cat:'Kategori',usedBy:'Används av',youHave:'Har du?',primary:'Primär kat.',secondary:'Sekundära kat.',photos:'Foton',web:'Webb',reco:'Rekommendation',recPrimary:'Rekommenderad primär kategori',recSecondary:'Föreslagna sekundära kategorier',recTitle:'Sökord i titeln',recText:'Överväg att lägga till specialitet eller område i titeln om det passar',competitors:'konkurrent(er)',noCatData:'Ingen kategoridata kom tillbaka i vanliga resultatlistan. Rankingen är fortfarande korrekt.',checklist:'Checklista för profiloptimering',step:'Steg',item:'Punkt',status:'Status',action:'Åtgärd krävs',cl:{phone:'Telefon',address:'Adress',hours:'Öppettider',description:'Företagsbeskrivning',openingDate:'Öppningsdatum',serviceAreas:'Serviceområden',photos:'Foton (minst 10)',logo:'Logotyp',services:'Tjänster / Produkter',posts:'Inlägg / Uppdateringar',primaryCategory:'Primär kategori',secondaryCategories:'Sekundära kategorier (minst 3)',titleKeywords:'Sökord i titeln',reviews:'Antal recensioner',configured:'Konfigurerat',missing:'SAKNAS',empty:'TOM',none:'INGEN',noAddress:'INGEN ADRESS',noDate:'EJ KONFIGURERAT',noAreas:'INGA OMRÅDEN',noLogo:'INGEN LOGO',noPosts:'INGA INLÄGG',noSecondary:'INGEN',titleNoKeyword:'Varken kategori eller område i titel',addPhone:'Lägg till telefonnummer',addAddress:'Lägg till korrekt adress',addHours:'Ange öppettider',addDescription:'Skriv en beskrivning på minst 200 tecken',addDate:'Lägg till öppningsdatum — Google visar “X år i branschen”',addAreas:'Lägg till serviceområden där ni arbetar',addPhotos:'Ladda upp fler foton — konkurrenter har ofta 30+',addLogo:'Lägg till professionell logotyp — 720×720px PNG',addServices:'Lägg till tjänster/produkter',addPosts:'Lägg till regelbundna inlägg med bilder och nyheter',addSecondary:'Lägg till 3–5 relevanta sekundära kategorier',addTitleKeywords:'Överväg att lägga till specialitet eller område i titeln',moreReviews:'Sätt upp automatiskt system för recensionsförfrågningar',reviewsLow:'(få)'}}
+en:{keyword:kw=>`// keyword: "${kw}"`,ranked:(p,t,kw)=>`Ranked ${p} out of ${t} results for "${kw}"`,invisible:(t,kw)=>`Not visible in the top ${t} results for "${kw}"`,notFound:n=>`${n} — not found in top results`,you:'◀ YOU',bizOf:(i,t)=>`// business ${i} of ${t}`,summary:(n,k,ts)=>`// ${n} businesses · ${k} keywords · ${ts}`,yes:'Yes',no:'No',noRating:'No rating',reviews:'Reviews',rating:'Rating',website:'Website',phone:'Phone',hours:'Hours',categories:'Categories',metric:'Metric',vsTitle:'Your profile vs #1',checklist:'Profile Optimization Checklist',step:'Step',item:'Item',status:'Status',action:'Action required',cl:{phone:'Phone',address:'Address',hours:'Opening hours',description:'Business description',openingDate:'Opening date',serviceAreas:'Service areas',photos:'Photos (minimum 10)',logo:'Logo',services:'Services / Products',posts:'Posts / Updates',primaryCategory:'Primary category',secondaryCategories:'Secondary categories (min 3)',titleKeywords:'Keywords in title',reviews:'Reviews count',configured:'Configured',missing:'MISSING',empty:'EMPTY',none:'NONE',noAddress:'NO ADDRESS',noDate:'NOT CONFIGURED',noAreas:'NO AREAS',noLogo:'NO LOGO',noPosts:'NO POSTS',noSecondary:'NONE',titleNoKeyword:'No category or area in title',addPhone:'Add phone number to profile',addAddress:'Add correct address',addHours:'Set opening hours',addDescription:'Write description of at least 200 characters',addDate:'Add opening date — Google shows “X years in business”',addAreas:'Add service areas where you work',addPhotos:'Upload more photos — competitors often have 30+',addLogo:'Add professional logo — 720×720px PNG',addServices:'Add services/products',addPosts:'Add regular posts with photos and updates',addSecondary:'Add 3–5 relevant secondary categories',addTitleKeywords:'Consider adding specialty or area to the title',moreReviews:'Need 10+ reviews — set up review request system',reviewsLow:'(low)'}},
+es:{keyword:kw=>`// palabra clave: "${kw}"`,ranked:(p,t,kw)=>`Posición ${p} de ${t} resultados para "${kw}"`,invisible:(t,kw)=>`No visible en el top ${t} para "${kw}"`,notFound:n=>`${n} — no encontrado en los resultados`,you:'◀ USTED',bizOf:(i,t)=>`// negocio ${i} de ${t}`,summary:(n,k,ts)=>`// ${n} negocios · ${k} palabras clave · ${ts}`,yes:'Sí',no:'No',noRating:'Sin calificación',reviews:'Reseñas',rating:'Calificación',website:'Sitio web',phone:'Teléfono',hours:'Horarios',categories:'Categorías',metric:'Métrica',vsTitle:'Tu perfil vs #1',checklist:'Checklist de optimización del perfil',step:'Paso',item:'Ítem',status:'Estado',action:'Acción requerida',cl:{phone:'Teléfono',address:'Dirección',hours:'Horarios de atención',description:'Descripción del negocio',openingDate:'Fecha de apertura',serviceAreas:'Áreas de servicio',photos:'Fotos (mínimo 10)',logo:'Logo',services:'Servicios / Productos',posts:'Publicaciones / Actualizaciones',primaryCategory:'Categoría principal',secondaryCategories:'Categorías secundarias (mín 3)',titleKeywords:'Keywords en el título',reviews:'Cantidad de reseñas',configured:'Configurado',missing:'VACÍA',empty:'VACÍA',none:'NINGUNA',noAddress:'SIN DIRECCIÓN',noDate:'NO CONFIGURADA',noAreas:'SIN ÁREAS',noLogo:'SIN LOGO',noPosts:'SIN PUBLICACIONES',noSecondary:'NINGUNA',titleNoKeyword:'Ni categoría ni barrio en título',addPhone:'Agregar teléfono al perfil',addAddress:'Agregar dirección correcta',addHours:'Configurar horarios de atención',addDescription:'Escribir descripción de mín 200 caracteres',addDate:'Agregar fecha — Google muestra “X años en el negocio”',addAreas:'Agregar áreas de servicio donde atendés',addPhotos:'Subir más fotos — competidores tienen 30+',addLogo:'Agregar logo profesional — 720×720px PNG',addServices:'Agregar servicios/productos',addPosts:'Agregar publicaciones regulares con fotos y novedades',addSecondary:'Agregar 3–5 categorías secundarias relevantes',addTitleKeywords:'Considerar agregar especialidad o barrio al título',moreReviews:'Configurar sistema de solicitud automática de reseñas',reviewsLow:'(pocas)'}},
+sv:{keyword:kw=>`// sökord: "${kw}"`,ranked:(p,t,kw)=>`Placering ${p} av ${t} resultat för "${kw}"`,invisible:(t,kw)=>`Inte synlig i topp ${t} för "${kw}"`,notFound:n=>`${n} — hittades inte i resultaten`,you:'◀ DU',bizOf:(i,t)=>`// företag ${i} av ${t}`,summary:(n,k,ts)=>`// ${n} företag · ${k} sökord · ${ts}`,yes:'Ja',no:'Nej',noRating:'Inget betyg',reviews:'Recensioner',rating:'Betyg',website:'Hemsida',phone:'Telefon',hours:'Öppettider',categories:'Kategorier',metric:'Mätvärde',vsTitle:'Din profil vs #1',checklist:'Checklista för profiloptimering',step:'Steg',item:'Punkt',status:'Status',action:'Åtgärd krävs',cl:{phone:'Telefon',address:'Adress',hours:'Öppettider',description:'Företagsbeskrivning',openingDate:'Öppningsdatum',serviceAreas:'Serviceområden',photos:'Foton (minst 10)',logo:'Logotyp',services:'Tjänster / Produkter',posts:'Inlägg / Uppdateringar',primaryCategory:'Primär kategori',secondaryCategories:'Sekundära kategorier (minst 3)',titleKeywords:'Sökord i titeln',reviews:'Antal recensioner',configured:'Konfigurerat',missing:'SAKNAS',empty:'TOM',none:'INGEN',noAddress:'INGEN ADRESS',noDate:'EJ KONFIGURERAT',noAreas:'INGA OMRÅDEN',noLogo:'INGEN LOGO',noPosts:'INGA INLÄGG',noSecondary:'INGEN',titleNoKeyword:'Varken kategori eller område i titel',addPhone:'Lägg till telefonnummer',addAddress:'Lägg till korrekt adress',addHours:'Ange öppettider',addDescription:'Skriv en beskrivning på minst 200 tecken',addDate:'Lägg till öppningsdatum — Google visar “X år i branschen”',addAreas:'Lägg till serviceområden där ni arbetar',addPhotos:'Ladda upp fler foton — konkurrenter har ofta 30+',addLogo:'Lägg till professionell logotyp — 720×720px PNG',addServices:'Lägg till tjänster/produkter',addPosts:'Lägg till regelbundna inlägg med bilder och nyheter',addSecondary:'Lägg till 3–5 relevanta sekundära kategorier',addTitleKeywords:'Överväg att lägga till specialitet eller område i titeln',moreReviews:'Sätt upp automatiskt system för recensionsförfrågningar',reviewsLow:'(få)'}}
 };
 
 function getLang(){return T[document.getElementById('reportLang').value]||T.sv}
@@ -242,23 +229,10 @@ function getCategories(item){
   add(item.categoryName); add(item.category);
   return [...new Set(out.filter(Boolean))];
 }
-
 function badgeOk(v){return `<span class="cl-ok">✓ ${v}</span>`}
 function badgeBad(v){return `<span class="cl-bad">✗ ${v}</span>`}
 
 function buildChecklist(you,t,place){
-  const adv=document.getElementById('advancedAudit')?.checked;
-  if(!adv){
-    const rows=[
-      ['A1',t.cl.phone,you.phone?badgeOk(t.cl.configured):badgeBad(t.cl.missing),you.phone?'—':t.cl.addPhone],
-      ['A2',t.cl.hours,you.hours?badgeOk(t.cl.configured):badgeBad(t.cl.missing),you.hours?'—':t.cl.addHours],
-      ['A3',t.categories,you.categories?.length?badgeOk(esc(you.categories.join(', '))):badgeBad(t.cl.none),you.categories?.length?'—':t.cl.addSecondary],
-      ['A4',t.rating,you.rating?badgeOk('★ '+Number(you.rating).toFixed(1)):badgeBad(t.noRating),you.rating?'—':'—'],
-      ['A5',t.reviews,(you.reviews>=10)?badgeOk(you.reviews):badgeBad((you.reviews||0)+' '+t.cl.reviewsLow),(you.reviews>=10)?'—':t.cl.moreReviews]
-    ];
-    return rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="cl-action">${r[3]}</td></tr>`).join('');
-  }
-
   const cats=you.categories||[];
   const title=String(place?.title||place?.name||you.name||'');
   const titleHasCat=cats.some(c=>normalize(title).includes(normalize(c)));
@@ -280,38 +254,6 @@ function buildChecklist(you,t,place){
     ['C1',t.cl.reviews,(you.reviews>=10)?badgeOk(you.reviews):badgeBad((you.reviews||0)+' '+t.cl.reviewsLow),(you.reviews>=10)?'—':t.cl.moreReviews]
   ];
   return rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="cl-action">${r[3]}</td></tr>`).join('');
-}
-
-function buildCategoryAnalysis(ranked,target,t){
-  if(!document.getElementById('advancedAudit')?.checked)return '';
-  const you=target||{categories:[]};
-  const yourNorm=new Set((you.categories||[]).map(c=>normalize(c)));
-  const competitors=ranked.filter(r=>!r.isTarget).slice(0,20);
-  const freq={}, example={};
-  for(const r of competitors){
-    for(const c of r.categories||[]){
-      const k=normalize(c); if(!k)continue;
-      freq[k]=(freq[k]||0)+1; if(!example[k])example[k]=c;
-    }
-  }
-  const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]).map(([k,count])=>({k,name:example[k],count,has:yourNorm.has(k)}));
-  const missing=sorted.filter(c=>!c.has);
-  const primary=(you.categories||[])[0]||sorted[0]?.name||'—';
-  const secondary=missing.slice(0,4).map(c=>c.name);
-
-  if(!sorted.length){
-    return `<div class="comparison-title">${t.catScan}</div><div class="empty-note">${t.noCatData}</div>`;
-  }
-
-  const missingRows=(missing.slice(0,8).map(c=>`<tr><td>→ ${esc(c.name)}</td><td>${c.count} ${t.competitors}</td></tr>`).join(''))||'<tr><td>—</td><td>—</td></tr>';
-  const compRows=competitors.slice(0,10).map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.name)}</td><td>${esc((r.categories||[])[0]||'—')}</td><td>${esc((r.categories||[]).slice(1,4).join(', ')||'—')}</td><td>${r.rating!=null?'★ '+Number(r.rating).toFixed(1):'—'}</td><td>${r.reviews??'—'}</td><td>${r.raw?.imageUrls?.length??r.raw?.imagesCount??'—'}</td><td>${r.website?badgeOk(t.yes):badgeBad(t.no)}</td></tr>`).join('');
-  const allRows=sorted.slice(0,12).map(c=>`<tr><td>${esc(c.name)}</td><td>${c.count} ${t.competitors}</td><td>${c.has?badgeOk(t.yes):badgeBad(t.no)}</td></tr>`).join('');
-
-  return `<div class="comparison-title">${t.catScan}</div>
-  <div class="section-title">${t.catMissing}</div><table><thead><tr><th>${t.cat}</th><th>${t.usedBy}</th></tr></thead><tbody>${missingRows}</tbody></table>
-  <div class="section-title">${t.catTop}</div><table><thead><tr><th>#</th><th>Name</th><th>${t.primary}</th><th>${t.secondary}</th><th>★</th><th>${t.reviews}</th><th>${t.photos}</th><th>${t.web}</th></tr></thead><tbody>${compRows}</tbody></table>
-  <div class="section-title">${t.catAll}</div><table><thead><tr><th>${t.cat}</th><th>${t.usedBy}</th><th>${t.youHave}</th></tr></thead><tbody>${allRows}</tbody></table>
-  <div class="reco"><strong>${t.reco}</strong><br>${t.recPrimary}: ${esc(primary)}<br>${t.recSecondary}: ${secondary.length?esc(secondary.join(', ')):'—'}<br>${t.recTitle}: ${t.recText}</div>`;
 }
 
 async function runCheck(){
@@ -347,10 +289,6 @@ async function runCheck(){
 
       setStatus(`Business ${i+1}/${businesses.length}: searching ${searchQueries.length} queries…`);
 
-      /* IMPORTANT:
-         Advanced Audit must NEVER change the Apify crawl.
-         It only changes how we render the report after stable ranking data returns.
-      */
       const input={
         searchStringsArray:searchQueries,
         lat,
@@ -382,8 +320,6 @@ async function runCheck(){
             if(ss.includes(qn)||qn.includes(ss)||ss.includes(kn)){kw=keywords[qi];break}
           }
         }
-
-        /* Fallback: if Apify does not send searchString, one-keyword runs still work. */
         if(kw){
           byKeyword[kw].push(item);
         } else if(keywords.length===1){
@@ -400,7 +336,7 @@ async function runCheck(){
 function openBizWindow(bi){
   const el=document.getElementById(`biz-block-${bi}`); if(!el)return;
   const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rank Report</title><style>body{font-family:Arial,sans-serif;padding:24px;max-width:850px;margin:auto;color:#111}.biz-pdf-btn{display:none}.rank-hero{border:1px solid #ddd;padding:16px;margin:10px 0;display:flex;gap:20px}.rank-number{font-size:48px;font-weight:bold}.good{color:#4a7c00}.mid{color:#b36200}.bad{color:#c00}.result-row{display:flex;gap:12px;border-bottom:1px solid #eee;padding:7px}.result-name{flex:1}.is-target{background:#f5ffe0}.result-pos{width:30px}table{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px}th,td{border-bottom:1px solid #eee;padding:7px;text-align:left}th{background:#f5f5f5}.cl-ok{color:#4a7c00}.cl-bad{color:#c00}.reco{background:#eefaf0;padding:12px;margin-top:10px}</style></head><body>${el.innerHTML}</body></html>`);
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rank Report</title><style>body{font-family:Arial,sans-serif;padding:24px;max-width:850px;margin:auto;color:#111}.biz-pdf-btn{display:none}.rank-hero{border:1px solid #ddd;padding:16px;margin:10px 0;display:flex;gap:20px}.rank-number{font-size:48px;font-weight:bold}.good{color:#4a7c00}.mid{color:#b36200}.bad{color:#c00}.result-row{display:flex;gap:12px;border-bottom:1px solid #eee;padding:7px}.result-name{flex:1}.is-target{background:#f5ffe0}.result-pos{width:30px}table{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px}th,td{border-bottom:1px solid #eee;padding:7px;text-align:left}th{background:#f5f5f5}.cl-ok{color:#4a7c00}.cl-bad{color:#c00}</style></head><body>${el.innerHTML}</body></html>`);
   win.document.close();
 }
 
@@ -425,7 +361,7 @@ function renderResults(allResults){
       const rankDisplay=pos?`#${pos}`:'20+';
 
       let comp='';
-      if(number1&&(!target||target.pos!==1)){
+      if(number1){
         const you=target||{name:business.name,rating:null,reviews:null,website:false,phone:false,hours:false,categories:[],raw:{}};
         const val=(ok,text)=>`<span class="${ok?'badge badge-good':'badge badge-bad'}">${text}</span>`;
         comp=`<div class="section-title">${t.checklist}</div><table><thead><tr><th>${t.step}</th><th>${t.item}</th><th>${t.status}</th><th>${t.action}</th></tr></thead><tbody>${buildChecklist(you,t,you.raw)}</tbody></table>
@@ -433,6 +369,8 @@ function renderResults(allResults){
         <tr><td>${t.rating}</td><td>${you.rating?val(true,'★ '+Number(you.rating).toFixed(1)):val(false,t.noRating)}</td><td>${number1.rating?'★ '+Number(number1.rating).toFixed(1):'—'}</td></tr>
         <tr><td>${t.reviews}</td><td>${you.reviews??0}</td><td>${number1.reviews??'—'}</td></tr>
         <tr><td>${t.website}</td><td>${you.website?t.yes:t.no}</td><td>${number1.website?t.yes:t.no}</td></tr>
+        <tr><td>${t.phone}</td><td>${you.phone?t.yes:t.no}</td><td>${number1.phone?t.yes:t.no}</td></tr>
+        <tr><td>${t.hours}</td><td>${you.hours?t.yes:t.no}</td><td>${number1.hours?t.yes:t.no}</td></tr>
         <tr><td>${t.categories}</td><td>${esc(you.categories.join(', ')||'—')}</td><td>${esc(number1.categories.join(', ')||'—')}</td></tr>
         </tbody></table>`;
       }
@@ -440,7 +378,7 @@ function renderResults(allResults){
       html+=`<div class="keyword-section"><div class="keyword-label">${t.keyword(kw)}</div>
       <div class="rank-hero"><div class="rank-number ${rankClass}">${rankDisplay}</div><div><div class="rank-name">${esc(business.name)}</div><div class="rank-desc">${pos?t.ranked(pos,total,kw):t.invisible(total,kw)}</div></div></div>
       <div class="results-list">${ranked.map(r=>`<div class="result-row${r.isTarget?' is-target':''}"><span class="result-pos">${r.pos}</span><span class="result-name">${esc(r.name)}${r.isTarget?' '+t.you:''}</span><span class="result-rating">${r.rating?'★ '+Number(r.rating).toFixed(1)+(r.reviews?' ('+r.reviews+')':''):''}</span></div>`).join('')}${!target?`<div class="invisible">✕ ${esc(t.notFound(business.name))}</div>`:''}</div>
-      ${buildCategoryAnalysis(ranked,target,t)}${comp}</div>`;
+      ${comp}</div>`;
     }
     html+='</div>';
   }
