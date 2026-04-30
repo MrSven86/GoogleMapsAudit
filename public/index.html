@@ -970,7 +970,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
       if (advancedOn && businesses.length === 1) {
         setStatus('Advanced — scraping full profile…');
         const profRun = await startActor(token, {
-          startUrls: [{ url: businesses[0].url }],
+          startUrls: [{ url: businesses[0].url.startsWith('http') ? businesses[0].url : 'https://' + businesses[0].url }],
           maxCrawledPlacesPerSearch: 1,
           language: 'en',
           maxReviews: 0,
