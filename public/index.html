@@ -514,18 +514,7 @@ https://www.google.com/maps/place/Peluqueria+Ana/@-34.567,-70.123,15z/…"></tex
         <div class="hint">// all keywords run in one batch — much faster</div>
         <div class="keywords-grid" id="keywordTags"></div>
       </div>
-      <div class="field" style="margin-top:20px;">
-        <label>Search From (optional)</label>
-        <select id="searchFrom" onchange="toggleCityField()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
-          <option value="pin">📍 PIN — search from business location</option>
-          <option value="city">🏙 City — search from city center</option>
-          <option value="neighborhood">🏘 Neighborhood — search from neighborhood</option>
-        </select>
-        <div id="cityField" style="display:none;margin-top:8px;">
-          <input type="text" id="cityName" placeholder="e.g. Spokane, Buenos Aires, Palermo…">
-          <div class="hint">// we'll geocode this and search from there</div>
-        </div>
-      </div>
+
       <div class="field" style="margin-top:20px;">
         <label>Report Language</label>
         <select id="reportLang" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;width:100%;outline:none;">
