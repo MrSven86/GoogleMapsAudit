@@ -39,14 +39,16 @@ th{background:#1a1a1a;color:var(--muted);text-align:left;padding:9px}
 td{border-top:1px solid var(--border);padding:9px;vertical-align:top}
 .good{color:var(--accent);font-weight:bold}.bad{color:var(--red);font-weight:bold}.mid{color:var(--orange);font-weight:bold}
 .url{color:var(--muted);font-size:11px;word-break:break-all}
-.reco{background:rgba(200,241,53,.08);border:1px solid rgba(200,241,53,.22);padding:14px;margin:10px 0;border-radius:4px;font-family:'DM Mono',monospace;font-size:13px;line-height:1.6}
-pre{background:#050505;border:1px solid var(--border);padding:18px;overflow-x:auto;font-size:12px;line-height:1.5;border-radius:3px;max-height:520px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+pre{background:#050505;border:1px solid var(--border);padding:18px;overflow-x:auto;font-size:12px;line-height:1.5;border-radius:3px;max-height:560px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
 .section-card{background:var(--surface2);border:1px solid var(--border);padding:16px;margin:12px 0;border-radius:3px}
 .section-card .num{display:inline-block;background:var(--accent);color:#000;font-weight:800;padding:2px 9px;border-radius:3px;font-size:11px;margin-right:8px}
-.section-card h4{margin:0 0 6px;font-family:Syne,sans-serif;font-size:18px}
-.section-card .meta{color:var(--muted);font-size:11px;margin:6px 0}
+.section-card .validated{display:inline-block;background:rgba(200,241,53,.15);color:var(--accent);font-weight:600;padding:2px 8px;border-radius:3px;font-size:10px;margin-left:8px;text-transform:uppercase;letter-spacing:.1em}
+.section-card .added{display:inline-block;background:rgba(255,179,71,.12);color:var(--orange);font-weight:600;padding:2px 8px;border-radius:3px;font-size:10px;margin-left:8px;text-transform:uppercase;letter-spacing:.1em}
+.section-card h4{margin:0 0 6px;font-family:Syne,sans-serif;font-size:18px;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.section-card .meta{color:var(--muted);font-size:12px;margin:6px 0;line-height:1.5}
 .section-card .copy-starter{background:#050505;border-left:3px solid var(--accent);padding:10px 14px;margin:10px 0;font-style:italic;color:#ddd;font-size:13px;line-height:1.5}
 .tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);padding:3px 8px;font-size:11px;border-radius:3px;margin:2px 4px 2px 0}
+.color-swatch{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--border);vertical-align:middle;margin-right:5px}
 .competitor-block{background:var(--surface2);border:1px solid var(--border);padding:18px;margin:14px 0;border-radius:3px}
 .competitor-block .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
 .competitor-block .head .pos{background:var(--accent);color:#000;padding:3px 10px;font-weight:800;border-radius:3px;font-size:12px}
@@ -56,7 +58,7 @@ pre{background:#050505;border:1px solid var(--border);padding:18px;overflow-x:au
 .tab-content{display:none;padding-top:18px}
 .tab-content.active{display:block}
 .copy-bar{display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--border);padding:10px 14px;border-radius:3px 3px 0 0;border-bottom:0}
-.copy-bar+pre{border-radius:0 0 3px 3px}
+.copy-bar+pre{border-radius:0 0 3px 3px;margin-top:0}
 @media(max-width:700px){.grid{grid-template-columns:1fr}h1{font-size:42px}}
 </style>
 </head>
@@ -66,17 +68,11 @@ pre{background:#050505;border:1px solid var(--border);padding:18px;overflow-x:au
 <p class="sub">// top 5 + djup strukturanalys + Lovable-redo blueprint</p>
 
 <div class="card">
-  <div class="grid">
-    <div class="field">
-      <label>Apify API Token</label>
-      <input id="token" type="password" placeholder="apify_api_xxxx">
-    </div>
-    <div class="field">
-      <label>Anthropic API Key</label>
-      <input id="anthropicKey" type="password" placeholder="sk-ant-xxxx">
-    </div>
+  <div class="field">
+    <label>Apify API Token</label>
+    <input id="token" type="password" placeholder="apify_api_xxxx">
   </div>
-  <div class="hint">Båda nycklar krävs. Lagras endast i din webbläsare under sessionen.</div>
+  <div class="hint">Lagras endast i din webbläsare under sessionen.</div>
 </div>
 
 <div class="card">
@@ -139,12 +135,11 @@ async function runAudit(){
   document.getElementById('results').style.display='none';
   const btn=document.getElementById('runBtn');
   btn.disabled=true;
-  showStatus('Kör… 1) Hämtar Google top 5  2) Auditar 6 sidor sekventiellt  3) LLM-strukturanalys per konkurrent  4) Syntetiserar blueprint. Tar ~2 min.');
+  showStatus('Kör… 1) Hämtar Google top 5  2) Auditar 6 sidor sekventiellt  3) Bygger blueprint från frekvensanalys. Tar 1–2 min.');
 
   try{
     const payload={
       token:document.getElementById('token').value.trim(),
-      anthropicKey:document.getElementById('anthropicKey').value.trim(),
       url:document.getElementById('url').value.trim(),
       keyword:document.getElementById('keyword').value.trim(),
       city:document.getElementById('city').value.trim(),
@@ -198,29 +193,36 @@ function downloadJSON(){
   a.click();
 }
 
+function colorChip(c){
+  return `<span class="tag"><span class="color-swatch" style="background:${esc(c)}"></span>${esc(c)}</span>`;
+}
+
 function render(data){
   const you=data.you;
   const comps=data.competitors||[];
-  const bp=data.blueprint||{};
-  const summary=bp.summary||{};
-  const blueprint=bp.blueprint||{};
-  const lovablePrompt=bp.lovable_prompt||'';
+  const summary=data.summary||{};
+  const blueprint=data.blueprint||{};
+  const lovablePrompt=data.lovablePrompt||'';
+  const halfThreshold=Math.ceil((summary.competitorCount||5)/2);
 
-  const sectionsHTML=(blueprint.sections||[]).map(s=>`
+  const sectionsHTML=(blueprint.sections||[]).map(s=>{
+    const validated=s.competitors_have_this>=halfThreshold;
+    const badge=validated?'<span class="validated">✓ validerad</span>':'<span class="added">○ tillagd</span>';
+    return `
     <div class="section-card">
-      <h4><span class="num">${s.order??'?'}</span>${esc(s.name||'')}</h4>
-      <div class="meta">${esc(s.purpose||'')}</div>
-      <div><strong>H2:</strong> ${esc(s.heading||'—')}</div>
-      ${s.subheadings&&s.subheadings.length?`<div><strong>H3:</strong> ${s.subheadings.map(h=>`<span class="tag">${esc(h)}</span>`).join('')}</div>`:''}
-      <div class="meta" style="margin-top:8px"><strong>Innehåll:</strong> ${esc(s.content_outline||'')}</div>
+      <h4><span class="num">${s.order}</span>${esc(s.name)}${badge}<span style="font-size:11px;color:var(--muted);margin-left:8px">${s.competitors_have_this}/${summary.competitorCount} top-sidor</span></h4>
+      <div class="meta"><strong>Syfte:</strong> ${esc(s.purpose)}</div>
+      <div><strong>H2:</strong> ${esc(s.heading)}</div>
+      ${s.competitor_heading_examples&&s.competitor_heading_examples.length?`<div class="meta"><strong>Konkurrent-rubriker:</strong> ${s.competitor_heading_examples.map(h=>`<span class="tag">${esc(h)}</span>`).join('')}</div>`:''}
+      ${s.subheadings&&s.subheadings.length?`<div class="meta"><strong>H3:</strong> ${s.subheadings.map(h=>`<span class="tag">${esc(h)}</span>`).join('')}</div>`:''}
+      <div class="meta"><strong>Innehåll:</strong> ${esc(s.content_outline)}</div>
       ${s.copy_starter?`<div class="copy-starter">"${esc(s.copy_starter)}"</div>`:''}
       ${s.cta&&s.cta.present?`<div class="meta"><strong>CTA:</strong> "${esc(s.cta.text||'')}" → <code>${esc(s.cta.target||'')}</code></div>`:''}
       ${s.design_notes?`<div class="meta"><strong>Design:</strong> ${esc(s.design_notes)}</div>`:''}
     </div>
-  `).join('');
+  `;}).join('');
 
-  const competitorsHTML=comps.map((c,i)=>{
-    const sa=(data.structureAnalyses||[])[i];
+  const competitorsHTML=comps.map(c=>{
     const auditOk=!!c.audit;
     return `
     <div class="competitor-block">
@@ -229,17 +231,13 @@ function render(data){
         <a href="${esc(c.url)}" target="_blank" class="url">${esc(c.url)} ↗</a>
       </div>
       ${!auditOk?`<div class="meta bad">Crawl misslyckades: ${esc(c.error||'okänd')}</div>`:`
-        <div class="meta">${c.audit.wordCount} ord · H1: ${mark(c.audit.hasH1)} · Schema: ${mark(c.audit.hasSchema)} · Phone: ${mark(c.audit.hasPhone)} · CTAs: ${c.audit.ctas?.length||0}</div>
-        ${sa&&!sa.error?`
-          <div style="margin-top:10px"><strong>Värdeerbjudande:</strong> ${esc(sa.value_proposition||'—')}</div>
-          <div class="meta"><strong>Tonalitet:</strong> ${esc(sa.tonality||'—')} · <strong>Copy-stil:</strong> ${esc(sa.copy_style||'—')}</div>
-          <div style="margin-top:8px"><strong>Sektionsordning:</strong> ${(sa.section_order||[]).map(s=>`<span class="tag">${esc(s.name)}</span>`).join('')}</div>
-          ${sa.primary_ctas?`<div class="meta"><strong>CTAs:</strong> ${sa.primary_ctas.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-          ${sa.trust_signals?`<div class="meta"><strong>Trust:</strong> ${sa.trust_signals.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-          ${sa.local_signals?`<div class="meta"><strong>Lokalt:</strong> ${sa.local_signals.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-          ${sa.what_this_page_does_well?`<div class="meta"><strong>Bra:</strong> ${sa.what_this_page_does_well.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-          ${sa.what_this_page_does_poorly?`<div class="meta"><strong>Svagheter:</strong> ${sa.what_this_page_does_poorly.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-        `:`<div class="meta bad">LLM-analys saknas: ${esc(sa?.error||'')}</div>`}
+        <div class="meta">${c.audit.wordCount} ord · H1: ${mark(c.audit.hasH1)} · Schema: ${mark(c.audit.hasSchema)} · Phone: ${mark(c.audit.hasPhone)} · CTAs: ${c.audit.ctas?.length||0} · FAQ: ${c.audit.faq?.detailsBlocks?.length||c.audit.faq?.jsonLdQuestions?.length||0}</div>
+        <div style="margin-top:10px"><strong>H1:</strong> ${esc(c.audit.h1||'—')}</div>
+        ${c.audit.sections&&c.audit.sections.length?`<div class="meta" style="margin-top:8px"><strong>Sektionsordning:</strong> ${c.audit.sections.filter(s=>!['navigation','footer','header','content'].includes(s.type)).map(s=>`<span class="tag">${esc(s.type)}</span>`).join('')}</div>`:''}
+        ${c.audit.schemaTypes&&c.audit.schemaTypes.length?`<div class="meta"><strong>Schema:</strong> ${c.audit.schemaTypes.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+        ${c.audit.ctas&&c.audit.ctas.length?`<div class="meta"><strong>CTAs:</strong> ${c.audit.ctas.slice(0,8).map(t=>`<span class="tag">${esc(t.text)}</span>`).join('')}</div>`:''}
+        ${c.audit.trustSignals&&c.audit.trustSignals.length?`<div class="meta"><strong>Trust:</strong> ${c.audit.trustSignals.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+        ${c.audit.localSignals&&c.audit.localSignals.length?`<div class="meta"><strong>Lokalt:</strong> ${c.audit.localSignals.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
       `}
     </div>
     `;
@@ -272,22 +270,21 @@ function render(data){
     <div class="section">
       <h2>Blueprint</h2>
       <div class="card">
-        <div><strong>Page title:</strong> ${esc(blueprint.page_title||'—')}</div>
+        <div><strong>&lt;title&gt;:</strong> ${esc(blueprint.page_title||'—')}</div>
         <div class="meta"><strong>Meta description:</strong> ${esc(blueprint.meta_description||'—')}</div>
         <div><strong>H1:</strong> ${esc(blueprint.h1||'—')}</div>
-        <div class="meta"><strong>Mål-ordmängd:</strong> ${blueprint.target_word_count||'—'}</div>
-        ${blueprint.ctas?`<div class="meta"><strong>Primär CTA:</strong> ${esc(blueprint.ctas.primary||'')} · <strong>Sekundär:</strong> ${esc(blueprint.ctas.secondary||'')} · <strong>Telefon:</strong> ${esc(blueprint.ctas.phone_format||'')}</div>`:''}
+        <div class="meta"><strong>Mål-ordmängd:</strong> ${blueprint.target_word_count||'—'} ord (top 5 snitt: ${summary.avgWords||'—'})</div>
+        <div class="meta"><strong>Primär CTA:</strong> "${esc(blueprint.primary_cta||'')}" · <strong>Sekundär:</strong> "${esc(blueprint.secondary_cta||'')}"</div>
         ${blueprint.schema_to_implement?`<div class="meta"><strong>Schema:</strong> ${blueprint.schema_to_implement.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-        ${blueprint.trust_signals_to_include?`<div class="meta"><strong>Trust signals:</strong> ${blueprint.trust_signals_to_include.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-        ${blueprint.local_signals_to_include?`<div class="meta"><strong>Lokala signaler:</strong> ${blueprint.local_signals_to_include.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-        ${blueprint.internal_link_targets?`<div class="meta"><strong>Interna länkar:</strong> ${blueprint.internal_link_targets.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+        ${blueprint.color_palette?`<div class="meta"><strong>Färger på top 5:</strong> ${blueprint.color_palette.map(c=>colorChip(c)).join('')}</div>`:''}
+        ${blueprint.trust_signals_to_include&&blueprint.trust_signals_to_include.length?`<div class="meta"><strong>Trust signals:</strong> ${blueprint.trust_signals_to_include.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
       </div>
 
       <h3>Sektioner i ordning</h3>
       ${sectionsHTML||'<div class="meta">Inga sektioner returnerade.</div>'}
 
-      ${blueprint.faq_questions?`
-        <h3>Föreslagna FAQ-frågor</h3>
+      ${blueprint.faq_questions&&blueprint.faq_questions.length?`
+        <h3>Föreslagna FAQ-frågor (från konkurrenter)</h3>
         <div class="card">${blueprint.faq_questions.map(q=>`<div>• ${esc(q)}</div>`).join('')}</div>
       `:''}
     </div>
@@ -301,29 +298,28 @@ function render(data){
         <div style="color:var(--muted);font-size:11px">PROMPT</div>
         <button class="ghost" data-copy-for="${lovablePromptId}" onclick="copyText('${lovablePromptId}')">Kopiera</button>
       </div>
-      <pre id="${lovablePromptId}" data-raw="${esc(lovablePrompt)}">${esc(lovablePrompt||'(ingen prompt returnerades)')}</pre>
+      <pre id="${lovablePromptId}" data-raw="${esc(lovablePrompt)}">${esc(lovablePrompt||'(ingen prompt genererades)')}</pre>
     </div>
   </div>
 
   <div class="tab-content" data-tab-content="main" data-content="summary">
     <div class="section">
-      <h2>Summary</h2>
+      <h2>Vad top 5 har gemensamt</h2>
       <div class="card">
-        ${summary.what_top_pages_have_in_common?`<h3>Vad top-sidorna har gemensamt</h3><ul>${summary.what_top_pages_have_in_common.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
-        ${summary.common_section_order?`<h3>Vanligaste sektionsordningen</h3><div>${summary.common_section_order.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}</div>`:''}
-        ${summary.average_word_count?`<div class="meta" style="margin-top:14px">Genomsnittlig ordmängd: <strong>${summary.average_word_count}</strong></div>`:''}
-        ${summary.common_schema_types?`<div class="meta">Vanliga schema-typer: ${summary.common_schema_types.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-        ${summary.common_value_propositions?`<h3>Återkommande värdeerbjudanden</h3><ul>${summary.common_value_propositions.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
-        ${summary.common_trust_signals?`<h3>Återkommande trust signals</h3><ul>${summary.common_trust_signals.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
-        ${summary.common_local_signals?`<h3>Återkommande lokala signaler</h3><ul>${summary.common_local_signals.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
-        ${summary.what_no_one_is_doing?`<h3>Gap att exploatera</h3><ul>${summary.what_no_one_is_doing.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
+        <div class="meta"><strong>Genomsnittlig ordmängd:</strong> ${summary.avgWords||'—'}</div>
+        ${summary.commonSectionOrder&&summary.commonSectionOrder.length?`<div class="meta" style="margin-top:14px"><strong>Vanligaste sektionsordning:</strong></div><div>${summary.commonSectionOrder.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}</div>`:''}
+        ${summary.topCtas&&summary.topCtas.length?`<div class="meta" style="margin-top:14px"><strong>Mest använda CTAs:</strong></div><div>${summary.topCtas.map(c=>`<span class="tag">"${esc(c.text)}" (${c.count}x)</span>`).join('')}</div>`:''}
+        ${summary.commonSchema&&summary.commonSchema.length?`<div class="meta" style="margin-top:14px"><strong>Vanliga schema-typer:</strong></div><div>${summary.commonSchema.map(s=>`<span class="tag">${esc(s.type)} (${s.count}x)</span>`).join('')}</div>`:''}
+        ${summary.commonTrust&&summary.commonTrust.length?`<div class="meta" style="margin-top:14px"><strong>Återkommande trust signals:</strong></div><div>${summary.commonTrust.map(t=>`<span class="tag">${esc(t.signal)} (${t.count}x)</span>`).join('')}</div>`:''}
+        ${summary.topColors&&summary.topColors.length?`<div class="meta" style="margin-top:14px"><strong>Dominerande färger:</strong></div><div>${summary.topColors.map(c=>colorChip(c.color)).join('')}</div>`:''}
+        ${summary.gaps&&summary.gaps.length?`<div class="meta" style="margin-top:14px"><strong>Gap att exploatera (sektionstyper INGEN top-sida har):</strong></div><div>${summary.gaps.map(g=>`<span class="tag">${esc(g)}</span>`).join('')}</div>`:''}
       </div>
     </div>
   </div>
 
   <div class="tab-content" data-tab-content="main" data-content="competitors">
     <div class="section">
-      <h2>Top 5 konkurrenter</h2>
+      <h2>Top ${comps.length} konkurrenter</h2>
       ${competitorsHTML}
     </div>
   </div>
@@ -344,6 +340,7 @@ function render(data){
           <tr><th>Schema markup</th><td>${mark(you.audit.hasSchema)} ${you.audit.schemaTypes?.length?`(${you.audit.schemaTypes.join(', ')})`:''}</td></tr>
           <tr><th>Bilder med alt</th><td>${you.audit.imagesWithAlt} / ${you.audit.images}</td></tr>
           <tr><th>CTAs hittade</th><td>${you.audit.ctas?.length||0}</td></tr>
+          <tr><th>Trust signals</th><td>${you.audit.trustSignals?.length?you.audit.trustSignals.join(', '):'<span class="bad">Inga</span>'}</td></tr>
         </tbody>
       </table>
     </div>
