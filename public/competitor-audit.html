@@ -2,52 +2,95 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<title>Competitor SEO Audit</title>
+<title>Competitor SEO Blueprint</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0a;--surface:#141414;--border:#222;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Syne,sans-serif;padding:40px 20px}.container{max-width:900px;margin:auto}
-h1{font-size:56px;line-height:.95;margin:0 0 12px}h1 span{color:var(--accent)}p,label,.hint,input,button,textarea,select,td,th{font-family:'DM Mono',monospace}
-.sub{color:var(--muted);margin-bottom:32px}.card{background:var(--surface);border:1px solid var(--border);padding:24px;margin-bottom:16px;border-radius:4px}
+:root{--bg:#0a0a0a;--surface:#141414;--surface2:#1a1a1a;--border:#222;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Syne,sans-serif;padding:40px 20px}
+.container{max-width:1100px;margin:auto}
+h1{font-size:56px;line-height:.95;margin:0 0 12px}
+h1 span{color:var(--accent)}
+p,label,.hint,input,button,textarea,select,td,th,pre,code{font-family:'DM Mono',monospace}
+.sub{color:var(--muted);margin-bottom:32px}
+.card{background:var(--surface);border:1px solid var(--border);padding:24px;margin-bottom:16px;border-radius:4px}
 label{display:block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-input,select{width:100%;background:#050505;border:1px solid var(--border);color:var(--text);padding:12px;font-size:13px;border-radius:3px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{margin-bottom:18px}.hint{font-size:11px;color:var(--muted);margin-top:6px}
-button{width:100%;background:var(--accent);border:0;color:#000;padding:16px;font-weight:800;font-size:16px;cursor:pointer;border-radius:3px}
-button:disabled{opacity:.45}.status,.error{display:none;padding:14px 18px;border-radius:4px;margin:16px 0;font-family:'DM Mono',monospace;font-size:13px}
-.status{background:var(--surface);border:1px solid var(--border);color:var(--muted)}.error{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);color:var(--red)}
-.visible{display:block}.results{display:none;margin-top:34px}.hero{border:1px solid var(--border);background:var(--surface);padding:22px;border-radius:4px;margin-bottom:18px}
-.score{font-size:58px;font-weight:800;color:var(--accent)}.section{margin:28px 0}.section h2{font-size:24px;margin-bottom:10px}
-table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-size:12px}th{background:#1a1a1a;color:var(--muted);text-align:left;padding:9px}td{border-top:1px solid var(--border);padding:9px;vertical-align:top}
-.good{color:var(--accent);font-weight:bold}.bad{color:var(--red);font-weight:bold}.mid{color:var(--orange);font-weight:bold}.url{color:var(--muted);font-size:11px}
+input,select,textarea{width:100%;background:#050505;border:1px solid var(--border);color:var(--text);padding:12px;font-size:13px;border-radius:3px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{margin-bottom:18px}
+.hint{font-size:11px;color:var(--muted);margin-top:6px}
+button.primary{width:100%;background:var(--accent);border:0;color:#000;padding:16px;font-weight:800;font-size:16px;cursor:pointer;border-radius:3px;font-family:'DM Mono',monospace}
+button.primary:disabled{opacity:.45;cursor:not-allowed}
+button.ghost{background:transparent;border:1px solid var(--border);color:var(--text);padding:8px 14px;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:.1em;text-transform:uppercase;font-family:'DM Mono',monospace}
+button.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.status,.error{display:none;padding:14px 18px;border-radius:4px;margin:16px 0;font-family:'DM Mono',monospace;font-size:13px}
+.status{background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.error{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);color:var(--red)}
+.visible{display:block}
+.results{display:none;margin-top:34px}
+.hero{border:1px solid var(--border);background:var(--surface);padding:22px;border-radius:4px;margin-bottom:18px}
+.score{font-size:58px;font-weight:800;color:var(--accent);line-height:1}
+.section{margin:36px 0}
+.section h2{font-size:26px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px}
+.section h3{font-size:18px;margin:22px 0 10px;color:var(--accent)}
+table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-size:12px}
+th{background:#1a1a1a;color:var(--muted);text-align:left;padding:9px}
+td{border-top:1px solid var(--border);padding:9px;vertical-align:top}
+.good{color:var(--accent);font-weight:bold}.bad{color:var(--red);font-weight:bold}.mid{color:var(--orange);font-weight:bold}
+.url{color:var(--muted);font-size:11px;word-break:break-all}
 .reco{background:rgba(200,241,53,.08);border:1px solid rgba(200,241,53,.22);padding:14px;margin:10px 0;border-radius:4px;font-family:'DM Mono',monospace;font-size:13px;line-height:1.6}
+pre{background:#050505;border:1px solid var(--border);padding:18px;overflow-x:auto;font-size:12px;line-height:1.5;border-radius:3px;max-height:520px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.section-card{background:var(--surface2);border:1px solid var(--border);padding:16px;margin:12px 0;border-radius:3px}
+.section-card .num{display:inline-block;background:var(--accent);color:#000;font-weight:800;padding:2px 9px;border-radius:3px;font-size:11px;margin-right:8px}
+.section-card h4{margin:0 0 6px;font-family:Syne,sans-serif;font-size:18px}
+.section-card .meta{color:var(--muted);font-size:11px;margin:6px 0}
+.section-card .copy-starter{background:#050505;border-left:3px solid var(--accent);padding:10px 14px;margin:10px 0;font-style:italic;color:#ddd;font-size:13px;line-height:1.5}
+.tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);padding:3px 8px;font-size:11px;border-radius:3px;margin:2px 4px 2px 0}
+.competitor-block{background:var(--surface2);border:1px solid var(--border);padding:18px;margin:14px 0;border-radius:3px}
+.competitor-block .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.competitor-block .head .pos{background:var(--accent);color:#000;padding:3px 10px;font-weight:800;border-radius:3px;font-size:12px}
+.tabs{display:flex;gap:6px;margin:18px 0 0;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px 14px;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:.1em;text-transform:uppercase;font-family:'DM Mono',monospace}
+.tab.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:bold}
+.tab-content{display:none;padding-top:18px}
+.tab-content.active{display:block}
+.copy-bar{display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--border);padding:10px 14px;border-radius:3px 3px 0 0;border-bottom:0}
+.copy-bar+pre{border-radius:0 0 3px 3px}
 @media(max-width:700px){.grid{grid-template-columns:1fr}h1{font-size:42px}}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Competitor<br><span>SEO Audit</span></h1>
-<p class="sub">// compare your page against the top 3 Google results and get concrete recommendations</p>
+<h1>Competitor<br><span>SEO Blueprint</span></h1>
+<p class="sub">// top 5 + djup strukturanalys + Lovable-redo blueprint</p>
 
 <div class="card">
-  <div class="field">
-    <label>Apify API Token</label>
-    <input id="token" type="password" placeholder="apify_api_xxxx">
+  <div class="grid">
+    <div class="field">
+      <label>Apify API Token</label>
+      <input id="token" type="password" placeholder="apify_api_xxxx">
+    </div>
+    <div class="field">
+      <label>Anthropic API Key</label>
+      <input id="anthropicKey" type="password" placeholder="sk-ant-xxxx">
+    </div>
   </div>
+  <div class="hint">Båda nycklar krävs. Lagras endast i din webbläsare under sessionen.</div>
 </div>
 
 <div class="card">
   <div class="field">
-    <label>Your URL</label>
+    <label>Din URL</label>
     <input id="url" value="https://rediviva.se/" placeholder="https://example.com/page">
   </div>
   <div class="grid">
     <div class="field">
-      <label>Keyword</label>
+      <label>Sökord</label>
       <input id="keyword" value="optiker">
     </div>
     <div class="field">
-      <label>City / modifier</label>
+      <label>Stad / modifier</label>
       <input id="city" value="Uppsala">
     </div>
   </div>
@@ -58,10 +101,11 @@ table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-si
         <option value="google.se" selected>google.se</option>
         <option value="google.com">google.com</option>
         <option value="google.es">google.es</option>
+        <option value="google.com.ar">google.com.ar</option>
       </select>
     </div>
     <div class="field">
-      <label>Language</label>
+      <label>Språk</label>
       <select id="language">
         <option value="sv" selected>Svenska</option>
         <option value="en">English</option>
@@ -71,7 +115,7 @@ table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-si
   </div>
 </div>
 
-<button id="runBtn" onclick="runAudit()">▶ Run Competitor Audit</button>
+<button id="runBtn" class="primary" onclick="runAudit()">▶ Kör Top 5 Blueprint Audit</button>
 
 <div id="status" class="status"></div>
 <div id="error" class="error"></div>
@@ -83,21 +127,24 @@ table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-si
 
 <script>
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function showStatus(s){document.getElementById('status').textContent=s;document.getElementById('status').classList.add('visible')}
+function showStatus(s){const e=document.getElementById('status');e.textContent=s;e.classList.add('visible')}
 function hideStatus(){document.getElementById('status').classList.remove('visible')}
-function showError(s){document.getElementById('error').textContent='⚠ '+s;document.getElementById('error').classList.add('visible')}
+function showError(s){const e=document.getElementById('error');e.textContent='⚠ '+s;e.classList.add('visible')}
 function clearError(){document.getElementById('error').classList.remove('visible')}
+
+let _lastData=null;
 
 async function runAudit(){
   clearError(); hideStatus();
   document.getElementById('results').style.display='none';
   const btn=document.getElementById('runBtn');
   btn.disabled=true;
-  showStatus('Running audit… fetching Google top 3 and crawling pages.');
+  showStatus('Kör… 1) Hämtar Google top 5  2) Auditar 6 sidor sekventiellt  3) LLM-strukturanalys per konkurrent  4) Syntetiserar blueprint. Tar ~2 min.');
 
   try{
     const payload={
       token:document.getElementById('token').value.trim(),
+      anthropicKey:document.getElementById('anthropicKey').value.trim(),
       url:document.getElementById('url').value.trim(),
       keyword:document.getElementById('keyword').value.trim(),
       city:document.getElementById('city').value.trim(),
@@ -114,6 +161,7 @@ async function runAudit(){
     const data=await res.json();
     if(!res.ok) throw new Error(data.error||'Audit failed');
 
+    _lastData=data;
     render(data);
     hideStatus();
   }catch(e){
@@ -125,57 +173,193 @@ async function runAudit(){
 
 function mark(v){return v?'<span class="good">✓</span>':'<span class="bad">✗</span>'}
 
+function copyText(id){
+  const el=document.getElementById(id);
+  const text=el.dataset.raw||el.textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.querySelector(`[data-copy-for="${id}"]`);
+    if(btn){const orig=btn.textContent;btn.textContent='✓ Kopierat';setTimeout(()=>btn.textContent=orig,1500)}
+  });
+}
+
+function showTab(group,name){
+  document.querySelectorAll(`[data-tab-group="${group}"]`).forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll(`[data-tab-content="${group}"]`).forEach(el=>el.classList.remove('active'));
+  document.querySelector(`[data-tab-group="${group}"][data-tab="${name}"]`).classList.add('active');
+  document.querySelector(`[data-tab-content="${group}"][data-content="${name}"]`).classList.add('active');
+}
+
+function downloadJSON(){
+  if(!_lastData) return;
+  const blob=new Blob([JSON.stringify(_lastData,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`blueprint-${_lastData.query.replace(/\s+/g,'-')}.json`;
+  a.click();
+}
+
 function render(data){
   const you=data.you;
-  const comps=data.competitors;
-  const recs=data.recommendations;
+  const comps=data.competitors||[];
+  const bp=data.blueprint||{};
+  const summary=bp.summary||{};
+  const blueprint=bp.blueprint||{};
+  const lovablePrompt=bp.lovable_prompt||'';
 
-  let html=`
+  const sectionsHTML=(blueprint.sections||[]).map(s=>`
+    <div class="section-card">
+      <h4><span class="num">${s.order??'?'}</span>${esc(s.name||'')}</h4>
+      <div class="meta">${esc(s.purpose||'')}</div>
+      <div><strong>H2:</strong> ${esc(s.heading||'—')}</div>
+      ${s.subheadings&&s.subheadings.length?`<div><strong>H3:</strong> ${s.subheadings.map(h=>`<span class="tag">${esc(h)}</span>`).join('')}</div>`:''}
+      <div class="meta" style="margin-top:8px"><strong>Innehåll:</strong> ${esc(s.content_outline||'')}</div>
+      ${s.copy_starter?`<div class="copy-starter">"${esc(s.copy_starter)}"</div>`:''}
+      ${s.cta&&s.cta.present?`<div class="meta"><strong>CTA:</strong> "${esc(s.cta.text||'')}" → <code>${esc(s.cta.target||'')}</code></div>`:''}
+      ${s.design_notes?`<div class="meta"><strong>Design:</strong> ${esc(s.design_notes)}</div>`:''}
+    </div>
+  `).join('');
+
+  const competitorsHTML=comps.map((c,i)=>{
+    const sa=(data.structureAnalyses||[])[i];
+    const auditOk=!!c.audit;
+    return `
+    <div class="competitor-block">
+      <div class="head">
+        <div><span class="pos">#${c.position}</span> <strong>${esc(c.title)}</strong></div>
+        <a href="${esc(c.url)}" target="_blank" class="url">${esc(c.url)} ↗</a>
+      </div>
+      ${!auditOk?`<div class="meta bad">Crawl misslyckades: ${esc(c.error||'okänd')}</div>`:`
+        <div class="meta">${c.audit.wordCount} ord · H1: ${mark(c.audit.hasH1)} · Schema: ${mark(c.audit.hasSchema)} · Phone: ${mark(c.audit.hasPhone)} · CTAs: ${c.audit.ctas?.length||0}</div>
+        ${sa&&!sa.error?`
+          <div style="margin-top:10px"><strong>Värdeerbjudande:</strong> ${esc(sa.value_proposition||'—')}</div>
+          <div class="meta"><strong>Tonalitet:</strong> ${esc(sa.tonality||'—')} · <strong>Copy-stil:</strong> ${esc(sa.copy_style||'—')}</div>
+          <div style="margin-top:8px"><strong>Sektionsordning:</strong> ${(sa.section_order||[]).map(s=>`<span class="tag">${esc(s.name)}</span>`).join('')}</div>
+          ${sa.primary_ctas?`<div class="meta"><strong>CTAs:</strong> ${sa.primary_ctas.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+          ${sa.trust_signals?`<div class="meta"><strong>Trust:</strong> ${sa.trust_signals.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+          ${sa.local_signals?`<div class="meta"><strong>Lokalt:</strong> ${sa.local_signals.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+          ${sa.what_this_page_does_well?`<div class="meta"><strong>Bra:</strong> ${sa.what_this_page_does_well.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+          ${sa.what_this_page_does_poorly?`<div class="meta"><strong>Svagheter:</strong> ${sa.what_this_page_does_poorly.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+        `:`<div class="meta bad">LLM-analys saknas: ${esc(sa?.error||'')}</div>`}
+      `}
+    </div>
+    `;
+  }).join('');
+
+  const lovablePromptId='lovable-prompt-block';
+  const jsonId='full-json-block';
+
+  const html=`
   <div class="hero">
-    <div class="score">${data.score}/100</div>
-    <div>Your page vs Google Top 3 for <strong>"${esc(data.query)}"</strong></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
+      <div>
+        <div class="score">${data.score}/100</div>
+        <div>Din sida vs Google Top 5 för <strong>"${esc(data.query)}"</strong></div>
+      </div>
+      <button class="ghost" onclick="downloadJSON()">⬇ Ladda ner full JSON</button>
+    </div>
   </div>
 
-  <div class="section">
-    <h2>Top 3 competitors</h2>
-    <table>
-      <thead><tr><th>#</th><th>Title</th><th>URL</th><th>Words</th><th>H1</th><th>Keyword</th><th>City</th></tr></thead>
-      <tbody>
-        ${comps.map(c=>`
-          <tr>
-            <td>${c.position}</td>
-            <td>${esc(c.title)}</td>
-            <td><div class="url">${esc(c.url)}</div></td>
-            <td>${c.audit.wordCount}</td>
-            <td>${mark(c.audit.hasH1)}</td>
-            <td>${mark(c.audit.keywordInImportantPlaces)}</td>
-            <td>${mark(c.audit.cityInImportantPlaces)}</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
+  <div class="tabs">
+    <button class="tab active" data-tab-group="main" data-tab="blueprint" onclick="showTab('main','blueprint')">Blueprint</button>
+    <button class="tab" data-tab-group="main" data-tab="lovable" onclick="showTab('main','lovable')">Lovable Prompt</button>
+    <button class="tab" data-tab-group="main" data-tab="summary" onclick="showTab('main','summary')">Summary</button>
+    <button class="tab" data-tab-group="main" data-tab="competitors" onclick="showTab('main','competitors')">Top 5</button>
+    <button class="tab" data-tab-group="main" data-tab="you" onclick="showTab('main','you')">Din sida</button>
+    <button class="tab" data-tab-group="main" data-tab="json" onclick="showTab('main','json')">Raw JSON</button>
   </div>
 
-  <div class="section">
-    <h2>Your page</h2>
-    <table>
-      <tbody>
-        <tr><th>Title</th><td>${esc(you.audit.title)}</td></tr>
-        <tr><th>Meta description</th><td>${esc(you.audit.metaDescription)}</td></tr>
-        <tr><th>H1</th><td>${esc(you.audit.h1)}</td></tr>
-        <tr><th>Word count</th><td>${you.audit.wordCount}</td></tr>
-        <tr><th>Keyword in title/H1/meta</th><td>${mark(you.audit.keywordInImportantPlaces)}</td></tr>
-        <tr><th>City in title/H1/meta</th><td>${mark(you.audit.cityInImportantPlaces)}</td></tr>
-        <tr><th>Phone found</th><td>${mark(you.audit.hasPhone)}</td></tr>
-        <tr><th>Schema markup</th><td>${mark(you.audit.hasSchema)}</td></tr>
-        <tr><th>Images with alt</th><td>${you.audit.imagesWithAlt} / ${you.audit.images}</td></tr>
-      </tbody>
-    </table>
+  <div class="tab-content active" data-tab-content="main" data-content="blueprint">
+    <div class="section">
+      <h2>Blueprint</h2>
+      <div class="card">
+        <div><strong>Page title:</strong> ${esc(blueprint.page_title||'—')}</div>
+        <div class="meta"><strong>Meta description:</strong> ${esc(blueprint.meta_description||'—')}</div>
+        <div><strong>H1:</strong> ${esc(blueprint.h1||'—')}</div>
+        <div class="meta"><strong>Mål-ordmängd:</strong> ${blueprint.target_word_count||'—'}</div>
+        ${blueprint.ctas?`<div class="meta"><strong>Primär CTA:</strong> ${esc(blueprint.ctas.primary||'')} · <strong>Sekundär:</strong> ${esc(blueprint.ctas.secondary||'')} · <strong>Telefon:</strong> ${esc(blueprint.ctas.phone_format||'')}</div>`:''}
+        ${blueprint.schema_to_implement?`<div class="meta"><strong>Schema:</strong> ${blueprint.schema_to_implement.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+        ${blueprint.trust_signals_to_include?`<div class="meta"><strong>Trust signals:</strong> ${blueprint.trust_signals_to_include.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+        ${blueprint.local_signals_to_include?`<div class="meta"><strong>Lokala signaler:</strong> ${blueprint.local_signals_to_include.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+        ${blueprint.internal_link_targets?`<div class="meta"><strong>Interna länkar:</strong> ${blueprint.internal_link_targets.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+      </div>
+
+      <h3>Sektioner i ordning</h3>
+      ${sectionsHTML||'<div class="meta">Inga sektioner returnerade.</div>'}
+
+      ${blueprint.faq_questions?`
+        <h3>Föreslagna FAQ-frågor</h3>
+        <div class="card">${blueprint.faq_questions.map(q=>`<div>• ${esc(q)}</div>`).join('')}</div>
+      `:''}
+    </div>
   </div>
 
-  <div class="section">
-    <h2>Why competitors may be winning</h2>
-    ${recs.map(r=>`<div class="reco">${esc(r)}</div>`).join('')}
-  </div>`;
+  <div class="tab-content" data-tab-content="main" data-content="lovable">
+    <div class="section">
+      <h2>Lovable Prompt</h2>
+      <p class="sub">// klistra in direkt i Lovable</p>
+      <div class="copy-bar">
+        <div style="color:var(--muted);font-size:11px">PROMPT</div>
+        <button class="ghost" data-copy-for="${lovablePromptId}" onclick="copyText('${lovablePromptId}')">Kopiera</button>
+      </div>
+      <pre id="${lovablePromptId}" data-raw="${esc(lovablePrompt)}">${esc(lovablePrompt||'(ingen prompt returnerades)')}</pre>
+    </div>
+  </div>
+
+  <div class="tab-content" data-tab-content="main" data-content="summary">
+    <div class="section">
+      <h2>Summary</h2>
+      <div class="card">
+        ${summary.what_top_pages_have_in_common?`<h3>Vad top-sidorna har gemensamt</h3><ul>${summary.what_top_pages_have_in_common.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
+        ${summary.common_section_order?`<h3>Vanligaste sektionsordningen</h3><div>${summary.common_section_order.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}</div>`:''}
+        ${summary.average_word_count?`<div class="meta" style="margin-top:14px">Genomsnittlig ordmängd: <strong>${summary.average_word_count}</strong></div>`:''}
+        ${summary.common_schema_types?`<div class="meta">Vanliga schema-typer: ${summary.common_schema_types.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+        ${summary.common_value_propositions?`<h3>Återkommande värdeerbjudanden</h3><ul>${summary.common_value_propositions.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
+        ${summary.common_trust_signals?`<h3>Återkommande trust signals</h3><ul>${summary.common_trust_signals.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
+        ${summary.common_local_signals?`<h3>Återkommande lokala signaler</h3><ul>${summary.common_local_signals.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
+        ${summary.what_no_one_is_doing?`<h3>Gap att exploatera</h3><ul>${summary.what_no_one_is_doing.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" data-tab-content="main" data-content="competitors">
+    <div class="section">
+      <h2>Top 5 konkurrenter</h2>
+      ${competitorsHTML}
+    </div>
+  </div>
+
+  <div class="tab-content" data-tab-content="main" data-content="you">
+    <div class="section">
+      <h2>Din sida</h2>
+      <table>
+        <tbody>
+          <tr><th>URL</th><td>${esc(you.url)}</td></tr>
+          <tr><th>Title</th><td>${esc(you.audit.title)}</td></tr>
+          <tr><th>Meta description</th><td>${esc(you.audit.metaDescription)}</td></tr>
+          <tr><th>H1</th><td>${esc(you.audit.h1)}</td></tr>
+          <tr><th>Word count</th><td>${you.audit.wordCount}</td></tr>
+          <tr><th>Keyword i title/H1/meta</th><td>${mark(you.audit.keywordInImportantPlaces)}</td></tr>
+          <tr><th>Stad i title/H1/meta</th><td>${mark(you.audit.cityInImportantPlaces)}</td></tr>
+          <tr><th>Telefon hittad</th><td>${mark(you.audit.hasPhone)}</td></tr>
+          <tr><th>Schema markup</th><td>${mark(you.audit.hasSchema)} ${you.audit.schemaTypes?.length?`(${you.audit.schemaTypes.join(', ')})`:''}</td></tr>
+          <tr><th>Bilder med alt</th><td>${you.audit.imagesWithAlt} / ${you.audit.images}</td></tr>
+          <tr><th>CTAs hittade</th><td>${you.audit.ctas?.length||0}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-content" data-tab-content="main" data-content="json">
+    <div class="section">
+      <h2>Raw JSON</h2>
+      <div class="copy-bar">
+        <div style="color:var(--muted);font-size:11px">FULL OUTPUT</div>
+        <button class="ghost" data-copy-for="${jsonId}" onclick="copyText('${jsonId}')">Kopiera</button>
+      </div>
+      <pre id="${jsonId}">${esc(JSON.stringify(data,null,2))}</pre>
+    </div>
+  </div>
+  `;
 
   document.getElementById('resultsBody').innerHTML=html;
   document.getElementById('results').style.display='block';
