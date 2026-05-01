@@ -1,165 +1,257 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>SEO System Builder</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-:root{--bg:#0a0a0a;--surface:#141414;--surface2:#101010;--border:#252525;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999;--blue:#82b1ff}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Syne,sans-serif;padding:40px 20px}.container{max-width:1080px;margin:auto}
-h1{font-size:58px;line-height:.92;margin:0 0 12px}h1 span{color:var(--accent)}p,label,.hint,input,button,textarea,select,td,th,pre,.pill{font-family:'DM Mono',monospace}.sub{color:var(--muted);margin-bottom:28px}.card{background:var(--surface);border:1px solid var(--border);padding:22px;margin-bottom:16px;border-radius:6px}.modegrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}.mode{background:var(--surface2);border:1px solid var(--border);padding:18px;border-radius:6px;cursor:pointer}.mode.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(200,241,53,.25)}.mode h3{margin:0 0 8px;font-size:20px}.mode p{margin:0;color:var(--muted);font-size:12px;line-height:1.5}
-label{display:block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}input,select,textarea{width:100%;background:#050505;border:1px solid var(--border);color:var(--text);padding:12px;font-size:13px;border-radius:3px}textarea{min-height:90px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.field{margin-bottom:18px}.hint{font-size:11px;color:var(--muted);margin-top:6px}.hidden{display:none!important}
-button{width:100%;background:var(--accent);border:0;color:#000;padding:16px;font-weight:800;font-size:16px;cursor:pointer;border-radius:3px}button:disabled{opacity:.45}.status,.error{display:none;padding:14px 18px;border-radius:4px;margin:16px 0;font-family:'DM Mono',monospace;font-size:13px}.status{background:var(--surface);border:1px solid var(--border);color:var(--muted)}.error{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);color:var(--red)}.visible{display:block}.results{display:none;margin-top:34px}.hero{border:1px solid var(--border);background:var(--surface);padding:22px;border-radius:6px;margin-bottom:18px}.score{font-size:58px;font-weight:800;color:var(--accent)}.section{margin:28px 0}.section h2{font-size:25px;margin-bottom:10px}.section h3{font-size:18px;margin-bottom:8px}.muted{color:var(--muted)}
-table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-size:12px}th{background:#1a1a1a;color:var(--muted);text-align:left;padding:9px}td{border-top:1px solid var(--border);padding:9px;vertical-align:top}.good{color:var(--accent);font-weight:bold}.bad{color:var(--red);font-weight:bold}.mid{color:var(--orange);font-weight:bold}.url{color:var(--muted);font-size:11px;word-break:break-all}.reco{background:rgba(200,241,53,.08);border:1px solid rgba(200,241,53,.22);padding:14px;margin:10px 0;border-radius:4px;font-family:'DM Mono',monospace;font-size:13px;line-height:1.6}.patch.high{border-color:rgba(255,77,77,.45);background:rgba(255,77,77,.06)}.patch.medium{border-color:rgba(255,179,71,.38);background:rgba(255,179,71,.06)}.pill{display:inline-block;border:1px solid var(--border);background:#0d0d0d;padding:5px 8px;margin:3px;border-radius:999px;font-size:11px;color:var(--muted)}pre{white-space:pre-wrap;background:#050505;border:1px solid var(--border);padding:14px;border-radius:4px;font-size:12px;line-height:1.55;max-height:560px;overflow:auto}.copy{background:#222;color:var(--text);font-size:12px;padding:10px 12px;margin-top:10px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:760px){.grid,.grid3,.modegrid,.two{grid-template-columns:1fr}h1{font-size:42px}}
+:root{--bg:#080808;--surface:#141414;--border:#262626;--accent:#c8f135;--red:#ff4d4d;--text:#f4f4f4;--muted:#999}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif;padding:40px 20px}
+.container{max-width:1100px;margin:auto}
+h1{font-size:48px;margin:0 0 12px}
+h1 span{color:var(--accent)}
+p,label,input,button,select,textarea,pre{font-family:monospace}
+.sub{color:var(--muted);margin-bottom:28px}
+.card{background:var(--surface);border:1px solid var(--border);padding:22px;margin-bottom:16px;border-radius:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.field{margin-bottom:16px}
+label{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+input,select,textarea{width:100%;background:#050505;border:1px solid var(--border);color:var(--text);padding:13px;border-radius:4px}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mode-card{cursor:pointer;border:1px solid var(--border);padding:18px;background:#111;border-radius:6px}
+.mode-card.active{border-color:var(--accent)}
+.mode-title{font-weight:bold;margin-bottom:8px}
+.mode-desc{font-family:monospace;color:var(--muted);font-size:12px;line-height:1.5}
+button{width:100%;background:var(--accent);border:0;color:#000;padding:18px;font-weight:800;font-size:16px;cursor:pointer;border-radius:4px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.status,.error{display:none;padding:14px 18px;border-radius:4px;margin:16px 0;font-family:monospace}
+.status{background:#111;border:1px solid var(--border);color:var(--muted)}
+.error{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.35);color:var(--red)}
+.visible{display:block}
+.results{display:none;margin-top:28px}
+pre{white-space:pre-wrap;background:#050505;border:1px solid var(--border);padding:18px;border-radius:6px;line-height:1.55}
+.copybtn{margin-top:12px}
+@media(max-width:760px){.grid,.grid3,.mode-grid{grid-template-columns:1fr}h1{font-size:36px}}
 </style>
 </head>
+
 <body>
 <div class="container">
-<h1>SEO System<br><span>Builder</span></h1>
-<p class="sub">// New Page = Claude content brief. Existing Website = Lovable technical SEO patch.</p>
+  <h1>SEO System <span>Builder</span></h1>
+  <p class="sub">New Page = Claude Content Brief. Compare Existing Website = Lovable Technical SEO Patch.</p>
 
-<div class="modegrid">
-  <div id="modeNew" class="mode active" onclick="setMode('new-page')">
-    <h3>New Page</h3>
-    <p>No URL. Finds top competitors and creates a Claude-ready content SEO brief.</p>
-  </div>
-  <div id="modeExisting" class="mode" onclick="setMode('existing-page')">
-    <h3>Compare Existing Website</h3>
-    <p>Requires URL. Compares built page and creates Lovable-ready technical SEO patches.</p>
-  </div>
-</div>
-
-<div class="card">
-  <div class="field">
-    <label>Apify API Token</label>
-    <input id="token" type="password" placeholder="apify_api_xxxx">
-  </div>
-</div>
-
-<div class="card">
-  <div id="urlField" class="field hidden">
-    <label>Your URL / Lovable page URL</label>
-    <input id="url" value="https://rediviva.se/" placeholder="https://example.com/page">
-    <div class="hint">Only used in Compare Existing Website mode.</div>
-  </div>
-  <div class="grid">
-    <div class="field">
-      <label>Keyword / service</label>
-      <input id="keyword" value="painter" placeholder="painter">
-    </div>
-    <div class="field">
-      <label>City / modifier</label>
-      <input id="city" value="Hermiston" placeholder="Hermiston">
+  <div class="card">
+    <label>Mode</label>
+    <div class="mode-grid">
+      <div id="modeNew" class="mode-card" onclick="setMode('new')">
+        <div class="mode-title">New Page</div>
+        <div class="mode-desc">No URL required. Finds competitors and creates Claude-ready content SEO brief.</div>
+      </div>
+      <div id="modeCompare" class="mode-card active" onclick="setMode('compare')">
+        <div class="mode-title">Compare Existing Website</div>
+        <div class="mode-desc">Requires URL. Compares built page and creates Lovable-ready technical SEO patches.</div>
+      </div>
     </div>
   </div>
-  <div class="grid3">
+
+  <div class="card">
     <div class="field">
-      <label>Google domain</label>
-      <select id="googleDomain">
-        <option value="google.com" selected>google.com</option>
-        <option value="google.se">google.se</option>
-        <option value="google.es">google.es</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Language</label>
-      <select id="language">
-        <option value="en" selected>English</option>
-        <option value="sv">Svenska</option>
-        <option value="es">Español</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Country code</label>
-      <input id="countryCode" value="us" placeholder="us / se / es">
+      <label>Apify API Token</label>
+      <input id="token" type="password" placeholder="apify_api_xxxx" />
     </div>
   </div>
-</div>
 
-<div class="card">
-  <div class="grid">
-    <div class="field"><label>Business name</label><input id="businessName" value="[Business Name]"></div>
-    <div class="field"><label>Phone</label><input id="phone" value="[Phone Number]"></div>
+  <div class="card">
+    <div id="urlField" class="field">
+      <label>Your URL / Lovable Page URL</label>
+      <input id="url" value="https://colormastersinc.com/" placeholder="https://example.com/" />
+      <p class="sub">Only used in Compare Existing Website mode.</p>
+    </div>
+
+    <div class="grid">
+      <div class="field">
+        <label>Keyword / Service</label>
+        <input id="keyword" value="commercial painter" />
+      </div>
+      <div class="field">
+        <label>City / Modifier</label>
+        <input id="city" value="Hermiston" />
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="field">
+        <label>Google Domain</label>
+        <select id="googleDomain">
+          <option value="google.com" selected>google.com</option>
+          <option value="google.se">google.se</option>
+          <option value="google.es">google.es</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Language</label>
+        <select id="language">
+          <option value="en" selected>English</option>
+          <option value="sv">Svenska</option>
+          <option value="es">Español</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Country Code</label>
+        <input id="countryCode" value="us" />
+      </div>
+    </div>
   </div>
-  <div class="grid3">
-    <div class="field"><label>Address</label><input id="address" value="[Street Address]"></div>
-    <div class="field"><label>State / region</label><input id="region" value="OR"></div>
-    <div class="field"><label>Postal code</label><input id="postalCode" value="[Postal Code]"></div>
+
+  <div class="card">
+    <div class="grid">
+      <div class="field">
+        <label>Business Name</label>
+        <input id="businessName" value="Color Masters Painting Inc" />
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input id="phone" value="(509) 554-1969" />
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="field">
+        <label>Address</label>
+        <input id="address" value="PO Box 334" />
+      </div>
+      <div class="field">
+        <label>State / Region</label>
+        <input id="region" value="OR" />
+      </div>
+      <div class="field">
+        <label>Postal Code</label>
+        <input id="postalCode" value="97838" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Service Area</label>
+      <input id="serviceArea" value="Pacific Northwest" />
+    </div>
   </div>
-  <div class="field"><label>Service area</label><input id="serviceArea" value="Hermiston, Pendleton and nearby areas"></div>
-</div>
 
-<button id="runBtn" onclick="runAudit()">▶ Generate New Page Brief</button>
+  <button id="runBtn" onclick="runAudit()">▶ Generate Lovable SEO Patch</button>
 
-<div id="status" class="status"></div>
-<div id="error" class="error"></div>
+  <div id="status" class="status"></div>
+  <div id="error" class="error"></div>
 
-<div id="results" class="results"><div id="resultsBody"></div></div>
+  <div id="results" class="results">
+    <h2 id="resultTitle"></h2>
+    <pre id="output"></pre>
+    <button class="copybtn" onclick="copyOutput()">Copy Output</button>
+  </div>
 </div>
 
 <script>
-let currentMode='new-page';
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function showStatus(s){document.getElementById('status').textContent=s;document.getElementById('status').classList.add('visible')}
-function hideStatus(){document.getElementById('status').classList.remove('visible')}
-function showError(s){document.getElementById('error').textContent='⚠ '+s;document.getElementById('error').classList.add('visible')}
-function clearError(){document.getElementById('error').classList.remove('visible')}
-function mark(v){return v?'<span class="good">✓</span>':'<span class="bad">✗</span>'}
-function list(items){return (items||[]).map(x=>`<span class="pill">${esc(x.value||x)}</span>`).join('') || '<span class="muted">None found</span>'}
+let currentMode = 'compare';
+
 function setMode(mode){
-  currentMode=mode;
-  document.getElementById('modeNew').classList.toggle('active',mode==='new-page');
-  document.getElementById('modeExisting').classList.toggle('active',mode==='existing-page');
-  document.getElementById('urlField').classList.toggle('hidden',mode!=='existing-page');
-  document.getElementById('runBtn').textContent=mode==='new-page'?'▶ Generate New Page Brief':'▶ Generate Lovable SEO Patch';
-  document.getElementById('results').style.display='none';
+  currentMode = mode;
+
+  document.getElementById('modeNew').classList.toggle('active', mode === 'new');
+  document.getElementById('modeCompare').classList.toggle('active', mode === 'compare');
+
+  document.getElementById('urlField').style.display = mode === 'compare' ? 'block' : 'none';
+  document.getElementById('runBtn').textContent =
+    mode === 'new'
+      ? '▶ Generate Claude Content Brief'
+      : '▶ Generate Lovable SEO Patch';
 }
+
+function showStatus(msg){
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function hideStatus(){
+  document.getElementById('status').classList.remove('visible');
+}
+
+function showError(msg){
+  const el = document.getElementById('error');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+}
+
+function clearError(){
+  document.getElementById('error').classList.remove('visible');
+}
+
 async function runAudit(){
-  clearError(); hideStatus(); document.getElementById('results').style.display='none';
-  const btn=document.getElementById('runBtn'); btn.disabled=true;
-  showStatus(currentMode==='new-page'?'Finding competitors and building Claude content brief…':'Crawling your page, finding competitors and building Lovable SEO patch…');
-  try{
-    const payload={
-      mode:currentMode,
-      token:document.getElementById('token').value.trim(),
-      url:document.getElementById('url').value.trim(),
-      keyword:document.getElementById('keyword').value.trim(),
-      city:document.getElementById('city').value.trim(),
-      googleDomain:document.getElementById('googleDomain').value,
-      language:document.getElementById('language').value,
-      countryCode:document.getElementById('countryCode').value.trim(),
-      businessName:document.getElementById('businessName').value.trim(),
-      phone:document.getElementById('phone').value.trim(),
-      address:document.getElementById('address').value.trim(),
-      region:document.getElementById('region').value.trim(),
-      postalCode:document.getElementById('postalCode').value.trim(),
-      serviceArea:document.getElementById('serviceArea').value.trim()
-    };
-    const res=await fetch('/api/competitor-audit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    const data=await res.json(); if(!res.ok) throw new Error(data.error||'Audit failed');
-    render(data); hideStatus();
-  }catch(e){hideStatus();showError(e.message)}finally{btn.disabled=false}
+  clearError();
+  hideStatus();
+  document.getElementById('results').style.display = 'none';
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+
+  showStatus('Running audit… fetching Google results and crawling pages.');
+
+  const payload = {
+    mode: currentMode,
+    token: document.getElementById('token').value.trim(),
+    url: document.getElementById('url').value.trim(),
+    keyword: document.getElementById('keyword').value.trim(),
+    city: document.getElementById('city').value.trim(),
+    googleDomain: document.getElementById('googleDomain').value,
+    language: document.getElementById('language').value,
+    countryCode: document.getElementById('countryCode').value.trim(),
+
+    business: {
+      name: document.getElementById('businessName').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      address: document.getElementById('address').value.trim(),
+      city: document.getElementById('city').value.trim(),
+      region: document.getElementById('region').value.trim(),
+      postalCode: document.getElementById('postalCode').value.trim(),
+      serviceArea: document.getElementById('serviceArea').value.trim()
+    }
+  };
+
+  try {
+    const res = await fetch('/api/competitor-audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Audit failed');
+
+    render(data);
+    hideStatus();
+
+  } catch(e) {
+    hideStatus();
+    showError(e.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
-function render(data){data.mode==='new-page'?renderNew(data):renderExisting(data);document.getElementById('results').style.display='block';document.getElementById('results').scrollIntoView({behavior:'smooth'})}
-function renderCompetitors(comps){return `<div class="section"><h2>Competitors used</h2><table><thead><tr><th>#</th><th>Title</th><th>URL</th><th>Words</th><th>Schema</th><th>Status</th></tr></thead><tbody>${(comps||[]).map(c=>`<tr><td>${c.position}</td><td>${esc(c.title)}</td><td><div class="url">${esc(c.url)}</div></td><td>${c.audit&&!c.audit.error?c.audit.wordCount:'—'}</td><td>${c.audit&&!c.audit.error?esc((c.audit.schemaTypes||[]).join(', ')):'—'}</td><td>${c.audit&&c.audit.error?'<span class="bad">'+esc(c.audit.error)+'</span>':'<span class="good">crawled</span>'}</td></tr>`).join('')}</tbody></table></div>`}
-function renderNew(data){const b=data.contentBrief;document.getElementById('resultsBody').innerHTML=`
-<div class="hero"><div class="score">New Page</div><div>Claude Content Brief for <strong>"${esc(data.query)}"</strong></div></div>
-${renderCompetitors(data.competitors)}
-<div class="two"><div class="section"><h2>Target meta</h2><table><tbody><tr><th>Title</th><td>${esc(b.page.title)}</td></tr><tr><th>Meta</th><td>${esc(b.page.metaDescription)}</td></tr><tr><th>H1</th><td>${esc(b.page.h1)}</td></tr><tr><th>Words</th><td>${b.page.targetWordCount}</td></tr></tbody></table></div><div class="section"><h2>Market patterns</h2><h3>Common H2s</h3>${list(b.competitorPatterns.commonH2s)}<h3>Trust</h3>${list(b.competitorPatterns.commonTrust)}</div></div>
-<div class="section"><h2>Recommended page structure</h2>${b.recommendedSections.map(s=>`<div class="reco"><strong>${s.order}. ${esc(s.heading)}</strong> <span class="muted">[${esc(s.type)}]</span><br>${esc(s.purpose)}<br><br>${esc(s.content)}</div>`).join('')}</div>
-<div class="section"><h2>FAQ questions</h2>${list(b.faqQuestions)}</div>
-<div class="section"><h2>Copy/paste prompt for Claude</h2><pre id="promptBox">${esc(data.claudePrompt)}</pre><button class="copy" onclick="copyPrompt()">Copy prompt</button></div>`}
-function renderExisting(data){const p=data.technicalPatch;document.getElementById('resultsBody').innerHTML=`
-<div class="hero"><div class="score">${data.score}/100</div><div>Lovable Technical SEO Patch for <strong>"${esc(data.query)}"</strong></div></div>
-${renderCompetitors(data.competitors)}
-<div class="section"><h2>Your current page</h2><table><tbody><tr><th>Title</th><td>${esc(p.currentPage.title)}</td></tr><tr><th>Meta</th><td>${esc(p.currentPage.metaDescription)}</td></tr><tr><th>H1</th><td>${esc(p.currentPage.h1)}</td></tr><tr><th>Words</th><td>${p.currentPage.wordCount}</td></tr><tr><th>Schema</th><td>${esc((p.currentPage.schemaTypes||[]).join(', '))}</td></tr></tbody></table></div>
-<div class="section"><h2>Target meta</h2><table><tbody><tr><th>Title</th><td>${esc(p.targetMeta.title)}</td></tr><tr><th>Meta</th><td>${esc(p.targetMeta.metaDescription)}</td></tr><tr><th>H1</th><td>${esc(p.targetMeta.h1)}</td></tr></tbody></table></div>
-<div class="section"><h2>Lovable patches</h2>${p.patches.map(x=>`<div class="reco patch ${esc(x.priority)}"><strong>[${esc(x.priority)}] ${esc(x.type)}</strong><br>${esc(x.instruction)}${x.code?`<pre>${esc(x.code)}</pre>`:''}</div>`).join('')}</div>
-<div class="section"><h2>Validation checklist</h2>${list(p.validationChecklist)}</div>
-<div class="section"><h2>Copy/paste prompt for Lovable</h2><pre id="promptBox">${esc(data.lovablePrompt)}</pre><button class="copy" onclick="copyPrompt()">Copy prompt</button></div>`}
-function copyPrompt(){navigator.clipboard.writeText(document.getElementById('promptBox').textContent)}
+
+function render(data){
+  const title = data.mode === 'new'
+    ? 'Claude Content SEO Brief'
+    : 'Lovable Technical SEO Patch';
+
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('output').textContent = data.output || JSON.stringify(data, null, 2);
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyOutput(){
+  navigator.clipboard.writeText(document.getElementById('output').textContent);
+}
 </script>
 </body>
 </html>
