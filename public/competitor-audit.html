@@ -2,366 +2,164 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<title>Competitor SEO Blueprint</title>
+<title>SEO System Builder</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0a;--surface:#141414;--surface2:#1a1a1a;--border:#222;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Syne,sans-serif;padding:40px 20px}
-.container{max-width:1100px;margin:auto}
-h1{font-size:56px;line-height:.95;margin:0 0 12px}
-h1 span{color:var(--accent)}
-p,label,.hint,input,button,textarea,select,td,th,pre,code{font-family:'DM Mono',monospace}
-.sub{color:var(--muted);margin-bottom:32px}
-.card{background:var(--surface);border:1px solid var(--border);padding:24px;margin-bottom:16px;border-radius:4px}
-label{display:block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-input,select,textarea{width:100%;background:#050505;border:1px solid var(--border);color:var(--text);padding:12px;font-size:13px;border-radius:3px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.field{margin-bottom:18px}
-.hint{font-size:11px;color:var(--muted);margin-top:6px}
-button.primary{width:100%;background:var(--accent);border:0;color:#000;padding:16px;font-weight:800;font-size:16px;cursor:pointer;border-radius:3px;font-family:'DM Mono',monospace}
-button.primary:disabled{opacity:.45;cursor:not-allowed}
-button.ghost{background:transparent;border:1px solid var(--border);color:var(--text);padding:8px 14px;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:.1em;text-transform:uppercase;font-family:'DM Mono',monospace}
-button.ghost:hover{border-color:var(--accent);color:var(--accent)}
-.status,.error{display:none;padding:14px 18px;border-radius:4px;margin:16px 0;font-family:'DM Mono',monospace;font-size:13px}
-.status{background:var(--surface);border:1px solid var(--border);color:var(--muted)}
-.error{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);color:var(--red)}
-.visible{display:block}
-.results{display:none;margin-top:34px}
-.hero{border:1px solid var(--border);background:var(--surface);padding:22px;border-radius:4px;margin-bottom:18px}
-.score{font-size:58px;font-weight:800;color:var(--accent);line-height:1}
-.section{margin:36px 0}
-.section h2{font-size:26px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px}
-.section h3{font-size:18px;margin:22px 0 10px;color:var(--accent)}
-table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-size:12px}
-th{background:#1a1a1a;color:var(--muted);text-align:left;padding:9px}
-td{border-top:1px solid var(--border);padding:9px;vertical-align:top}
-.good{color:var(--accent);font-weight:bold}.bad{color:var(--red);font-weight:bold}.mid{color:var(--orange);font-weight:bold}
-.url{color:var(--muted);font-size:11px;word-break:break-all}
-pre{background:#050505;border:1px solid var(--border);padding:18px;overflow-x:auto;font-size:12px;line-height:1.5;border-radius:3px;max-height:560px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
-.section-card{background:var(--surface2);border:1px solid var(--border);padding:16px;margin:12px 0;border-radius:3px}
-.section-card .num{display:inline-block;background:var(--accent);color:#000;font-weight:800;padding:2px 9px;border-radius:3px;font-size:11px;margin-right:8px}
-.section-card .validated{display:inline-block;background:rgba(200,241,53,.15);color:var(--accent);font-weight:600;padding:2px 8px;border-radius:3px;font-size:10px;margin-left:8px;text-transform:uppercase;letter-spacing:.1em}
-.section-card .added{display:inline-block;background:rgba(255,179,71,.12);color:var(--orange);font-weight:600;padding:2px 8px;border-radius:3px;font-size:10px;margin-left:8px;text-transform:uppercase;letter-spacing:.1em}
-.section-card h4{margin:0 0 6px;font-family:Syne,sans-serif;font-size:18px;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
-.section-card .meta{color:var(--muted);font-size:12px;margin:6px 0;line-height:1.5}
-.section-card .copy-starter{background:#050505;border-left:3px solid var(--accent);padding:10px 14px;margin:10px 0;font-style:italic;color:#ddd;font-size:13px;line-height:1.5}
-.tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);padding:3px 8px;font-size:11px;border-radius:3px;margin:2px 4px 2px 0}
-.color-swatch{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--border);vertical-align:middle;margin-right:5px}
-.competitor-block{background:var(--surface2);border:1px solid var(--border);padding:18px;margin:14px 0;border-radius:3px}
-.competitor-block .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
-.competitor-block .head .pos{background:var(--accent);color:#000;padding:3px 10px;font-weight:800;border-radius:3px;font-size:12px}
-.tabs{display:flex;gap:6px;margin:18px 0 0;flex-wrap:wrap}
-.tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px 14px;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:.1em;text-transform:uppercase;font-family:'DM Mono',monospace}
-.tab.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:bold}
-.tab-content{display:none;padding-top:18px}
-.tab-content.active{display:block}
-.copy-bar{display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--border);padding:10px 14px;border-radius:3px 3px 0 0;border-bottom:0}
-.copy-bar+pre{border-radius:0 0 3px 3px;margin-top:0}
-@media(max-width:700px){.grid{grid-template-columns:1fr}h1{font-size:42px}}
+:root{--bg:#0a0a0a;--surface:#141414;--surface2:#101010;--border:#252525;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999;--blue:#82b1ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Syne,sans-serif;padding:40px 20px}.container{max-width:1080px;margin:auto}
+h1{font-size:58px;line-height:.92;margin:0 0 12px}h1 span{color:var(--accent)}p,label,.hint,input,button,textarea,select,td,th,pre,.pill{font-family:'DM Mono',monospace}.sub{color:var(--muted);margin-bottom:28px}.card{background:var(--surface);border:1px solid var(--border);padding:22px;margin-bottom:16px;border-radius:6px}.modegrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}.mode{background:var(--surface2);border:1px solid var(--border);padding:18px;border-radius:6px;cursor:pointer}.mode.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(200,241,53,.25)}.mode h3{margin:0 0 8px;font-size:20px}.mode p{margin:0;color:var(--muted);font-size:12px;line-height:1.5}
+label{display:block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}input,select,textarea{width:100%;background:#050505;border:1px solid var(--border);color:var(--text);padding:12px;font-size:13px;border-radius:3px}textarea{min-height:90px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.field{margin-bottom:18px}.hint{font-size:11px;color:var(--muted);margin-top:6px}.hidden{display:none!important}
+button{width:100%;background:var(--accent);border:0;color:#000;padding:16px;font-weight:800;font-size:16px;cursor:pointer;border-radius:3px}button:disabled{opacity:.45}.status,.error{display:none;padding:14px 18px;border-radius:4px;margin:16px 0;font-family:'DM Mono',monospace;font-size:13px}.status{background:var(--surface);border:1px solid var(--border);color:var(--muted)}.error{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);color:var(--red)}.visible{display:block}.results{display:none;margin-top:34px}.hero{border:1px solid var(--border);background:var(--surface);padding:22px;border-radius:6px;margin-bottom:18px}.score{font-size:58px;font-weight:800;color:var(--accent)}.section{margin:28px 0}.section h2{font-size:25px;margin-bottom:10px}.section h3{font-size:18px;margin-bottom:8px}.muted{color:var(--muted)}
+table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-size:12px}th{background:#1a1a1a;color:var(--muted);text-align:left;padding:9px}td{border-top:1px solid var(--border);padding:9px;vertical-align:top}.good{color:var(--accent);font-weight:bold}.bad{color:var(--red);font-weight:bold}.mid{color:var(--orange);font-weight:bold}.url{color:var(--muted);font-size:11px;word-break:break-all}.reco{background:rgba(200,241,53,.08);border:1px solid rgba(200,241,53,.22);padding:14px;margin:10px 0;border-radius:4px;font-family:'DM Mono',monospace;font-size:13px;line-height:1.6}.patch.high{border-color:rgba(255,77,77,.45);background:rgba(255,77,77,.06)}.patch.medium{border-color:rgba(255,179,71,.38);background:rgba(255,179,71,.06)}.pill{display:inline-block;border:1px solid var(--border);background:#0d0d0d;padding:5px 8px;margin:3px;border-radius:999px;font-size:11px;color:var(--muted)}pre{white-space:pre-wrap;background:#050505;border:1px solid var(--border);padding:14px;border-radius:4px;font-size:12px;line-height:1.55;max-height:560px;overflow:auto}.copy{background:#222;color:var(--text);font-size:12px;padding:10px 12px;margin-top:10px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid,.grid3,.modegrid,.two{grid-template-columns:1fr}h1{font-size:42px}}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Competitor<br><span>SEO Blueprint</span></h1>
-<p class="sub">// top 5 + djup strukturanalys + Lovable-redo blueprint</p>
+<h1>SEO System<br><span>Builder</span></h1>
+<p class="sub">// New Page = Claude content brief. Existing Website = Lovable technical SEO patch.</p>
+
+<div class="modegrid">
+  <div id="modeNew" class="mode active" onclick="setMode('new-page')">
+    <h3>New Page</h3>
+    <p>No URL. Finds top competitors and creates a Claude-ready content SEO brief.</p>
+  </div>
+  <div id="modeExisting" class="mode" onclick="setMode('existing-page')">
+    <h3>Compare Existing Website</h3>
+    <p>Requires URL. Compares built page and creates Lovable-ready technical SEO patches.</p>
+  </div>
+</div>
 
 <div class="card">
   <div class="field">
     <label>Apify API Token</label>
     <input id="token" type="password" placeholder="apify_api_xxxx">
   </div>
-  <div class="hint">Lagras endast i din webbläsare under sessionen.</div>
 </div>
 
 <div class="card">
-  <div class="field">
-    <label>Din URL</label>
+  <div id="urlField" class="field hidden">
+    <label>Your URL / Lovable page URL</label>
     <input id="url" value="https://rediviva.se/" placeholder="https://example.com/page">
+    <div class="hint">Only used in Compare Existing Website mode.</div>
   </div>
   <div class="grid">
     <div class="field">
-      <label>Sökord</label>
-      <input id="keyword" value="optiker">
+      <label>Keyword / service</label>
+      <input id="keyword" value="painter" placeholder="painter">
     </div>
     <div class="field">
-      <label>Stad / modifier</label>
-      <input id="city" value="Uppsala">
+      <label>City / modifier</label>
+      <input id="city" value="Hermiston" placeholder="Hermiston">
     </div>
   </div>
-  <div class="grid">
+  <div class="grid3">
     <div class="field">
       <label>Google domain</label>
       <select id="googleDomain">
-        <option value="google.se" selected>google.se</option>
-        <option value="google.com">google.com</option>
+        <option value="google.com" selected>google.com</option>
+        <option value="google.se">google.se</option>
         <option value="google.es">google.es</option>
-        <option value="google.com.ar">google.com.ar</option>
       </select>
     </div>
     <div class="field">
-      <label>Språk</label>
+      <label>Language</label>
       <select id="language">
-        <option value="sv" selected>Svenska</option>
-        <option value="en">English</option>
+        <option value="en" selected>English</option>
+        <option value="sv">Svenska</option>
         <option value="es">Español</option>
       </select>
+    </div>
+    <div class="field">
+      <label>Country code</label>
+      <input id="countryCode" value="us" placeholder="us / se / es">
     </div>
   </div>
 </div>
 
-<button id="runBtn" class="primary" onclick="runAudit()">▶ Kör Top 5 Blueprint Audit</button>
+<div class="card">
+  <div class="grid">
+    <div class="field"><label>Business name</label><input id="businessName" value="[Business Name]"></div>
+    <div class="field"><label>Phone</label><input id="phone" value="[Phone Number]"></div>
+  </div>
+  <div class="grid3">
+    <div class="field"><label>Address</label><input id="address" value="[Street Address]"></div>
+    <div class="field"><label>State / region</label><input id="region" value="OR"></div>
+    <div class="field"><label>Postal code</label><input id="postalCode" value="[Postal Code]"></div>
+  </div>
+  <div class="field"><label>Service area</label><input id="serviceArea" value="Hermiston, Pendleton and nearby areas"></div>
+</div>
+
+<button id="runBtn" onclick="runAudit()">▶ Generate New Page Brief</button>
 
 <div id="status" class="status"></div>
 <div id="error" class="error"></div>
 
-<div id="results" class="results">
-  <div id="resultsBody"></div>
-</div>
+<div id="results" class="results"><div id="resultsBody"></div></div>
 </div>
 
 <script>
+let currentMode='new-page';
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function showStatus(s){const e=document.getElementById('status');e.textContent=s;e.classList.add('visible')}
+function showStatus(s){document.getElementById('status').textContent=s;document.getElementById('status').classList.add('visible')}
 function hideStatus(){document.getElementById('status').classList.remove('visible')}
-function showError(s){const e=document.getElementById('error');e.textContent='⚠ '+s;e.classList.add('visible')}
+function showError(s){document.getElementById('error').textContent='⚠ '+s;document.getElementById('error').classList.add('visible')}
 function clearError(){document.getElementById('error').classList.remove('visible')}
-
-let _lastData=null;
-
-async function runAudit(){
-  clearError(); hideStatus();
+function mark(v){return v?'<span class="good">✓</span>':'<span class="bad">✗</span>'}
+function list(items){return (items||[]).map(x=>`<span class="pill">${esc(x.value||x)}</span>`).join('') || '<span class="muted">None found</span>'}
+function setMode(mode){
+  currentMode=mode;
+  document.getElementById('modeNew').classList.toggle('active',mode==='new-page');
+  document.getElementById('modeExisting').classList.toggle('active',mode==='existing-page');
+  document.getElementById('urlField').classList.toggle('hidden',mode!=='existing-page');
+  document.getElementById('runBtn').textContent=mode==='new-page'?'▶ Generate New Page Brief':'▶ Generate Lovable SEO Patch';
   document.getElementById('results').style.display='none';
-  const btn=document.getElementById('runBtn');
-  btn.disabled=true;
-  showStatus('Kör… 1) Hämtar Google top 5  2) Auditar 6 sidor sekventiellt  3) Bygger blueprint från frekvensanalys. Tar 1–2 min.');
-
+}
+async function runAudit(){
+  clearError(); hideStatus(); document.getElementById('results').style.display='none';
+  const btn=document.getElementById('runBtn'); btn.disabled=true;
+  showStatus(currentMode==='new-page'?'Finding competitors and building Claude content brief…':'Crawling your page, finding competitors and building Lovable SEO patch…');
   try{
     const payload={
+      mode:currentMode,
       token:document.getElementById('token').value.trim(),
       url:document.getElementById('url').value.trim(),
       keyword:document.getElementById('keyword').value.trim(),
       city:document.getElementById('city').value.trim(),
       googleDomain:document.getElementById('googleDomain').value,
-      language:document.getElementById('language').value
+      language:document.getElementById('language').value,
+      countryCode:document.getElementById('countryCode').value.trim(),
+      businessName:document.getElementById('businessName').value.trim(),
+      phone:document.getElementById('phone').value.trim(),
+      address:document.getElementById('address').value.trim(),
+      region:document.getElementById('region').value.trim(),
+      postalCode:document.getElementById('postalCode').value.trim(),
+      serviceArea:document.getElementById('serviceArea').value.trim()
     };
-
-    const res=await fetch('/api/competitor-audit',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
-    });
-
-    const data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Audit failed');
-
-    _lastData=data;
-    render(data);
-    hideStatus();
-  }catch(e){
-    hideStatus(); showError(e.message);
-  }finally{
-    btn.disabled=false;
-  }
+    const res=await fetch('/api/competitor-audit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await res.json(); if(!res.ok) throw new Error(data.error||'Audit failed');
+    render(data); hideStatus();
+  }catch(e){hideStatus();showError(e.message)}finally{btn.disabled=false}
 }
-
-function mark(v){return v?'<span class="good">✓</span>':'<span class="bad">✗</span>'}
-
-function copyText(id){
-  const el=document.getElementById(id);
-  const text=el.dataset.raw||el.textContent;
-  navigator.clipboard.writeText(text).then(()=>{
-    const btn=document.querySelector(`[data-copy-for="${id}"]`);
-    if(btn){const orig=btn.textContent;btn.textContent='✓ Kopierat';setTimeout(()=>btn.textContent=orig,1500)}
-  });
-}
-
-function showTab(group,name){
-  document.querySelectorAll(`[data-tab-group="${group}"]`).forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll(`[data-tab-content="${group}"]`).forEach(el=>el.classList.remove('active'));
-  document.querySelector(`[data-tab-group="${group}"][data-tab="${name}"]`).classList.add('active');
-  document.querySelector(`[data-tab-content="${group}"][data-content="${name}"]`).classList.add('active');
-}
-
-function downloadJSON(){
-  if(!_lastData) return;
-  const blob=new Blob([JSON.stringify(_lastData,null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`blueprint-${_lastData.query.replace(/\s+/g,'-')}.json`;
-  a.click();
-}
-
-function colorChip(c){
-  return `<span class="tag"><span class="color-swatch" style="background:${esc(c)}"></span>${esc(c)}</span>`;
-}
-
-function render(data){
-  const you=data.you;
-  const comps=data.competitors||[];
-  const summary=data.summary||{};
-  const blueprint=data.blueprint||{};
-  const lovablePrompt=data.lovablePrompt||'';
-  const halfThreshold=Math.ceil((summary.competitorCount||5)/2);
-
-  const sectionsHTML=(blueprint.sections||[]).map(s=>{
-    const validated=s.competitors_have_this>=halfThreshold;
-    const badge=validated?'<span class="validated">✓ validerad</span>':'<span class="added">○ tillagd</span>';
-    return `
-    <div class="section-card">
-      <h4><span class="num">${s.order}</span>${esc(s.name)}${badge}<span style="font-size:11px;color:var(--muted);margin-left:8px">${s.competitors_have_this}/${summary.competitorCount} top-sidor</span></h4>
-      <div class="meta"><strong>Syfte:</strong> ${esc(s.purpose)}</div>
-      <div><strong>H2:</strong> ${esc(s.heading)}</div>
-      ${s.competitor_heading_examples&&s.competitor_heading_examples.length?`<div class="meta"><strong>Konkurrent-rubriker:</strong> ${s.competitor_heading_examples.map(h=>`<span class="tag">${esc(h)}</span>`).join('')}</div>`:''}
-      ${s.subheadings&&s.subheadings.length?`<div class="meta"><strong>H3:</strong> ${s.subheadings.map(h=>`<span class="tag">${esc(h)}</span>`).join('')}</div>`:''}
-      <div class="meta"><strong>Innehåll:</strong> ${esc(s.content_outline)}</div>
-      ${s.copy_starter?`<div class="copy-starter">"${esc(s.copy_starter)}"</div>`:''}
-      ${s.cta&&s.cta.present?`<div class="meta"><strong>CTA:</strong> "${esc(s.cta.text||'')}" → <code>${esc(s.cta.target||'')}</code></div>`:''}
-      ${s.design_notes?`<div class="meta"><strong>Design:</strong> ${esc(s.design_notes)}</div>`:''}
-    </div>
-  `;}).join('');
-
-  const competitorsHTML=comps.map(c=>{
-    const auditOk=!!c.audit;
-    return `
-    <div class="competitor-block">
-      <div class="head">
-        <div><span class="pos">#${c.position}</span> <strong>${esc(c.title)}</strong></div>
-        <a href="${esc(c.url)}" target="_blank" class="url">${esc(c.url)} ↗</a>
-      </div>
-      ${!auditOk?`<div class="meta bad">Crawl misslyckades: ${esc(c.error||'okänd')}</div>`:`
-        <div class="meta">${c.audit.wordCount} ord · H1: ${mark(c.audit.hasH1)} · Schema: ${mark(c.audit.hasSchema)} · Phone: ${mark(c.audit.hasPhone)} · CTAs: ${c.audit.ctas?.length||0} · FAQ: ${c.audit.faq?.detailsBlocks?.length||c.audit.faq?.jsonLdQuestions?.length||0}</div>
-        <div style="margin-top:10px"><strong>H1:</strong> ${esc(c.audit.h1||'—')}</div>
-        ${c.audit.sections&&c.audit.sections.length?`<div class="meta" style="margin-top:8px"><strong>Sektionsordning:</strong> ${c.audit.sections.filter(s=>!['navigation','footer','header','content'].includes(s.type)).map(s=>`<span class="tag">${esc(s.type)}</span>`).join('')}</div>`:''}
-        ${c.audit.schemaTypes&&c.audit.schemaTypes.length?`<div class="meta"><strong>Schema:</strong> ${c.audit.schemaTypes.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-        ${c.audit.ctas&&c.audit.ctas.length?`<div class="meta"><strong>CTAs:</strong> ${c.audit.ctas.slice(0,8).map(t=>`<span class="tag">${esc(t.text)}</span>`).join('')}</div>`:''}
-        ${c.audit.trustSignals&&c.audit.trustSignals.length?`<div class="meta"><strong>Trust:</strong> ${c.audit.trustSignals.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-        ${c.audit.localSignals&&c.audit.localSignals.length?`<div class="meta"><strong>Lokalt:</strong> ${c.audit.localSignals.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-      `}
-    </div>
-    `;
-  }).join('');
-
-  const lovablePromptId='lovable-prompt-block';
-  const jsonId='full-json-block';
-
-  const html=`
-  <div class="hero">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
-      <div>
-        <div class="score">${data.score}/100</div>
-        <div>Din sida vs Google Top 5 för <strong>"${esc(data.query)}"</strong></div>
-      </div>
-      <button class="ghost" onclick="downloadJSON()">⬇ Ladda ner full JSON</button>
-    </div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" data-tab-group="main" data-tab="blueprint" onclick="showTab('main','blueprint')">Blueprint</button>
-    <button class="tab" data-tab-group="main" data-tab="lovable" onclick="showTab('main','lovable')">Lovable Prompt</button>
-    <button class="tab" data-tab-group="main" data-tab="summary" onclick="showTab('main','summary')">Summary</button>
-    <button class="tab" data-tab-group="main" data-tab="competitors" onclick="showTab('main','competitors')">Top 5</button>
-    <button class="tab" data-tab-group="main" data-tab="you" onclick="showTab('main','you')">Din sida</button>
-    <button class="tab" data-tab-group="main" data-tab="json" onclick="showTab('main','json')">Raw JSON</button>
-  </div>
-
-  <div class="tab-content active" data-tab-content="main" data-content="blueprint">
-    <div class="section">
-      <h2>Blueprint</h2>
-      <div class="card">
-        <div><strong>&lt;title&gt;:</strong> ${esc(blueprint.page_title||'—')}</div>
-        <div class="meta"><strong>Meta description:</strong> ${esc(blueprint.meta_description||'—')}</div>
-        <div><strong>H1:</strong> ${esc(blueprint.h1||'—')}</div>
-        <div class="meta"><strong>Mål-ordmängd:</strong> ${blueprint.target_word_count||'—'} ord (top 5 snitt: ${summary.avgWords||'—'})</div>
-        <div class="meta"><strong>Primär CTA:</strong> "${esc(blueprint.primary_cta||'')}" · <strong>Sekundär:</strong> "${esc(blueprint.secondary_cta||'')}"</div>
-        ${blueprint.schema_to_implement?`<div class="meta"><strong>Schema:</strong> ${blueprint.schema_to_implement.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-        ${blueprint.color_palette?`<div class="meta"><strong>Färger på top 5:</strong> ${blueprint.color_palette.map(c=>colorChip(c)).join('')}</div>`:''}
-        ${blueprint.trust_signals_to_include&&blueprint.trust_signals_to_include.length?`<div class="meta"><strong>Trust signals:</strong> ${blueprint.trust_signals_to_include.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
-      </div>
-
-      <h3>Sektioner i ordning</h3>
-      ${sectionsHTML||'<div class="meta">Inga sektioner returnerade.</div>'}
-
-      ${blueprint.faq_questions&&blueprint.faq_questions.length?`
-        <h3>Föreslagna FAQ-frågor (från konkurrenter)</h3>
-        <div class="card">${blueprint.faq_questions.map(q=>`<div>• ${esc(q)}</div>`).join('')}</div>
-      `:''}
-    </div>
-  </div>
-
-  <div class="tab-content" data-tab-content="main" data-content="lovable">
-    <div class="section">
-      <h2>Lovable Prompt</h2>
-      <p class="sub">// klistra in direkt i Lovable</p>
-      <div class="copy-bar">
-        <div style="color:var(--muted);font-size:11px">PROMPT</div>
-        <button class="ghost" data-copy-for="${lovablePromptId}" onclick="copyText('${lovablePromptId}')">Kopiera</button>
-      </div>
-      <pre id="${lovablePromptId}" data-raw="${esc(lovablePrompt)}">${esc(lovablePrompt||'(ingen prompt genererades)')}</pre>
-    </div>
-  </div>
-
-  <div class="tab-content" data-tab-content="main" data-content="summary">
-    <div class="section">
-      <h2>Vad top 5 har gemensamt</h2>
-      <div class="card">
-        <div class="meta"><strong>Genomsnittlig ordmängd:</strong> ${summary.avgWords||'—'}</div>
-        ${summary.commonSectionOrder&&summary.commonSectionOrder.length?`<div class="meta" style="margin-top:14px"><strong>Vanligaste sektionsordning:</strong></div><div>${summary.commonSectionOrder.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}</div>`:''}
-        ${summary.topCtas&&summary.topCtas.length?`<div class="meta" style="margin-top:14px"><strong>Mest använda CTAs:</strong></div><div>${summary.topCtas.map(c=>`<span class="tag">"${esc(c.text)}" (${c.count}x)</span>`).join('')}</div>`:''}
-        ${summary.commonSchema&&summary.commonSchema.length?`<div class="meta" style="margin-top:14px"><strong>Vanliga schema-typer:</strong></div><div>${summary.commonSchema.map(s=>`<span class="tag">${esc(s.type)} (${s.count}x)</span>`).join('')}</div>`:''}
-        ${summary.commonTrust&&summary.commonTrust.length?`<div class="meta" style="margin-top:14px"><strong>Återkommande trust signals:</strong></div><div>${summary.commonTrust.map(t=>`<span class="tag">${esc(t.signal)} (${t.count}x)</span>`).join('')}</div>`:''}
-        ${summary.topColors&&summary.topColors.length?`<div class="meta" style="margin-top:14px"><strong>Dominerande färger:</strong></div><div>${summary.topColors.map(c=>colorChip(c.color)).join('')}</div>`:''}
-        ${summary.gaps&&summary.gaps.length?`<div class="meta" style="margin-top:14px"><strong>Gap att exploatera (sektionstyper INGEN top-sida har):</strong></div><div>${summary.gaps.map(g=>`<span class="tag">${esc(g)}</span>`).join('')}</div>`:''}
-      </div>
-    </div>
-  </div>
-
-  <div class="tab-content" data-tab-content="main" data-content="competitors">
-    <div class="section">
-      <h2>Top ${comps.length} konkurrenter</h2>
-      ${competitorsHTML}
-    </div>
-  </div>
-
-  <div class="tab-content" data-tab-content="main" data-content="you">
-    <div class="section">
-      <h2>Din sida</h2>
-      <table>
-        <tbody>
-          <tr><th>URL</th><td>${esc(you.url)}</td></tr>
-          <tr><th>Title</th><td>${esc(you.audit.title)}</td></tr>
-          <tr><th>Meta description</th><td>${esc(you.audit.metaDescription)}</td></tr>
-          <tr><th>H1</th><td>${esc(you.audit.h1)}</td></tr>
-          <tr><th>Word count</th><td>${you.audit.wordCount}</td></tr>
-          <tr><th>Keyword i title/H1/meta</th><td>${mark(you.audit.keywordInImportantPlaces)}</td></tr>
-          <tr><th>Stad i title/H1/meta</th><td>${mark(you.audit.cityInImportantPlaces)}</td></tr>
-          <tr><th>Telefon hittad</th><td>${mark(you.audit.hasPhone)}</td></tr>
-          <tr><th>Schema markup</th><td>${mark(you.audit.hasSchema)} ${you.audit.schemaTypes?.length?`(${you.audit.schemaTypes.join(', ')})`:''}</td></tr>
-          <tr><th>Bilder med alt</th><td>${you.audit.imagesWithAlt} / ${you.audit.images}</td></tr>
-          <tr><th>CTAs hittade</th><td>${you.audit.ctas?.length||0}</td></tr>
-          <tr><th>Trust signals</th><td>${you.audit.trustSignals?.length?you.audit.trustSignals.join(', '):'<span class="bad">Inga</span>'}</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="tab-content" data-tab-content="main" data-content="json">
-    <div class="section">
-      <h2>Raw JSON</h2>
-      <div class="copy-bar">
-        <div style="color:var(--muted);font-size:11px">FULL OUTPUT</div>
-        <button class="ghost" data-copy-for="${jsonId}" onclick="copyText('${jsonId}')">Kopiera</button>
-      </div>
-      <pre id="${jsonId}">${esc(JSON.stringify(data,null,2))}</pre>
-    </div>
-  </div>
-  `;
-
-  document.getElementById('resultsBody').innerHTML=html;
-  document.getElementById('results').style.display='block';
-  document.getElementById('results').scrollIntoView({behavior:'smooth'});
-}
+function render(data){data.mode==='new-page'?renderNew(data):renderExisting(data);document.getElementById('results').style.display='block';document.getElementById('results').scrollIntoView({behavior:'smooth'})}
+function renderCompetitors(comps){return `<div class="section"><h2>Competitors used</h2><table><thead><tr><th>#</th><th>Title</th><th>URL</th><th>Words</th><th>Schema</th><th>Status</th></tr></thead><tbody>${(comps||[]).map(c=>`<tr><td>${c.position}</td><td>${esc(c.title)}</td><td><div class="url">${esc(c.url)}</div></td><td>${c.audit&&!c.audit.error?c.audit.wordCount:'—'}</td><td>${c.audit&&!c.audit.error?esc((c.audit.schemaTypes||[]).join(', ')):'—'}</td><td>${c.audit&&c.audit.error?'<span class="bad">'+esc(c.audit.error)+'</span>':'<span class="good">crawled</span>'}</td></tr>`).join('')}</tbody></table></div>`}
+function renderNew(data){const b=data.contentBrief;document.getElementById('resultsBody').innerHTML=`
+<div class="hero"><div class="score">New Page</div><div>Claude Content Brief for <strong>"${esc(data.query)}"</strong></div></div>
+${renderCompetitors(data.competitors)}
+<div class="two"><div class="section"><h2>Target meta</h2><table><tbody><tr><th>Title</th><td>${esc(b.page.title)}</td></tr><tr><th>Meta</th><td>${esc(b.page.metaDescription)}</td></tr><tr><th>H1</th><td>${esc(b.page.h1)}</td></tr><tr><th>Words</th><td>${b.page.targetWordCount}</td></tr></tbody></table></div><div class="section"><h2>Market patterns</h2><h3>Common H2s</h3>${list(b.competitorPatterns.commonH2s)}<h3>Trust</h3>${list(b.competitorPatterns.commonTrust)}</div></div>
+<div class="section"><h2>Recommended page structure</h2>${b.recommendedSections.map(s=>`<div class="reco"><strong>${s.order}. ${esc(s.heading)}</strong> <span class="muted">[${esc(s.type)}]</span><br>${esc(s.purpose)}<br><br>${esc(s.content)}</div>`).join('')}</div>
+<div class="section"><h2>FAQ questions</h2>${list(b.faqQuestions)}</div>
+<div class="section"><h2>Copy/paste prompt for Claude</h2><pre id="promptBox">${esc(data.claudePrompt)}</pre><button class="copy" onclick="copyPrompt()">Copy prompt</button></div>`}
+function renderExisting(data){const p=data.technicalPatch;document.getElementById('resultsBody').innerHTML=`
+<div class="hero"><div class="score">${data.score}/100</div><div>Lovable Technical SEO Patch for <strong>"${esc(data.query)}"</strong></div></div>
+${renderCompetitors(data.competitors)}
+<div class="section"><h2>Your current page</h2><table><tbody><tr><th>Title</th><td>${esc(p.currentPage.title)}</td></tr><tr><th>Meta</th><td>${esc(p.currentPage.metaDescription)}</td></tr><tr><th>H1</th><td>${esc(p.currentPage.h1)}</td></tr><tr><th>Words</th><td>${p.currentPage.wordCount}</td></tr><tr><th>Schema</th><td>${esc((p.currentPage.schemaTypes||[]).join(', '))}</td></tr></tbody></table></div>
+<div class="section"><h2>Target meta</h2><table><tbody><tr><th>Title</th><td>${esc(p.targetMeta.title)}</td></tr><tr><th>Meta</th><td>${esc(p.targetMeta.metaDescription)}</td></tr><tr><th>H1</th><td>${esc(p.targetMeta.h1)}</td></tr></tbody></table></div>
+<div class="section"><h2>Lovable patches</h2>${p.patches.map(x=>`<div class="reco patch ${esc(x.priority)}"><strong>[${esc(x.priority)}] ${esc(x.type)}</strong><br>${esc(x.instruction)}${x.code?`<pre>${esc(x.code)}</pre>`:''}</div>`).join('')}</div>
+<div class="section"><h2>Validation checklist</h2>${list(p.validationChecklist)}</div>
+<div class="section"><h2>Copy/paste prompt for Lovable</h2><pre id="promptBox">${esc(data.lovablePrompt)}</pre><button class="copy" onclick="copyPrompt()">Copy prompt</button></div>`}
+function copyPrompt(){navigator.clipboard.writeText(document.getElementById('promptBox').textContent)}
 </script>
 </body>
 </html>
