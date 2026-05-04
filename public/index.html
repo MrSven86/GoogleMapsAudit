@@ -42,6 +42,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 .biz-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:10px}
 .biz-title{font-size:22px;font-weight:800;margin-bottom:4px}
 .biz-meta{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.5}
+.score{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent);font-weight:700;margin-top:6px}
 .btn-pdf{background:none;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
 .btn-pdf:hover{background:var(--accent);color:#000}
 .keyword-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin:22px 0 8px}
@@ -141,6 +142,23 @@ const ACTOR='compass~crawler-google-places';
 let keywords=[];
 let latestAudits=[];
 
+const AUDIT_WEIGHTS={
+  primaryCategory:18,
+  secondaryCategories:12,
+  description:12,
+  reviews:12,
+  photos:10,
+  website:8,
+  phone:6,
+  address:5,
+  hours:5,
+  services:4,
+  posts:3,
+  serviceAreas:2,
+  logo:2,
+  openingDate:1
+};
+
 const LANG={
   en:{
     businessOf:(i,t)=>`// BUSINESS ${i} OF ${t}`,
@@ -149,11 +167,21 @@ const LANG={
     notFound:(t,k)=>`Not found in top ${t} results for "${k}"`,
     you:'◀ YOU',
     checklist:'Profile Optimization Checklist',
+    auditScore:'Audit Score',
+    categoriesCounter:'Categories Counter',
+    primaryCounter:'Primary Categories',
+    secondaryCounter:'Secondary Categories',
+    usedBy:'Used By Top 20',
+    notes:'Notes',
+    commonRanking:'Common ranking category',
+    lessCommon:'Less common',
+    strongSecondary:'Strong secondary category candidate',
+    possibleCategory:'Possible category',
     step:'Step',item:'Item',status:'Status',action:'Action Required',
-    phone:'Phone',address:'Address',hours:'Opening hours',description:'Business description',openingDate:'Opening date',serviceAreas:'Service areas',photos:'Photos (minimum 10)',logo:'Logo',services:'Services / Products',posts:'Posts / Updates',primaryCategory:'Primary category',secondaryCategories:'Secondary categories (min 3)',titleKeywords:'Keywords in title',reviewsCount:'Reviews count',
+    phone:'Phone',address:'Address',hours:'Opening hours',description:'Business description',openingDate:'Opening date',serviceAreas:'Service areas',photos:'Photos (minimum 10)',logo:'Logo',services:'Services / Products',posts:'Posts / Updates',primaryCategory:'Primary category',secondaryCategories:'Secondary categories (min 3)',titleKeywords:'Keywords in title',reviewsCount:'Reviews count',websiteCheck:'Website',
     configured:'Configured',missing:'MISSING',empty:'EMPTY',notConfigured:'NOT CONFIGURED',noAreas:'NO AREAS',noLogo:'NO LOGO',none:'NONE',noPosts:'NO POSTS',
-    addPhone:'Add phone number to profile',addAddress:'Add correct address',addHours:'Set opening hours',addDescription:'Write description of at least 200 characters',addDate:'Add opening date — Google shows “X years in business”',addAreas:'Add service areas where you work',addPhotos:'Upload more photos — competitors often have 30+',addLogo:'Add professional logo — 720×720px PNG',addServices:'Add services/products',addPosts:'Add regular posts with photos and updates',addSecondary:'Add 3–5 relevant secondary categories',addTitleKeywords:'Consider adding specialty or area to the title',moreReviews:'Need 10+ reviews — set up review request system',
-    vs:'#1 comparison',yourProfileVs:'Your profile vs #1',metric:'Metric',youCol:'You',num1:'#1',rating:'Rating',reviews:'Reviews',website:'Website',yes:'Yes',no:'No',categories:'Categories'
+    addPhone:'Add phone number to profile',addAddress:'Add correct address',addHours:'Set opening hours',addDescription:'Write description of at least 200 characters',addDate:'Add opening date — Google shows “X years in business”',addAreas:'Add service areas where you work',addPhotos:'Upload more photos — competitors often have 30+',addLogo:'Add professional logo — 720×720px PNG',addServices:'Add services/products',addPosts:'Add regular posts with photos and updates',addSecondary:'Add 3–5 relevant secondary categories',addTitleKeywords:'Consider adding specialty or area to the title',moreReviews:'Need 10+ reviews — set up review request system',addWebsite:'Add website to profile',
+    yourProfileVs:'Your profile vs #1',metric:'Metric',youCol:'You',num1:'#1',rating:'Rating',reviews:'Reviews',website:'Website',yes:'Yes',no:'No',categories:'Categories'
   },
   sv:{
     businessOf:(i,t)=>`// FÖRETAG ${i} AV ${t}`,
@@ -162,11 +190,21 @@ const LANG={
     notFound:(t,k)=>`Hittades inte i topp ${t} resultat för "${k}"`,
     you:'◀ DU',
     checklist:'Checklista för profiloptimering',
+    auditScore:'Audit Score',
+    categoriesCounter:'Categories Counter',
+    primaryCounter:'Primära kategorier',
+    secondaryCounter:'Sekundära kategorier',
+    usedBy:'Används av topp 20',
+    notes:'Notering',
+    commonRanking:'Vanlig rankingkategori',
+    lessCommon:'Mindre vanlig',
+    strongSecondary:'Stark sekundär kandidat',
+    possibleCategory:'Möjlig kategori',
     step:'Steg',item:'Punkt',status:'Status',action:'Åtgärd krävs',
-    phone:'Telefon',address:'Adress',hours:'Öppettider',description:'Företagsbeskrivning',openingDate:'Öppningsdatum',serviceAreas:'Serviceområden',photos:'Foton (minst 10)',logo:'Logotyp',services:'Tjänster / Produkter',posts:'Inlägg / Uppdateringar',primaryCategory:'Primär kategori',secondaryCategories:'Sekundära kategorier (minst 3)',titleKeywords:'Sökord i titeln',reviewsCount:'Antal recensioner',
+    phone:'Telefon',address:'Adress',hours:'Öppettider',description:'Företagsbeskrivning',openingDate:'Öppningsdatum',serviceAreas:'Serviceområden',photos:'Foton (minst 10)',logo:'Logotyp',services:'Tjänster / Produkter',posts:'Inlägg / Uppdateringar',primaryCategory:'Primär kategori',secondaryCategories:'Sekundära kategorier (minst 3)',titleKeywords:'Sökord i titeln',reviewsCount:'Antal recensioner',websiteCheck:'Hemsida',
     configured:'Konfigurerat',missing:'SAKNAS',empty:'TOM',notConfigured:'EJ KONFIGURERAT',noAreas:'INGA OMRÅDEN',noLogo:'INGEN LOGO',none:'INGEN',noPosts:'INGA INLÄGG',
-    addPhone:'Lägg till telefonnummer',addAddress:'Lägg till korrekt adress',addHours:'Ange öppettider',addDescription:'Skriv en beskrivning på minst 200 tecken',addDate:'Lägg till öppningsdatum — Google visar “X år i branschen”',addAreas:'Lägg till serviceområden där ni arbetar',addPhotos:'Ladda upp fler foton — konkurrenter har ofta 30+',addLogo:'Lägg till professionell logotyp — 720×720px PNG',addServices:'Lägg till tjänster/produkter',addPosts:'Lägg till regelbundna inlägg med bilder och nyheter',addSecondary:'Lägg till 3–5 relevanta sekundära kategorier',addTitleKeywords:'Överväg att lägga till specialitet eller område i titeln',moreReviews:'Sätt upp automatiskt system för recensionsförfrågningar',
-    vs:'Din profil vs #1',yourProfileVs:'Din profil vs #1',metric:'Mätvärde',youCol:'Du',num1:'#1',rating:'Betyg',reviews:'Recensioner',website:'Hemsida',yes:'Ja',no:'Nej',categories:'Kategorier'
+    addPhone:'Lägg till telefonnummer',addAddress:'Lägg till korrekt adress',addHours:'Ange öppettider',addDescription:'Skriv en beskrivning på minst 200 tecken',addDate:'Lägg till öppningsdatum — Google visar “X år i branschen”',addAreas:'Lägg till serviceområden där ni arbetar',addPhotos:'Ladda upp fler foton — konkurrenter har ofta 30+',addLogo:'Lägg till professionell logotyp — 720×720px PNG',addServices:'Lägg till tjänster/produkter',addPosts:'Lägg till regelbundna inlägg med bilder och nyheter',addSecondary:'Lägg till 3–5 relevanta sekundära kategorier',addTitleKeywords:'Överväg att lägga till specialitet eller område i titeln',moreReviews:'Sätt upp automatiskt system för recensionsförfrågningar',addWebsite:'Lägg till hemsida i profilen',
+    yourProfileVs:'Din profil vs #1',metric:'Mätvärde',youCol:'Du',num1:'#1',rating:'Betyg',reviews:'Recensioner',website:'Hemsida',yes:'Ja',no:'Nej',categories:'Kategorier'
   },
   es:{
     businessOf:(i,t)=>`// NEGOCIO ${i} DE ${t}`,
@@ -175,11 +213,21 @@ const LANG={
     notFound:(t,k)=>`No encontrado en top ${t} para "${k}"`,
     you:'◀ USTED',
     checklist:'Checklist de optimización del perfil',
+    auditScore:'Audit Score',
+    categoriesCounter:'Categories Counter',
+    primaryCounter:'Categorías principales',
+    secondaryCounter:'Categorías secundarias',
+    usedBy:'Usado por top 20',
+    notes:'Notas',
+    commonRanking:'Categoría común de ranking',
+    lessCommon:'Menos común',
+    strongSecondary:'Fuerte categoría secundaria',
+    possibleCategory:'Categoría posible',
     step:'Paso',item:'Ítem',status:'Estado',action:'Acción requerida',
-    phone:'Teléfono',address:'Dirección',hours:'Horarios',description:'Descripción del negocio',openingDate:'Fecha de apertura',serviceAreas:'Áreas de servicio',photos:'Fotos (mínimo 10)',logo:'Logo',services:'Servicios / Productos',posts:'Publicaciones / Actualizaciones',primaryCategory:'Categoría principal',secondaryCategories:'Categorías secundarias (mín 3)',titleKeywords:'Keywords en el título',reviewsCount:'Cantidad de reseñas',
+    phone:'Teléfono',address:'Dirección',hours:'Horarios',description:'Descripción del negocio',openingDate:'Fecha de apertura',serviceAreas:'Áreas de servicio',photos:'Fotos (mínimo 10)',logo:'Logo',services:'Servicios / Productos',posts:'Publicaciones / Actualizaciones',primaryCategory:'Categoría principal',secondaryCategories:'Categorías secundarias (mín 3)',titleKeywords:'Keywords en el título',reviewsCount:'Cantidad de reseñas',websiteCheck:'Sitio web',
     configured:'Configurado',missing:'FALTA',empty:'VACÍA',notConfigured:'NO CONFIGURADA',noAreas:'SIN ÁREAS',noLogo:'SIN LOGO',none:'NINGUNA',noPosts:'SIN PUBLICACIONES',
-    addPhone:'Agregar teléfono al perfil',addAddress:'Agregar dirección correcta',addHours:'Configurar horarios',addDescription:'Escribir descripción de mínimo 200 caracteres',addDate:'Agregar fecha de apertura',addAreas:'Agregar áreas de servicio',addPhotos:'Subir más fotos — competidores suelen tener 30+',addLogo:'Agregar logo profesional — 720×720px PNG',addServices:'Agregar servicios/productos',addPosts:'Agregar publicaciones regulares con fotos',addSecondary:'Agregar 3–5 categorías secundarias relevantes',addTitleKeywords:'Considerar agregar especialidad o zona al título',moreReviews:'Configurar sistema automático de reseñas',
-    vs:'Tu perfil vs #1',yourProfileVs:'Tu perfil vs #1',metric:'Métrica',youCol:'Tú',num1:'#1',rating:'Calificación',reviews:'Reseñas',website:'Sitio web',yes:'Sí',no:'No',categories:'Categorías'
+    addPhone:'Agregar teléfono al perfil',addAddress:'Agregar dirección correcta',addHours:'Configurar horarios',addDescription:'Escribir descripción de mínimo 200 caracteres',addDate:'Agregar fecha de apertura',addAreas:'Agregar áreas de servicio',addPhotos:'Subir más fotos — competidores suelen tener 30+',addLogo:'Agregar logo profesional — 720×720px PNG',addServices:'Agregar servicios/productos',addPosts:'Agregar publicaciones regulares con fotos',addSecondary:'Agregar 3–5 categorías secundarias relevantes',addTitleKeywords:'Considerar agregar especialidad o zona al título',moreReviews:'Configurar sistema automático de reseñas',addWebsite:'Agregar sitio web al perfil',
+    yourProfileVs:'Tu perfil vs #1',metric:'Métrica',youCol:'Tú',num1:'#1',rating:'Calificación',reviews:'Reseñas',website:'Sitio web',yes:'Sí',no:'No',categories:'Categorías'
   }
 };
 
@@ -278,6 +326,14 @@ function getCategories(item){
   add(item.categoryName); add(item.category);
   return [...new Set(out.filter(Boolean))];
 }
+function getPrimaryCategory(item){
+  const cats=getCategories(item);
+  return item?.categoryName||item?.category||cats[0]||'Unknown';
+}
+function getSecondaryCategories(item){
+  const primary=getPrimaryCategory(item);
+  return getCategories(item).filter(c=>c&&c!==primary);
+}
 function hasWebsite(item){return !!(item.website&&String(item.website).trim())}
 function hasPhone(item){return !!(item.phone||item.phoneUnformatted)}
 function hasHours(item){return !!(item.openingHours&&item.openingHours.length)}
@@ -292,21 +348,79 @@ function buildChecklist(profile,keyword){
   const titleNorm=normalize(profile.title||profile.name||'');
   const catInTitle=cats.some(c=>titleNorm.includes(normalize(c)))||titleNorm.includes(normalize(keyword||''));
   return [
-    {step:'A1',item:L.phone,ok:hasPhone(profile),status:profile.phone||profile.phoneUnformatted||L.missing,action:L.addPhone},
-    {step:'A2',item:L.address,ok:!!profile.address,status:profile.address||L.missing,action:L.addAddress},
-    {step:'A3',item:L.hours,ok:hasHours(profile),status:L.configured,action:L.addHours},
-    {step:'A4',item:L.description,ok:!!(profile.description&&profile.description.length>=120),status:profile.description?L.configured:L.empty,action:L.addDescription},
-    {step:'A5',item:L.openingDate,ok:!!(profile.openingDate||profile.yearsInBusiness),status:L.notConfigured,action:L.addDate},
-    {step:'A6',item:L.serviceAreas,ok:!!(profile.serviceArea||profile.serviceAreas?.length),status:L.noAreas,action:L.addAreas},
-    {step:'A7',item:L.photos,ok:photoCount(profile)>=10,status:`${photoCount(profile)} photos`,action:L.addPhotos},
-    {step:'A8',item:L.logo,ok:hasLogo(profile),status:hasLogo(profile)?L.configured:L.noLogo,action:L.addLogo},
-    {step:'A9',item:L.services,ok:hasServices(profile),status:hasServices(profile)?L.configured:L.none,action:L.addServices},
-    {step:'A10',item:L.posts,ok:hasPosts(profile),status:hasPosts(profile)?L.configured:L.noPosts,action:L.addPosts},
-    {step:'B1',item:L.primaryCategory,ok:!!(profile.categoryName||cats[0]),status:profile.categoryName||cats[0]||L.none,action:L.addSecondary},
-    {step:'B2',item:L.secondaryCategories,ok:cats.length>=3,status:cats.length>=3?cats.slice(1).join(', '):L.none,action:L.addSecondary},
-    {step:'B3',item:L.titleKeywords,ok:catInTitle,status:catInTitle?L.configured:L.missing,action:L.addTitleKeywords},
-    {step:'C1',item:L.reviewsCount,ok:Number(profile.reviewsCount||0)>=10,status:String(profile.reviewsCount||0),action:L.moreReviews}
+    {step:'A1',key:'phone',item:L.phone,ok:hasPhone(profile),status:profile.phone||profile.phoneUnformatted||L.missing,action:L.addPhone},
+    {step:'A2',key:'address',item:L.address,ok:!!profile.address,status:profile.address||L.missing,action:L.addAddress},
+    {step:'A3',key:'hours',item:L.hours,ok:hasHours(profile),status:L.configured,action:L.addHours},
+    {step:'A4',key:'description',item:L.description,ok:!!(profile.description&&profile.description.length>=120),status:profile.description?L.configured:L.empty,action:L.addDescription},
+    {step:'A5',key:'openingDate',item:L.openingDate,ok:!!(profile.openingDate||profile.yearsInBusiness),status:L.notConfigured,action:L.addDate},
+    {step:'A6',key:'serviceAreas',item:L.serviceAreas,ok:!!(profile.serviceArea||profile.serviceAreas?.length),status:L.noAreas,action:L.addAreas},
+    {step:'A7',key:'photos',item:L.photos,ok:photoCount(profile)>=10,status:`${photoCount(profile)} photos`,action:L.addPhotos},
+    {step:'A8',key:'logo',item:L.logo,ok:hasLogo(profile),status:hasLogo(profile)?L.configured:L.noLogo,action:L.addLogo},
+    {step:'A9',key:'services',item:L.services,ok:hasServices(profile),status:hasServices(profile)?L.configured:L.none,action:L.addServices},
+    {step:'A10',key:'posts',item:L.posts,ok:hasPosts(profile),status:hasPosts(profile)?L.configured:L.noPosts,action:L.addPosts},
+    {step:'B1',key:'primaryCategory',item:L.primaryCategory,ok:!!(profile.categoryName||cats[0]),status:profile.categoryName||cats[0]||L.none,action:L.addSecondary},
+    {step:'B2',key:'secondaryCategories',item:L.secondaryCategories,ok:cats.length>=3,status:cats.length>=3?cats.slice(1).join(', '):L.none,action:L.addSecondary},
+    {step:'B3',key:'titleKeywords',item:L.titleKeywords,ok:catInTitle,status:catInTitle?L.configured:L.missing,action:L.addTitleKeywords},
+    {step:'C1',key:'reviews',item:L.reviewsCount,ok:Number(profile.reviewsCount||0)>=10,status:String(profile.reviewsCount||0),action:L.moreReviews},
+    {step:'D1',key:'website',item:L.websiteCheck,ok:hasWebsite(profile),status:hasWebsite(profile)?L.configured:L.missing,action:L.addWebsite}
   ];
+}
+
+function calculateAuditScore(profile,keyword){
+  const checks=buildChecklist(profile,keyword);
+  let earned=0,total=0;
+  for(const c of checks){
+    const weight=AUDIT_WEIGHTS[c.key]||0;
+    total+=weight;
+    if(c.ok)earned+=weight;
+  }
+  return total?Math.round((earned/total)*100):0;
+}
+
+function buildCategoriesCounter(ranked){
+  const primary={};
+  const secondary={};
+
+  for(const r of (ranked||[]).slice(0,20)){
+    const item=r.item||{};
+    const p=getPrimaryCategory(item);
+    primary[p]=(primary[p]||0)+1;
+
+    for(const cat of getSecondaryCategories(item)){
+      secondary[cat]=(secondary[cat]||0)+1;
+    }
+  }
+
+  return {
+    primary:Object.entries(primary).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])),
+    secondary:Object.entries(secondary).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))
+  };
+}
+
+function renderCategoriesCounter(ka){
+  const L=t();
+  const counter=buildCategoriesCounter(ka.ranked);
+  return `
+    <div class="keyword-label">// ${esc(L.categoriesCounter)}</div>
+    <div class="checklist">
+      <div class="check-row check-head"><div>${esc(L.primaryCounter)}</div><div>${esc(L.usedBy)}</div><div>${esc(L.notes)}</div></div>
+      ${counter.primary.map(([cat,count])=>`
+        <div class="check-row">
+          <div>${esc(cat)}</div>
+          <div>${count}/20</div>
+          <div>${count>=3?esc(L.commonRanking):esc(L.lessCommon)}</div>
+        </div>`).join('')}
+    </div>
+    <div class="checklist">
+      <div class="check-row check-head"><div>${esc(L.secondaryCounter)}</div><div>${esc(L.usedBy)}</div><div>${esc(L.notes)}</div></div>
+      ${counter.secondary.length?counter.secondary.map(([cat,count])=>`
+        <div class="check-row">
+          <div>${esc(cat)}</div>
+          <div>${count}/20</div>
+          <div>${count>=3?esc(L.strongSecondary):esc(L.possibleCategory)}</div>
+        </div>`).join(''):`<div class="check-row"><div>—</div><div>0/20</div><div>—</div></div>`}
+    </div>
+  `;
 }
 
 async function runCheck(){
@@ -391,6 +505,8 @@ async function runCheck(){
           rating:item.totalScore??item.rating??null,
           reviews:item.reviewsCount??item.reviewCount??null,
           categories:getCategories(item),
+          primaryCategory:getPrimaryCategory(item),
+          secondaryCategories:getSecondaryCategories(item),
           website:hasWebsite(item),
           phone:hasPhone(item),
           hours:hasHours(item),
@@ -403,7 +519,8 @@ async function runCheck(){
           keyword:kw,
           query:searchFrom==='city'?`${kw} ${city}`:kw,
           ranked,target,found:!!target,position:target?target.pos:null,
-          number1:ranked[0]||null
+          number1:ranked[0]||null,
+          categoriesCounter:buildCategoriesCounter(ranked)
         });
       }
       audits.push({profile,keywordAudits});
@@ -427,7 +544,7 @@ function renderResults(audits){
     const p=audit.profile;
     const cats=getCategories(p);
     const checks=buildChecklist(p,audit.keywordAudits[0]?.keyword);
-    const passed=checks.filter(c=>c.ok).length;
+    const auditScore=calculateAuditScore(p,audit.keywordAudits[0]?.keyword);
 
     html+=`
     <div class="biz-block">
@@ -436,8 +553,9 @@ function renderResults(audits){
           <div class="biz-title">${esc(p.title||p.name||'Business')}</div>
           <div class="biz-meta">
             ${esc(p.categoryName||cats[0]||'')} · ${esc(p.address||'No address')} · ${esc(p.phone||'No phone')}<br>
-            Rating: ${p.totalScore??'—'} · Reviews: ${p.reviewsCount??0} · Website: ${hasWebsite(p)?'Yes':'No'} · Profile score: ${passed}/${checks.length}
+            Rating: ${p.totalScore??'—'} · Reviews: ${p.reviewsCount??0} · Website: ${hasWebsite(p)?'Yes':'No'}
           </div>
+          <div class="score">${esc(L.auditScore)}: ${auditScore}%</div>
         </div>
         <button class="btn-pdf" onclick="openBizPdf(${idx})">Open PDF</button>
       </div>
@@ -466,7 +584,9 @@ function renderResults(audits){
             <div class="rating">${r.rating!=null?'★ '+Number(r.rating).toFixed(1)+(r.reviews?' ('+r.reviews+')':''):''}</div>
           </div>`).join('')}
         ${!ka.target?`<div class="notfound">✕ ${esc(p.title||'Business')} — not found in top results</div>`:''}
-      </div>`;
+      </div>
+      ${renderCategoriesCounter(ka)}
+      `;
     }
 
     html+=`
@@ -508,10 +628,11 @@ function buildPdfHtml(audit,index,total){
   const p=audit.profile;
   const ka=audit.keywordAudits[0];
   const checks=buildChecklist(p,ka?.keyword);
+  const auditScore=calculateAuditScore(p,ka?.keyword);
   const number1=ka?.number1;
-  const you=ka?.target;
   const cats=getCategories(p);
   const num1Cats=number1?.categories||getCategories(number1?.item||{});
+  const counter=buildCategoriesCounter(ka?.ranked||[]);
   const now=new Date().toISOString().slice(0,10)+' '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   const title=esc(p.title||'Business');
   const query=ka?.query||'';
@@ -533,13 +654,13 @@ body{background:#fff;color:#111;font-family:'DM Mono',monospace;font-size:12px;m
 .page:last-child{page-break-after:auto}
 .topline{position:absolute;top:3mm;left:6mm;right:6mm;display:flex;justify-content:space-between;font-size:9px;color:#222}
 h1{font-family:Syne,sans-serif;font-size:24px;line-height:1.05;margin:18px 0 18px;font-weight:800;letter-spacing:-.03em}
-h2{font-family:Syne,sans-serif;font-size:22px;margin:20px 0 8px;font-weight:800;letter-spacing:-.03em}
-.mono{font-family:'DM Mono',monospace}
+h2{font-family:Syne,sans-serif;font-size:21px;margin:18px 0 8px;font-weight:800;letter-spacing:-.03em}
 .muted{color:#666}
 .keyword{font-size:11px;color:#333;margin-bottom:8px;text-transform:uppercase}
 .rankbox{display:flex;align-items:center;gap:22px;margin:6px 0 14px}
 .rank{font-family:Syne,sans-serif;font-size:72px;color:#111;font-weight:800;line-height:.9;min-width:130px}
 .rank-title{font-family:Syne,sans-serif;font-size:18px;font-weight:800;margin-bottom:4px}
+.audit-score{font-size:18px;font-weight:700;margin:8px 0 14px;color:#5d8200}
 .results{border:1px solid #ddd;width:100%;border-collapse:collapse}
 .results td{padding:5px 8px;border-bottom:1px solid #e5e5e5;vertical-align:middle}
 .results tr:last-child td{border-bottom:0}
@@ -547,11 +668,12 @@ h2{font-family:Syne,sans-serif;font-size:22px;margin:20px 0 8px;font-weight:800;
 .pos{width:26px;text-align:right;color:#555}
 .rating{text-align:right;color:#333;width:90px;font-size:11px}
 .table{width:100%;border-collapse:collapse;border:1px solid #d0d0d0;margin-top:8px}
-.table th{background:#f5f5f5;text-align:left;padding:7px 9px;font-size:10px}
-.table td{border-top:1px solid #ddd;padding:7px 9px;vertical-align:top}
+.table th{background:#f5f5f5;text-align:left;padding:6px 8px;font-size:10px}
+.table td{border-top:1px solid #ddd;padding:6px 8px;vertical-align:top}
 .green{color:#5d8200;font-weight:700}
 .red{color:#c00;font-weight:700}
 .footer{position:absolute;bottom:3mm;left:6mm;right:6mm;display:flex;justify-content:space-between;font-size:9px;color:#222}
+.small{font-size:10px}
 @media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.page{margin:0}}
 </style>
 </head>
@@ -566,6 +688,7 @@ h2{font-family:Syne,sans-serif;font-size:22px;margin:20px 0 8px;font-weight:800;
     <div>
       <div class="rank-title">${title}</div>
       <div class="muted">${esc(desc)}</div>
+      <div class="audit-score">${esc(L.auditScore)}: ${auditScore}%</div>
     </div>
   </div>
   <table class="results">
@@ -581,7 +704,9 @@ h2{font-family:Syne,sans-serif;font-size:22px;margin:20px 0 8px;font-weight:800;
 
 <div class="page">
   <div class="topline"><span>${esc(now)}</span><span>${title} — Rank Report</span></div>
+
   <h2>${esc(L.checklist)}</h2>
+  <div class="audit-score">${esc(L.auditScore)}: ${auditScore}%</div>
   <table class="table">
     <thead><tr><th style="width:11%">${esc(L.step)}</th><th style="width:31%">${esc(L.item)}</th><th style="width:30%">${esc(L.status)}</th><th>${esc(L.action)}</th></tr></thead>
     <tbody>
@@ -608,6 +733,22 @@ h2{font-family:Syne,sans-serif;font-size:22px;margin:20px 0 8px;font-weight:800;
       <tr><td>${esc(L.categories)}</td><td>${esc(cats.join(', ')||'—')}</td><td>${esc(num1Cats.join(', ')||'—')}</td></tr>
     </tbody>
   </table>
+
+  <h2>${esc(L.categoriesCounter)}</h2>
+  <table class="table">
+    <thead><tr><th>${esc(L.primaryCounter)}</th><th style="width:28%">${esc(L.usedBy)}</th></tr></thead>
+    <tbody>
+      ${counter.primary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join('')}
+    </tbody>
+  </table>
+
+  <table class="table">
+    <thead><tr><th>${esc(L.secondaryCounter)}</th><th style="width:28%">${esc(L.usedBy)}</th></tr></thead>
+    <tbody>
+      ${counter.secondary.length?counter.secondary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join(''):`<tr><td>—</td><td>0/20</td></tr>`}
+    </tbody>
+  </table>
+
   <div class="footer"><span>about:blank</span><span>2/2</span></div>
 </div>
 
