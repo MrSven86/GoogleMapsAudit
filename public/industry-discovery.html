@@ -728,16 +728,19 @@ async function runScan(){
       const candidates=businesses.filter(b=>b.ippScore>=65).sort((a,b)=>b.ippScore-a.ippScore);
       const counter=buildCategoriesCounter(businesses);
 
-      // Phase 2: deep-dive only on IPP candidates with websites
-      // Skip website analysis entirely if market is hopeless (saves time + bandwidth)
+      // Phase 2: analyze every candidate's website. No gate — if we found a
+      // candidate, we want to know what their site looks like.
       const candidatesWithSites=candidates.filter(b=>b.website);
-      if(marketScore>=30&&candidatesWithSites.length){
+      if(candidatesWithSites.length){
         status(`${label}: analyzing ${candidatesWithSites.length} candidate website(s)`);
         const cityForCheck=searchFrom==='city'?city:'';
         await Promise.all(candidatesWithSites.map(async b=>{
           try{
             b.websiteAnalysis=await analyzeWebsite(b.website,cityForCheck,keyword);
-          }catch(e){b.websiteAnalysis=null}
+          }catch(e){
+            console.error('Website analysis failed for',b.name,e);
+            b.websiteAnalysis={reachable:false,weaknessScore:90};
+          }
         }));
       }
 
@@ -816,18 +819,6 @@ function renderMarkets(markets){
       <table class="table">
         <thead><tr><th>#</th><th>Name</th><th>Profile</th><th>IPP</th><th>Traction difficulty</th><th>Rating</th><th>Reviews</th><th>Website</th><th>Primary category</th></tr></thead>
         <tbody>${m.businesses.map(b=>renderBusinessRow(b)).join('')}</tbody>
-      </table>
-
-      <div class="section-title">// categories counter — primary</div>
-      <table class="table">
-        <thead><tr><th>Primary category</th><th>Used by top 20</th></tr></thead>
-        <tbody>${m.counter.primary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join('')}</tbody>
-      </table>
-
-      <div class="section-title">// categories counter — secondary</div>
-      <table class="table">
-        <thead><tr><th>Secondary category</th><th>Used by top 20</th></tr></thead>
-        <tbody>${m.counter.secondary.length?m.counter.secondary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join(''):`<tr><td>—</td><td>0/20</td></tr>`}</tbody>
       </table>
     </div>`;
   });
@@ -942,20 +933,6 @@ td{border-top:1px solid #ddd;padding:5px;vertical-align:top}
   <table>
     <thead><tr><th>#</th><th>Name</th><th>Profile</th><th>IPP</th><th>Traction</th><th>Reviews</th><th>Website</th><th>Primary Category</th></tr></thead>
     <tbody>${m.businesses.map(b=>`<tr><td>${b.rank}</td><td>${esc(b.name)}</td><td>${b.profileScore}%</td><td>${b.ippScore}</td><td>${b.tractionDifficulty}/100</td><td>${b.reviews}</td><td>${b.hasWebsite?'Yes':'No'}</td><td>${esc(b.primaryCategory)}</td></tr>`).join('')}</tbody>
-  </table>
-</div>
-
-<div class="page">
-  <h1>Categories Counter</h1>
-  <h2>Primary Categories</h2>
-  <table>
-    <thead><tr><th>Category</th><th>Used by top 20</th></tr></thead>
-    <tbody>${m.counter.primary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join('')}</tbody>
-  </table>
-  <h2>Secondary Categories</h2>
-  <table>
-    <thead><tr><th>Category</th><th>Used by top 20</th></tr></thead>
-    <tbody>${m.counter.secondary.length?m.counter.secondary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join(''):`<tr><td>—</td><td>0/20</td></tr>`}</tbody>
   </table>
 </div>
 </body>
