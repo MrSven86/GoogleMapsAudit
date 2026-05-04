@@ -317,6 +317,254 @@ function getIPPScore(b,allBusinesses){
   return Math.max(0,Math.min(100,Math.round(score)));
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// WEBSITE WEAKNESS SCORING
+// Fetches the prospect's homepage and parses cheap signals to determine
+// how "brochure-like" the site is. Higher score = weaker site = better
+// pitch opportunity ("your site doesn't rank because of X, Y, Z").
+// Only runs for IPP candidates to keep the tool fast.
+// ─────────────────────────────────────────────────────────────────────
+
+const CORS_PROXIES=[
+  url=>`https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+];
+
+async function fetchHtml(url,timeoutMs=12000){
+  // try each proxy in order until one works
+  for(const proxy of CORS_PROXIES){
+    try{
+      const ctrl=new AbortController();
+      const t=setTimeout(()=>ctrl.abort(),timeoutMs);
+      const res=await fetch(proxy(url),{signal:ctrl.signal});
+      clearTimeout(t);
+      if(!res.ok)continue;
+      const html=await res.text();
+      if(html&&html.length>200)return {ok:true,html,status:res.status};
+    }catch(e){}
+  }
+  return {ok:false,html:'',status:0};
+}
+
+async function fetchSitemap(siteUrl,timeoutMs=8000){
+  try{
+    const u=new URL(siteUrl);
+    const sitemapUrl=`${u.protocol}//${u.host}/sitemap.xml`;
+    const r=await fetchHtml(sitemapUrl,timeoutMs);
+    if(!r.ok)return {pageCount:null,servicePageCount:null};
+    const urls=Array.from(r.html.matchAll(/<loc>([^<]+)<\/loc>/gi)).map(m=>m[1]);
+    const servicePages=urls.filter(u=>/\/services?\//i.test(u)||/\/(plumb|paint|hvac|roof|electric|clean|repair|install|service)/i.test(u));
+    return {pageCount:urls.length||null,servicePageCount:servicePages.length};
+  }catch(e){return {pageCount:null,servicePageCount:null}}
+}
+
+async function fetchPageSpeed(url){
+  // Google PageSpeed Insights API — free, no key needed for low volume
+  try{
+    const api=`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&category=performance`;
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),20000);
+    const res=await fetch(api,{signal:ctrl.signal});
+    clearTimeout(t);
+    if(!res.ok)return null;
+    const data=await res.json();
+    const score=data?.lighthouseResult?.categories?.performance?.score;
+    return typeof score==='number'?Math.round(score*100):null;
+  }catch(e){return null}
+}
+
+function analyzeHtml(html,siteUrl,city,keyword){
+  if(!html)return null;
+  const lower=html.toLowerCase();
+  const cityLower=(city||'').toLowerCase();
+  const kwLower=(keyword||'').toLowerCase();
+
+  // Title
+  const titleMatch=html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const title=titleMatch?titleMatch[1].replace(/\s+/g,' ').trim():'';
+  const titleLower=title.toLowerCase();
+
+  // H1
+  const h1Match=html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const h1=h1Match?h1Match[1].replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim():'';
+  const h1Lower=h1.toLowerCase();
+
+  // Schema detection (JSON-LD)
+  const ldMatches=Array.from(html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi));
+  let localBusinessSchema=false,serviceSchema=false,faqSchema=false,breadcrumbSchema=false;
+  for(const m of ldMatches){
+    const txt=m[1];
+    if(/"@type"\s*:\s*"(LocalBusiness|Plumber|RoofingContractor|HVACBusiness|Electrician|HousePainter|HomeAndConstructionBusiness|ProfessionalService|GeneralContractor)"/i.test(txt))localBusinessSchema=true;
+    if(/"@type"\s*:\s*"Service"/i.test(txt))serviceSchema=true;
+    if(/"@type"\s*:\s*"FAQPage"/i.test(txt))faqSchema=true;
+    if(/"@type"\s*:\s*"BreadcrumbList"/i.test(txt))breadcrumbSchema=true;
+  }
+
+  // Open Graph
+  const ogTitle=/<meta[^>]+property=["']og:title["']/i.test(html);
+  const ogImage=/<meta[^>]+property=["']og:image["']/i.test(html);
+  const openGraph=ogTitle&&ogImage;
+
+  // Mobile viewport
+  const mobileViewport=/<meta[^>]+name=["']viewport["'][^>]*content=["'][^"']*width=device-width/i.test(html);
+
+  // HTTPS
+  const https=siteUrl.startsWith('https://');
+
+  // CMS / generator detection
+  let generator='';
+  const genMatch=html.match(/<meta[^>]+name=["']generator["'][^>]*content=["']([^"']+)["']/i);
+  if(genMatch)generator=genMatch[1];
+  else if(/wp-content|wp-includes/i.test(html))generator='WordPress';
+  else if(/static\.wixstatic\.com|wix\.com/i.test(html))generator='Wix';
+  else if(/squarespace/i.test(lower))generator='Squarespace';
+  else if(/cdn\.shopify\.com/i.test(html))generator='Shopify';
+  else if(/webflow\.com/i.test(html))generator='Webflow';
+
+  // Word count (strip tags + scripts/styles first)
+  const stripped=html
+    .replace(/<script[\s\S]*?<\/script>/gi,'')
+    .replace(/<style[\s\S]*?<\/style>/gi,'')
+    .replace(/<[^>]+>/g,' ')
+    .replace(/\s+/g,' ');
+  const wordCount=stripped.split(' ').filter(w=>w.length>1).length;
+
+  // Phone presence
+  const phoneVisible=/(\+?\d[\d\s\-().]{7,})/.test(stripped)&&/tel:|phone|call|ring/i.test(html);
+
+  // Address / city presence
+  const cityVisible=cityLower?stripped.toLowerCase().includes(cityLower):false;
+
+  // Form detection
+  const formDetected=/<form[\s>]/i.test(html)||/<input[^>]+type=["']email["']/i.test(html);
+
+  // Keyword/city in title and h1
+  const titleHasCity=cityLower?titleLower.includes(cityLower):false;
+  const titleHasKeyword=kwLower?kwLower.split(/\s+/).some(w=>w.length>2&&titleLower.includes(w)):false;
+  const h1HasCity=cityLower?h1Lower.includes(cityLower):false;
+  const h1HasKeyword=kwLower?kwLower.split(/\s+/).some(w=>w.length>2&&h1Lower.includes(w)):false;
+
+  return {
+    title,h1,
+    https,mobileViewport,
+    localBusinessSchema,serviceSchema,faqSchema,breadcrumbSchema,
+    openGraph,generator,
+    wordCount,
+    phoneVisible,cityVisible,formDetected,
+    titleHasCity,titleHasKeyword,h1HasCity,h1HasKeyword
+  };
+}
+
+function getWebsiteWeaknessScore(s){
+  if(!s)return null;
+  let score=0;
+
+  // Schema absence — strongest signal that no SEO work was done
+  if(!s.localBusinessSchema)score+=25;
+  if(!s.serviceSchema)score+=15;
+  if(!s.faqSchema)score+=8;
+  if(!s.breadcrumbSchema)score+=5;
+
+  // Title and H1 don't target city + service
+  if(!s.titleHasCity)score+=8;
+  if(!s.titleHasKeyword)score+=8;
+  if(!s.h1HasCity)score+=6;
+  if(!s.h1HasKeyword)score+=6;
+
+  // Site size
+  if(s.pageCount===1)score+=25;
+  else if(s.pageCount&&s.pageCount<4)score+=15;
+  else if(!s.pageCount)score+=10; // no sitemap = probably small
+
+  // Service pages (real SEO sites have these)
+  if(s.servicePageCount===0||s.servicePageCount===null)score+=10;
+
+  // Content depth
+  if(s.wordCount<300)score+=10;
+  else if(s.wordCount<600)score+=5;
+
+  // Trust + technical
+  if(!s.phoneVisible)score+=5;
+  if(!s.formDetected)score+=5;
+  if(!s.https)score+=20;
+  if(!s.mobileViewport)score+=15;
+  if(!s.openGraph)score+=4;
+
+  // PageSpeed (if available)
+  if(typeof s.pageSpeedMobile==='number'){
+    if(s.pageSpeedMobile<30)score+=12;
+    else if(s.pageSpeedMobile<50)score+=8;
+    else if(s.pageSpeedMobile<70)score+=4;
+  }
+
+  // Builder hints (Wix/Squarespace skew toward brochures)
+  if(s.generator==='Wix'||s.generator==='Squarespace')score+=4;
+
+  return Math.min(100,Math.max(0,Math.round(score)));
+}
+
+async function analyzeWebsite(siteUrl,city,keyword){
+  if(!siteUrl)return null;
+  // normalize
+  let url=siteUrl.trim();
+  if(!/^https?:\/\//i.test(url))url='https://'+url;
+
+  const [htmlResult,sitemapData,pageSpeed]=await Promise.all([
+    fetchHtml(url),
+    fetchSitemap(url),
+    fetchPageSpeed(url)
+  ]);
+
+  if(!htmlResult.ok){
+    // site unreachable — that itself is a strong "weak" signal
+    return {
+      reachable:false,url,
+      pageSpeedMobile:pageSpeed,
+      ...sitemapData,
+      weaknessScore:90 // unreachable = very weak
+    };
+  }
+
+  const analysis=analyzeHtml(htmlResult.html,url,city,keyword);
+  const combined={
+    reachable:true,url,
+    pageSpeedMobile:pageSpeed,
+    ...sitemapData,
+    ...analysis
+  };
+  combined.weaknessScore=getWebsiteWeaknessScore(combined);
+  return combined;
+}
+
+function buildPitchAngle(b){
+  if(!b.website)return 'No website at all — start from zero.';
+  const w=b.websiteAnalysis;
+  if(!w)return 'Website not yet analyzed.';
+  if(!w.reachable)return 'Their website is unreachable — broken or abandoned.';
+
+  const issues=[];
+  if(!w.localBusinessSchema)issues.push('no LocalBusiness schema');
+  if(!w.serviceSchema)issues.push('no Service schema');
+  if(!w.titleHasCity)issues.push('city missing from title tag');
+  if(!w.h1HasCity)issues.push('city missing from H1');
+  if(w.pageCount&&w.pageCount<4)issues.push(`only ${w.pageCount} pages indexed`);
+  if(w.servicePageCount===0)issues.push('no dedicated service pages');
+  if(w.wordCount&&w.wordCount<300)issues.push('thin homepage content');
+  if(typeof w.pageSpeedMobile==='number'&&w.pageSpeedMobile<50)issues.push(`slow mobile (PageSpeed ${w.pageSpeedMobile})`);
+  if(w.generator==='Wix'||w.generator==='Squarespace')issues.push(`${w.generator} template`);
+
+  if(!issues.length)return 'Their website is reasonable — focus pitch on GBP gaps.';
+  return `Their site looks fine but doesn't rank: ${issues.slice(0,4).join(', ')}.`;
+}
+
+function getFinalProspectScore(b){
+  // IPP already incorporates traction difficulty, so weight 65/35 with weakness
+  const ipp=b.ippScore||0;
+  const weakness=b.websiteAnalysis?.weaknessScore;
+  if(typeof weakness!=='number')return ipp; // no website data = use IPP only
+  return Math.round(ipp*0.65+weakness*0.35);
+}
+
 function buildCategoriesCounter(businesses){
   const primary={},secondary={};
   for(const b of businesses.slice(0,20)){
@@ -362,6 +610,10 @@ function getMarketScore(businesses){
   const weakTop10=top10.filter(b=>b.profileScore<50||!b.hasWebsite).length;
   const candidates=businesses.filter(b=>b.ippScore>=65).length;
 
+  // detect giants anywhere in top 20 — they will eventually dominate
+  const giants1000=businesses.filter(b=>b.reviews>=1000).length;
+  const giants500=businesses.filter(b=>b.reviews>=500).length;
+
   let score=0;
   if((leader.reviews||0)<200)score+=35;
   else if((leader.reviews||0)<500)score+=15;
@@ -373,6 +625,10 @@ function getMarketScore(businesses){
 
   score+=weakTop10*4;
   score+=candidates*10;
+
+  // CRITICAL: any giant in top 20 = market is gravitationally pulled toward them
+  if(giants1000>=1)score*=0.5;       // market killer
+  else if(giants500>=2)score*=0.7;   // heavy competition
 
   return Math.max(0,Math.min(100,Math.round(score)));
 }
@@ -472,6 +728,27 @@ async function runScan(){
       const candidates=businesses.filter(b=>b.ippScore>=65).sort((a,b)=>b.ippScore-a.ippScore);
       const counter=buildCategoriesCounter(businesses);
 
+      // Phase 2: deep-dive only on IPP candidates with websites
+      // Skip website analysis entirely if market is hopeless (saves time + bandwidth)
+      const candidatesWithSites=candidates.filter(b=>b.website);
+      if(marketScore>=30&&candidatesWithSites.length){
+        status(`${label}: analyzing ${candidatesWithSites.length} candidate website(s)`);
+        const cityForCheck=searchFrom==='city'?city:'';
+        await Promise.all(candidatesWithSites.map(async b=>{
+          try{
+            b.websiteAnalysis=await analyzeWebsite(b.website,cityForCheck,keyword);
+          }catch(e){b.websiteAnalysis=null}
+        }));
+      }
+
+      // Final score + pitch angle for every candidate (with or without site analysis)
+      for(const b of candidates){
+        b.finalScore=getFinalProspectScore(b);
+        b.pitchAngle=buildPitchAngle(b);
+      }
+      // Re-sort candidates by final score (IPP + website weakness combined)
+      candidates.sort((a,b)=>b.finalScore-a.finalScore);
+
       markets.push({
         keyword,city,query,label,searchFrom,businesses,marketScore,verdict,candidates,counter,
         leader:businesses[0]||null,
@@ -492,6 +769,15 @@ async function runScan(){
 function scoreClass(n){return n>=70?'good':n>=45?'mid':'bad'}
 function profileBadge(score){return `<span class="badge ${score>=70?'badge-good':score>=50?'badge-mid':'badge-bad'}">${score}%</span>`}
 function ippBadge(score){return `<span class="badge ${score>=65?'badge-good':score>=40?'badge-mid':'badge-bad'}">${score}</span>`}
+function weaknessBadge(score){
+  if(typeof score!=='number')return '<span style="color:var(--muted)">—</span>';
+  // Higher weakness = better prospect, so colors are inverted vs other badges
+  return `<span class="badge ${score>=60?'badge-good':score>=35?'badge-mid':'badge-bad'}">${score}</span>`;
+}
+function finalBadge(score){
+  if(typeof score!=='number')return '<span style="color:var(--muted)">—</span>';
+  return `<span class="badge ${score>=65?'badge-good':score>=45?'badge-mid':'badge-bad'}">${score}</span>`;
+}
 
 function renderMarkets(markets){
   let html=`<div class="summary">// ${markets.length} market scans · ${new Date().toLocaleString()}</div>`;
@@ -520,7 +806,7 @@ function renderMarkets(markets){
 
       <div class="section-title">// call list — best IPP prospects</div>
       <table class="table">
-        <thead><tr><th>Rank</th><th>Business</th><th>IPP</th><th>Profile</th><th>Traction</th><th>Rating</th><th>Reviews</th><th>Website</th><th>Why</th></tr></thead>
+        <thead><tr><th>Rank</th><th>Business</th><th>Final</th><th>IPP</th><th>Profile</th><th>Site Weakness</th><th>Rating</th><th>Reviews</th><th>Phone</th><th>Website</th><th>Pitch Angle</th></tr></thead>
         <tbody>
           ${m.candidates.length?m.candidates.map(b=>renderProspectRow(b)).join(''):`<tr><td colspan="9">No strong IPP candidates found.</td></tr>`}
         </tbody>
@@ -566,22 +852,24 @@ function renderBusinessRow(b){
 }
 
 function renderProspectRow(b){
-  const why=[];
-  if(b.rank>=8&&b.rank<=15)why.push('sweet spot rank');
-  if(!b.hasWebsite)why.push('no website');
-  if(b.profileScore<50)why.push('weak profile');
-  if(b.reviews>=15&&b.reviews<=60)why.push('good review range');
-  if(b.tractionDifficulty<60)why.push('weak competitors above');
+  const phone=b.item.phone||b.item.phoneUnformatted||'—';
+  const websiteCell=b.website
+    ? `<a href="${esc(b.website)}" target="_blank" rel="noopener">Site</a>`
+    : '<span class="bad">No</span>';
+  const weakness=b.websiteAnalysis?.weaknessScore;
+  const pitch=b.pitchAngle||'—';
   return `<tr class="prospect">
     <td>${b.rank}</td>
     <td><strong>${esc(b.name)}</strong></td>
+    <td>${finalBadge(b.finalScore)}</td>
     <td>${ippBadge(b.ippScore)}</td>
     <td>${profileBadge(b.profileScore)}</td>
-    <td><span class="${scoreClass(100-b.tractionDifficulty)}">${b.tractionDifficulty}/100</span></td>
+    <td>${weaknessBadge(weakness)}</td>
     <td>${b.rating?`★ ${b.rating.toFixed(1)}`:'—'}</td>
     <td>${b.reviews}</td>
-    <td>${b.hasWebsite?'Yes':'<span class="bad">No</span>'}</td>
-    <td>${esc(why.join(', ')||'potential')}</td>
+    <td>${esc(phone)}</td>
+    <td>${websiteCell}</td>
+    <td style="max-width:280px;font-size:11px;line-height:1.4">${esc(pitch)}</td>
   </tr>`;
 }
 
@@ -639,8 +927,15 @@ td{border-top:1px solid #ddd;padding:5px;vertical-align:top}
 
   <h2>Call List — IPP Candidates</h2>
   <table>
-    <thead><tr><th>Rank</th><th>Business</th><th>IPP</th><th>Profile</th><th>Traction</th><th>Rating</th><th>Reviews</th><th>Website</th></tr></thead>
-    <tbody>${m.candidates.length?m.candidates.map(b=>`<tr><td>${b.rank}</td><td>${esc(b.name)}</td><td>${b.ippScore}</td><td>${b.profileScore}%</td><td>${b.tractionDifficulty}/100</td><td>${b.rating?`★ ${b.rating.toFixed(1)}`:'—'}</td><td>${b.reviews}</td><td>${b.hasWebsite?'Yes':'No'}</td></tr>`).join(''):`<tr><td colspan="8">No strong candidates.</td></tr>`}</tbody>
+    <thead><tr><th>Rank</th><th>Business</th><th>Final</th><th>IPP</th><th>Profile</th><th>Site Weakness</th><th>Rating</th><th>Reviews</th><th>Phone</th><th>Website</th><th>Pitch Angle</th></tr></thead>
+    <tbody>${m.candidates.length?m.candidates.map(b=>{
+      const phone=b.item.phone||b.item.phoneUnformatted||'—';
+      const websiteCell=b.website?`<a href="${esc(b.website)}" target="_blank">Site</a>`:'No';
+      const weakness=typeof b.websiteAnalysis?.weaknessScore==='number'?b.websiteAnalysis.weaknessScore:'—';
+      const finalScore=typeof b.finalScore==='number'?b.finalScore:'—';
+      const pitch=b.pitchAngle||'—';
+      return `<tr><td>${b.rank}</td><td>${esc(b.name)}</td><td>${finalScore}</td><td>${b.ippScore}</td><td>${b.profileScore}%</td><td>${weakness}</td><td>${b.rating?`★ ${b.rating.toFixed(1)}`:'—'}</td><td>${b.reviews}</td><td>${esc(phone)}</td><td>${websiteCell}</td><td style="max-width:240px">${esc(pitch)}</td></tr>`;
+    }).join(''):`<tr><td colspan="11">No strong candidates.</td></tr>`}</tbody>
   </table>
 
   <h2>Top 20 Competitor Analysis</h2>
