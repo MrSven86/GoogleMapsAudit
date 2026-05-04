@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Google Maps Rank Checker</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0a0a0a;--surface:#141414;--border:#222;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:Syne,sans-serif;min-height:100vh;padding:40px 20px}
-.container{max-width:850px;margin:0 auto}
+.container{max-width:860px;margin:0 auto}
 header{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:34px}
 .logo{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
 h1{font-size:clamp(34px,5vw,58px);font-weight:800;line-height:.92;letter-spacing:-.04em}
@@ -39,8 +39,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 .summary{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:22px}
 .biz-block{border-top:1px solid var(--border);padding-top:28px;margin-bottom:42px}
 .biz-block:first-child{border-top:0;padding-top:0}
+.biz-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:10px}
 .biz-title{font-size:22px;font-weight:800;margin-bottom:4px}
-.biz-meta{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.biz-meta{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.5}
+.btn-pdf{background:none;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.btn-pdf:hover{background:var(--accent);color:#000}
 .keyword-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin:22px 0 8px}
 .rank-hero{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:20px 24px;margin-bottom:10px;display:flex;align-items:center;gap:20px}
 .rank-number{font-size:58px;font-weight:800;line-height:1;min-width:115px}
@@ -61,7 +64,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 .check-row div{padding:9px 12px}
 .check-head{background:#1a1a1a;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em}
 .ok{color:var(--accent);font-weight:700}.no{color:var(--red);font-weight:700}
-@media(max-width:720px){.keyword-row{display:block}.btn-small{width:100%;margin-top:8px}.rank-hero{align-items:flex-start}.check-row{grid-template-columns:1fr}}
+@media(max-width:720px){.keyword-row{display:block}.btn-small{width:100%;margin-top:8px}.rank-hero{align-items:flex-start}.check-row{grid-template-columns:1fr}.biz-head{display:block}.btn-pdf{margin-top:10px;width:100%}}
 </style>
 </head>
 <body>
@@ -69,7 +72,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 <header>
   <div class="logo">Maps Rank Checker</div>
   <h1>Where do you<br>actually <span>rank?</span></h1>
-  <p class="subtitle">// paste up to 30 Google Maps URLs — tool fetches real profile first, then rank-checks</p>
+  <p class="subtitle">// paste up to 30 Google Maps URLs — fetch profile first, then rank-check top 20</p>
 </header>
 
 <div id="inputSection">
@@ -85,7 +88,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
       <label>Google Maps URLs — one per line</label>
       <textarea id="urls" rows="7" placeholder="https://www.google.com/maps/place/..."></textarea>
       <div class="counter" id="urlCounter"><span>0</span> / 30 URLs</div>
-      <div class="hint">// full Google Maps URLs work best. Short maps.app.goo.gl links may need resolving first.</div>
+      <div class="hint">// full Google Maps URLs work best</div>
     </div>
   </div>
 
@@ -107,12 +110,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
       </select>
       <div id="cityBox" style="display:none;margin-top:10px">
         <input id="city" placeholder="e.g. Portland">
-        <div class="hint">// if city mode is used, query becomes “keyword + city”</div>
+        <div class="hint">// city mode searches “keyword + city” from the city center</div>
       </div>
     </div>
 
     <div class="field">
-      <label>Language</label>
+      <label>Report Language</label>
       <select id="language">
         <option value="en" selected>English</option>
         <option value="sv">Svenska</option>
@@ -133,15 +136,59 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 </div>
 
 <script>
-const BASE = 'https://api.apify.com/v2';
-const ACTOR = 'compass~crawler-google-places';
-let keywords = [];
+const BASE='https://api.apify.com/v2';
+const ACTOR='compass~crawler-google-places';
+let keywords=[];
+let latestAudits=[];
 
+const LANG={
+  en:{
+    businessOf:(i,t)=>`// BUSINESS ${i} OF ${t}`,
+    keyword:k=>`// KEYWORD: "${k.toUpperCase()} "`,
+    ranked:(p,t,k)=>`Ranked ${p} of ${t} results for "${k}"`,
+    notFound:(t,k)=>`Not found in top ${t} results for "${k}"`,
+    you:'◀ YOU',
+    checklist:'Profile Optimization Checklist',
+    step:'Step',item:'Item',status:'Status',action:'Action Required',
+    phone:'Phone',address:'Address',hours:'Opening hours',description:'Business description',openingDate:'Opening date',serviceAreas:'Service areas',photos:'Photos (minimum 10)',logo:'Logo',services:'Services / Products',posts:'Posts / Updates',primaryCategory:'Primary category',secondaryCategories:'Secondary categories (min 3)',titleKeywords:'Keywords in title',reviewsCount:'Reviews count',
+    configured:'Configured',missing:'MISSING',empty:'EMPTY',notConfigured:'NOT CONFIGURED',noAreas:'NO AREAS',noLogo:'NO LOGO',none:'NONE',noPosts:'NO POSTS',
+    addPhone:'Add phone number to profile',addAddress:'Add correct address',addHours:'Set opening hours',addDescription:'Write description of at least 200 characters',addDate:'Add opening date — Google shows “X years in business”',addAreas:'Add service areas where you work',addPhotos:'Upload more photos — competitors often have 30+',addLogo:'Add professional logo — 720×720px PNG',addServices:'Add services/products',addPosts:'Add regular posts with photos and updates',addSecondary:'Add 3–5 relevant secondary categories',addTitleKeywords:'Consider adding specialty or area to the title',moreReviews:'Need 10+ reviews — set up review request system',
+    vs:'#1 comparison',yourProfileVs:'Your profile vs #1',metric:'Metric',youCol:'You',num1:'#1',rating:'Rating',reviews:'Reviews',website:'Website',yes:'Yes',no:'No',categories:'Categories'
+  },
+  sv:{
+    businessOf:(i,t)=>`// FÖRETAG ${i} AV ${t}`,
+    keyword:k=>`// SÖKORD: "${k.toUpperCase()} "`,
+    ranked:(p,t,k)=>`Placering ${p} av ${t} resultat för "${k}"`,
+    notFound:(t,k)=>`Hittades inte i topp ${t} resultat för "${k}"`,
+    you:'◀ DU',
+    checklist:'Checklista för profiloptimering',
+    step:'Steg',item:'Punkt',status:'Status',action:'Åtgärd krävs',
+    phone:'Telefon',address:'Adress',hours:'Öppettider',description:'Företagsbeskrivning',openingDate:'Öppningsdatum',serviceAreas:'Serviceområden',photos:'Foton (minst 10)',logo:'Logotyp',services:'Tjänster / Produkter',posts:'Inlägg / Uppdateringar',primaryCategory:'Primär kategori',secondaryCategories:'Sekundära kategorier (minst 3)',titleKeywords:'Sökord i titeln',reviewsCount:'Antal recensioner',
+    configured:'Konfigurerat',missing:'SAKNAS',empty:'TOM',notConfigured:'EJ KONFIGURERAT',noAreas:'INGA OMRÅDEN',noLogo:'INGEN LOGO',none:'INGEN',noPosts:'INGA INLÄGG',
+    addPhone:'Lägg till telefonnummer',addAddress:'Lägg till korrekt adress',addHours:'Ange öppettider',addDescription:'Skriv en beskrivning på minst 200 tecken',addDate:'Lägg till öppningsdatum — Google visar “X år i branschen”',addAreas:'Lägg till serviceområden där ni arbetar',addPhotos:'Ladda upp fler foton — konkurrenter har ofta 30+',addLogo:'Lägg till professionell logotyp — 720×720px PNG',addServices:'Lägg till tjänster/produkter',addPosts:'Lägg till regelbundna inlägg med bilder och nyheter',addSecondary:'Lägg till 3–5 relevanta sekundära kategorier',addTitleKeywords:'Överväg att lägga till specialitet eller område i titeln',moreReviews:'Sätt upp automatiskt system för recensionsförfrågningar',
+    vs:'Din profil vs #1',yourProfileVs:'Din profil vs #1',metric:'Mätvärde',youCol:'Du',num1:'#1',rating:'Betyg',reviews:'Recensioner',website:'Hemsida',yes:'Ja',no:'Nej',categories:'Kategorier'
+  },
+  es:{
+    businessOf:(i,t)=>`// NEGOCIO ${i} DE ${t}`,
+    keyword:k=>`// PALABRA CLAVE: "${k.toUpperCase()} "`,
+    ranked:(p,t,k)=>`Posición ${p} de ${t} resultados para "${k}"`,
+    notFound:(t,k)=>`No encontrado en top ${t} para "${k}"`,
+    you:'◀ USTED',
+    checklist:'Checklist de optimización del perfil',
+    step:'Paso',item:'Ítem',status:'Estado',action:'Acción requerida',
+    phone:'Teléfono',address:'Dirección',hours:'Horarios',description:'Descripción del negocio',openingDate:'Fecha de apertura',serviceAreas:'Áreas de servicio',photos:'Fotos (mínimo 10)',logo:'Logo',services:'Servicios / Productos',posts:'Publicaciones / Actualizaciones',primaryCategory:'Categoría principal',secondaryCategories:'Categorías secundarias (mín 3)',titleKeywords:'Keywords en el título',reviewsCount:'Cantidad de reseñas',
+    configured:'Configurado',missing:'FALTA',empty:'VACÍA',notConfigured:'NO CONFIGURADA',noAreas:'SIN ÁREAS',noLogo:'SIN LOGO',none:'NINGUNA',noPosts:'SIN PUBLICACIONES',
+    addPhone:'Agregar teléfono al perfil',addAddress:'Agregar dirección correcta',addHours:'Configurar horarios',addDescription:'Escribir descripción de mínimo 200 caracteres',addDate:'Agregar fecha de apertura',addAreas:'Agregar áreas de servicio',addPhotos:'Subir más fotos — competidores suelen tener 30+',addLogo:'Agregar logo profesional — 720×720px PNG',addServices:'Agregar servicios/productos',addPosts:'Agregar publicaciones regulares con fotos',addSecondary:'Agregar 3–5 categorías secundarias relevantes',addTitleKeywords:'Considerar agregar especialidad o zona al título',moreReviews:'Configurar sistema automático de reseñas',
+    vs:'Tu perfil vs #1',yourProfileVs:'Tu perfil vs #1',metric:'Métrica',youCol:'Tú',num1:'#1',rating:'Calificación',reviews:'Reseñas',website:'Sitio web',yes:'Sí',no:'No',categories:'Categorías'
+  }
+};
+
+function t(){return LANG[document.getElementById('language').value]||LANG.en}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 function status(msg){const el=document.getElementById('status');el.textContent=msg;el.classList.add('visible')}
 function hideStatus(){document.getElementById('status').classList.remove('visible')}
-function error(msg){const el=document.getElementById('error');el.textContent='⚠ '+msg;el.classList.add('visible')}
+function showError(msg){const el=document.getElementById('error');el.textContent='⚠ '+msg;el.classList.add('visible')}
 function clearError(){document.getElementById('error').classList.remove('visible')}
 function normalize(s){return String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/&/g,'and').replace(/[^a-z0-9]/g,'')}
 function parseUrls(raw){return raw.split('\n').map(u=>u.trim()).filter(u=>u.includes('google.com/maps')||u.includes('maps.app.goo.gl')||u.includes('goo.gl/maps')).slice(0,30)}
@@ -150,45 +197,25 @@ document.getElementById('urls').addEventListener('input',function(){
   const n=parseUrls(this.value).length;
   document.getElementById('urlCounter').innerHTML=`<span>${n}</span> / 30 URLs`;
 });
-
 document.getElementById('keywordInput').addEventListener('keydown',e=>{if(e.key==='Enter')addKeyword()});
 
 function addKeyword(){
   const input=document.getElementById('keywordInput');
   const val=input.value.trim();
   if(!val||keywords.includes(val)){input.value='';return}
-  keywords.push(val);
-  input.value='';
-  renderTags();
+  keywords.push(val); input.value=''; renderTags();
 }
-
-function removeKeyword(i){
-  keywords.splice(i,1);
-  renderTags();
-}
-
-function renderTags(){
-  document.getElementById('tags').innerHTML=keywords.map((k,i)=>`<div class="tag">${esc(k)} <button onclick="removeKeyword(${i})">×</button></div>`).join('');
-}
-
-function toggleCity(){
-  document.getElementById('cityBox').style.display=document.getElementById('searchFrom').value==='city'?'block':'none';
-}
+function removeKeyword(i){keywords.splice(i,1);renderTags()}
+function renderTags(){document.getElementById('tags').innerHTML=keywords.map((k,i)=>`<div class="tag">${esc(k)} <button onclick="removeKeyword(${i})">×</button></div>`).join('')}
+function toggleCity(){document.getElementById('cityBox').style.display=document.getElementById('searchFrom').value==='city'?'block':'none'}
 
 async function startActor(token,input){
   const res=await fetch(`${BASE}/acts/${ACTOR}/runs?token=${encodeURIComponent(token)}`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(input)
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)
   });
-  if(!res.ok){
-    const e=await res.json().catch(()=>({}));
-    throw new Error(e.error?.message||`Apify HTTP ${res.status}`);
-  }
-  const j=await res.json();
-  return j.data;
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`Apify HTTP ${res.status}`)}
+  const j=await res.json(); return j.data;
 }
-
 async function pollRun(token,runId,label){
   for(let i=0;i<80;i++){
     await sleep(5000);
@@ -201,151 +228,108 @@ async function pollRun(token,runId,label){
   }
   throw new Error(`${label} timed out`);
 }
-
 async function fetchDataset(token,datasetId,limit=500){
   const res=await fetch(`${BASE}/datasets/${datasetId}/items?token=${encodeURIComponent(token)}&clean=true&limit=${limit}`);
   return await res.json();
 }
-
 async function runActor(token,input,label,limit=500){
   const run=await startActor(token,input);
   const datasetId=await pollRun(token,run.id,label);
   return await fetchDataset(token,datasetId,limit);
 }
-
 async function geocodeCity(city){
   const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
   const j=await res.json();
   if(!j||!j[0])throw new Error(`Could not geocode city: ${city}`);
   return {lat:Number(j[0].lat),lng:Number(j[0].lon)};
 }
-
 function profileLatLng(profile){
-  const lat = profile?.location?.lat ?? profile?.latitude ?? profile?.lat;
-  const lng = profile?.location?.lng ?? profile?.longitude ?? profile?.lng;
+  const lat=profile?.location?.lat??profile?.latitude??profile?.lat;
+  const lng=profile?.location?.lng??profile?.longitude??profile?.lng;
   if(lat==null||lng==null)return null;
   return {lat:Number(lat),lng:Number(lng)};
 }
-
 function canonicalName(s){
-  return normalize(
-    String(s||'')
-      .replace(/\b(llc|inc|ltd|co|company|corp|corporation|ab|gmbh)\b/gi,' ')
-      .replace(/\b(the|of|in|near|at)\b/gi,' ')
-      .replace(/\s+/g,' ')
-  );
+  return normalize(String(s||'').replace(/\b(llc|inc|ltd|co|company|corp|corporation|ab|gmbh)\b/gi,' ').replace(/\b(the|of|in|near|at)\b/gi,' ').replace(/\s+/g,' '));
 }
-
 function wordMatchScore(a,b){
-  const A=canonicalName(a);
-  const B=canonicalName(b);
+  const A=canonicalName(a),B=canonicalName(b);
   if(!A||!B)return 0;
   if(A===B)return 1;
   if(A.includes(B)||B.includes(A))return .95;
-
   const wordsA=String(a||'').toLowerCase().split(/\s+/).map(canonicalName).filter(w=>w.length>2);
   const wordsB=String(b||'').toLowerCase().split(/\s+/).map(canonicalName).filter(w=>w.length>2);
   if(!wordsA.length||!wordsB.length)return 0;
-
   let hits=0;
-  for(const w of wordsA){
-    if(wordsB.some(x=>x===w||x.includes(w)||w.includes(x)))hits++;
-  }
-  return hits / Math.max(wordsA.length, wordsB.length);
+  for(const w of wordsA){if(wordsB.some(x=>x===w||x.includes(w)||w.includes(x)))hits++}
+  return hits/Math.max(wordsA.length,wordsB.length);
 }
-
-function isSameBusinessByName(resultName,targetName){
-  return wordMatchScore(resultName,targetName) >= 0.6;
-}
-
+function isSameBusinessByName(a,b){return wordMatchScore(a,b)>=0.6}
 function isSameBusiness(item,profile){
-  const itemPlaceId = item.placeId || item.place_id || item.cid;
-  const profilePlaceId = profile.placeId || profile.place_id || profile.cid;
-
-  if(itemPlaceId && profilePlaceId && String(itemPlaceId)===String(profilePlaceId)) return true;
-
-  const resultName = item.title || item.name || '';
-  const targetName = profile.title || profile.name || '';
-  return isSameBusinessByName(resultName,targetName);
+  const itemPlaceId=item.placeId||item.place_id||item.cid;
+  const profilePlaceId=profile.placeId||profile.place_id||profile.cid;
+  if(itemPlaceId&&profilePlaceId&&String(itemPlaceId)===String(profilePlaceId))return true;
+  return isSameBusinessByName(item.title||item.name||'',profile.title||profile.name||'');
 }
-
 function getCategories(item){
-  const out=[];
-  const add=x=>{
-    if(!x)return;
-    if(typeof x==='string')out.push(x.trim());
-    else if(typeof x==='object')out.push(String(x.name||x.title||x.label||x.categoryName||'').trim());
-  };
+  const out=[]; const add=x=>{if(!x)return;if(typeof x==='string')out.push(x.trim());else if(typeof x==='object')out.push(String(x.name||x.title||x.label||x.categoryName||'').trim())};
   if(Array.isArray(item.categories))item.categories.forEach(add);
   if(Array.isArray(item.additionalCategories))item.additionalCategories.forEach(add);
-  add(item.categoryName);
-  add(item.category);
+  add(item.categoryName); add(item.category);
   return [...new Set(out.filter(Boolean))];
 }
+function hasWebsite(item){return !!(item.website&&String(item.website).trim())}
+function hasPhone(item){return !!(item.phone||item.phoneUnformatted)}
+function hasHours(item){return !!(item.openingHours&&item.openingHours.length)}
+function photoCount(item){return item.imageCount||item.imagesCount||item.photosCount||(Array.isArray(item.imageUrls)?item.imageUrls.length:0)||0}
+function hasLogo(item){return !!(item.logoUrl||item.logo||item.imageUrl)}
+function hasServices(item){return !!(item.services?.length||item.additionalInfo?.Services||item.additionalInfo)}
+function hasPosts(item){return !!(item.posts?.length||item.updatesFromCustomers?.length||item.updatesCount)}
 
-function hasWebsite(item){
-  return !!(item.website && String(item.website).trim());
-}
-
-function hasPhone(item){
-  return !!(item.phone || item.phoneUnformatted);
-}
-
-function hasHours(item){
-  return !!(item.openingHours && item.openingHours.length);
-}
-
-function photoCount(item){
-  return item.imageCount || item.imagesCount || item.photosCount || (Array.isArray(item.imageUrls)?item.imageUrls.length:0) || 0;
-}
-
-function buildChecklist(profile){
+function buildChecklist(profile,keyword){
+  const L=t();
   const cats=getCategories(profile);
-  const checks=[
-    ['Phone',hasPhone(profile),'Add phone number'],
-    ['Address',!!profile.address,'Add correct address'],
-    ['Hours',hasHours(profile),'Set opening hours'],
-    ['Description',!!(profile.description && profile.description.length>=120),'Write business description'],
-    ['Photos 10+',photoCount(profile)>=10,'Upload at least 10 photos'],
-    ['Website',hasWebsite(profile),'Add website'],
-    ['Categories 3+',cats.length>=3,'Add 3–5 relevant categories'],
-    ['Reviews 20+',Number(profile.reviewsCount||0)>=20,'Set up review request system'],
-    ['Rating 4+',Number(profile.totalScore||0)>=4,'Improve review quality']
+  const titleNorm=normalize(profile.title||profile.name||'');
+  const catInTitle=cats.some(c=>titleNorm.includes(normalize(c)))||titleNorm.includes(normalize(keyword||''));
+  return [
+    {step:'A1',item:L.phone,ok:hasPhone(profile),status:profile.phone||profile.phoneUnformatted||L.missing,action:L.addPhone},
+    {step:'A2',item:L.address,ok:!!profile.address,status:profile.address||L.missing,action:L.addAddress},
+    {step:'A3',item:L.hours,ok:hasHours(profile),status:L.configured,action:L.addHours},
+    {step:'A4',item:L.description,ok:!!(profile.description&&profile.description.length>=120),status:profile.description?L.configured:L.empty,action:L.addDescription},
+    {step:'A5',item:L.openingDate,ok:!!(profile.openingDate||profile.yearsInBusiness),status:L.notConfigured,action:L.addDate},
+    {step:'A6',item:L.serviceAreas,ok:!!(profile.serviceArea||profile.serviceAreas?.length),status:L.noAreas,action:L.addAreas},
+    {step:'A7',item:L.photos,ok:photoCount(profile)>=10,status:`${photoCount(profile)} photos`,action:L.addPhotos},
+    {step:'A8',item:L.logo,ok:hasLogo(profile),status:hasLogo(profile)?L.configured:L.noLogo,action:L.addLogo},
+    {step:'A9',item:L.services,ok:hasServices(profile),status:hasServices(profile)?L.configured:L.none,action:L.addServices},
+    {step:'A10',item:L.posts,ok:hasPosts(profile),status:hasPosts(profile)?L.configured:L.noPosts,action:L.addPosts},
+    {step:'B1',item:L.primaryCategory,ok:!!(profile.categoryName||cats[0]),status:profile.categoryName||cats[0]||L.none,action:L.addSecondary},
+    {step:'B2',item:L.secondaryCategories,ok:cats.length>=3,status:cats.length>=3?cats.slice(1).join(', '):L.none,action:L.addSecondary},
+    {step:'B3',item:L.titleKeywords,ok:catInTitle,status:catInTitle?L.configured:L.missing,action:L.addTitleKeywords},
+    {step:'C1',item:L.reviewsCount,ok:Number(profile.reviewsCount||0)>=10,status:String(profile.reviewsCount||0),action:L.moreReviews}
   ];
-  return checks;
 }
 
 async function runCheck(){
-  clearError();
-  hideStatus();
-  document.getElementById('results').style.display='none';
-
+  clearError(); hideStatus(); document.getElementById('results').style.display='none';
   const token=document.getElementById('token').value.trim();
   const urls=parseUrls(document.getElementById('urls').value);
   const searchFrom=document.getElementById('searchFrom').value;
   const city=document.getElementById('city').value.trim();
   const lang=document.getElementById('language').value;
 
-  if(!token)return error('Apify token is required.');
-  if(!urls.length)return error('Paste at least one Google Maps URL.');
-  if(!keywords.length)return error('Add at least one keyword.');
-  if(searchFrom==='city'&&!city)return error('Enter city or switch back to PIN mode.');
+  if(!token)return showError('Apify token is required.');
+  if(!urls.length)return showError('Paste at least one Google Maps URL.');
+  if(!keywords.length)return showError('Add at least one keyword.');
+  if(searchFrom==='city'&&!city)return showError('Enter city or switch back to PIN mode.');
 
-  const btn=document.getElementById('runBtn');
-  btn.disabled=true;
-
+  const btn=document.getElementById('runBtn'); btn.disabled=true;
   try{
     let cityCoords=null;
-    if(searchFrom==='city'){
-      status(`Geocoding ${city}`);
-      cityCoords=await geocodeCity(city);
-    }
-
+    if(searchFrom==='city'){status(`Geocoding ${city}`);cityCoords=await geocodeCity(city)}
     const audits=[];
 
     for(let i=0;i<urls.length;i++){
       const url=urls[i];
-
       status(`Step 1 — Fetching real Google profile ${i+1}/${urls.length}`);
 
       const profiles=await runActor(token,{
@@ -358,27 +342,23 @@ async function runCheck(){
       },`Profile ${i+1}/${urls.length}`,20);
 
       if(!profiles||!profiles[0])throw new Error(`Could not fetch profile for URL ${i+1}`);
-
-      const profile=profiles[0];
-      if(!profile.url)profile.url=url;
-      profile._inputUrl=url;
+      const profile=profiles[0]; if(!profile.url)profile.url=url; profile._inputUrl=url;
 
       const coords=profileLatLng(profile);
       if(!coords&&!cityCoords)throw new Error(`Could not get coordinates for ${profile.title||url}`);
 
-      const searchLat=cityCoords ? cityCoords.lat : coords.lat;
-      const searchLng=cityCoords ? cityCoords.lng : coords.lng;
-
+      const searchLat=cityCoords?cityCoords.lat:coords.lat;
+      const searchLng=cityCoords?cityCoords.lng:coords.lng;
       const searchQueries=keywords.map(k=>searchFrom==='city'?`${k} ${city}`:k);
 
-      status(`Step 2 — Searching ${searchQueries.length} keyword(s) for ${profile.title}`);
+      status(`Step 2 — Searching top 20 for ${profile.title}`);
 
       const searchResults=await runActor(token,{
         searchStringsArray:searchQueries,
         lat:String(searchLat),
         lng:String(searchLng),
         zoom:searchFrom==='city'?12:14,
-        maxCrawledPlacesPerSearch:50,
+        maxCrawledPlacesPerSearch:20,
         language:lang,
         maxReviews:0,
         maxImages:0,
@@ -386,7 +366,7 @@ async function runCheck(){
         scrapeContacts:false,
         exportPlaceUrls:false,
         additionalInfo:false
-      },`Search ${i+1}/${urls.length}`,1000);
+      },`Search ${i+1}/${urls.length}`,500);
 
       const byKeyword={};
       for(const kw of keywords)byKeyword[kw]=[];
@@ -394,65 +374,50 @@ async function runCheck(){
       for(const item of searchResults||[]){
         const ss=normalize(item.searchString||'');
         let matchedKeyword=null;
-
         for(let q=0;q<searchQueries.length;q++){
           const queryNorm=normalize(searchQueries[q]);
           const kwNorm=normalize(keywords[q]);
-          if(ss===queryNorm || ss.includes(queryNorm) || queryNorm.includes(ss) || ss.includes(kwNorm)){
-            matchedKeyword=keywords[q];
-            break;
-          }
+          if(ss===queryNorm||ss.includes(queryNorm)||queryNorm.includes(ss)||ss.includes(kwNorm)){matchedKeyword=keywords[q];break}
         }
-
-        if(!matchedKeyword && keywords.length===1)matchedKeyword=keywords[0];
+        if(!matchedKeyword&&keywords.length===1)matchedKeyword=keywords[0];
         if(matchedKeyword)byKeyword[matchedKeyword].push(item);
       }
 
       const keywordAudits=[];
-
       for(const kw of keywords){
-        const items=(byKeyword[kw]||[]).sort((a,b)=>(a.rank??999)-(b.rank??999));
+        const items=(byKeyword[kw]||[]).sort((a,b)=>(a.rank??999)-(b.rank??999)).slice(0,20);
         const ranked=items.map((item,idx)=>({
-          pos:idx+1,
-          item,
-          name:item.title||item.name||'(unknown)',
+          pos:idx+1,item,name:item.title||item.name||'(unknown)',
           rating:item.totalScore??item.rating??null,
           reviews:item.reviewsCount??item.reviewCount??null,
+          categories:getCategories(item),
+          website:hasWebsite(item),
+          phone:hasPhone(item),
+          hours:hasHours(item),
           isTarget:isSameBusiness(item,profile)
         }));
-
-        let foundTarget=false;
-        for(const r of ranked){
-          if(r.isTarget && !foundTarget)foundTarget=true;
-          else if(r.isTarget)r.isTarget=false;
-        }
-
+        let found=false;
+        for(const r of ranked){if(r.isTarget&&!found)found=true;else if(r.isTarget)r.isTarget=false}
         const target=ranked.find(r=>r.isTarget);
         keywordAudits.push({
           keyword:kw,
           query:searchFrom==='city'?`${kw} ${city}`:kw,
-          ranked,
-          target,
-          found:!!target,
-          position:target?target.pos:null,
-          topCompetitors:ranked.filter(r=>!r.isTarget).slice(0,5)
+          ranked,target,found:!!target,position:target?target.pos:null,
+          number1:ranked[0]||null
         });
       }
-
       audits.push({profile,keywordAudits});
     }
 
+    latestAudits=audits;
     hideStatus();
     renderResults(audits);
-  }catch(e){
-    hideStatus();
-    error(e.message);
-  }finally{
-    btn.disabled=false;
-  }
+  }catch(e){hideStatus();showError(e.message)}
+  finally{btn.disabled=false}
 }
 
 function renderResults(audits){
+  const L=t();
   let invisible=0;
   for(const a of audits)for(const k of a.keywordAudits)if(!k.found)invisible++;
 
@@ -461,28 +426,31 @@ function renderResults(audits){
   audits.forEach((audit,idx)=>{
     const p=audit.profile;
     const cats=getCategories(p);
-    const checks=buildChecklist(p);
-    const passed=checks.filter(c=>c[1]).length;
+    const checks=buildChecklist(p,audit.keywordAudits[0]?.keyword);
+    const passed=checks.filter(c=>c.ok).length;
 
     html+=`
     <div class="biz-block">
-      <div class="biz-title">${esc(p.title||p.name||'Business')}</div>
-      <div class="biz-meta">
-        ${esc(p.categoryName||cats[0]||'')} · ${esc(p.address||'No address')} · ${esc(p.phone||'No phone')}<br>
-        Rating: ${p.totalScore??'—'} · Reviews: ${p.reviewsCount??0} · Website: ${p.website?'Yes':'No'} · Profile score: ${passed}/${checks.length}
+      <div class="biz-head">
+        <div>
+          <div class="biz-title">${esc(p.title||p.name||'Business')}</div>
+          <div class="biz-meta">
+            ${esc(p.categoryName||cats[0]||'')} · ${esc(p.address||'No address')} · ${esc(p.phone||'No phone')}<br>
+            Rating: ${p.totalScore??'—'} · Reviews: ${p.reviewsCount??0} · Website: ${hasWebsite(p)?'Yes':'No'} · Profile score: ${passed}/${checks.length}
+          </div>
+        </div>
+        <button class="btn-pdf" onclick="openBizPdf(${idx})">Open PDF</button>
       </div>
     `;
 
     for(const ka of audit.keywordAudits){
       const pos=ka.position;
       const rankClass=!pos?'bad':pos<=5?'good':pos<=12?'mid':'bad';
-      const display=pos?`#${pos}`:'50+';
-      const desc=pos
-        ? `Ranked ${pos} of ${ka.ranked.length} results for "${ka.query}"`
-        : `Not found in top ${ka.ranked.length} results for "${ka.query}"`;
+      const display=pos?`#${pos}`:'20+';
+      const desc=pos?L.ranked(pos,ka.ranked.length,ka.query):L.notFound(ka.ranked.length,ka.query);
 
       html+=`
-      <div class="keyword-label">// keyword: "${esc(ka.query)}"</div>
+      <div class="keyword-label">${esc(L.keyword(ka.query))}</div>
       <div class="rank-hero">
         <div class="rank-number ${rankClass}">${display}</div>
         <div>
@@ -494,26 +462,23 @@ function renderResults(audits){
         ${ka.ranked.map(r=>`
           <div class="row ${r.isTarget?'target':''}">
             <div class="pos">${r.pos}</div>
-            <div class="name">${esc(r.name)}${r.isTarget?' ◀ YOU':''}</div>
+            <div class="name">${esc(r.name)}${r.isTarget?' '+esc(L.you):''}</div>
             <div class="rating">${r.rating!=null?'★ '+Number(r.rating).toFixed(1)+(r.reviews?' ('+r.reviews+')':''):''}</div>
-          </div>
-        `).join('')}
+          </div>`).join('')}
         ${!ka.target?`<div class="notfound">✕ ${esc(p.title||'Business')} — not found in top results</div>`:''}
-      </div>
-      `;
+      </div>`;
     }
 
     html+=`
       <div class="keyword-label">// profile optimization checklist</div>
       <div class="checklist">
-        <div class="check-row check-head"><div>Item</div><div>Status</div><div>Action</div></div>
+        <div class="check-row check-head"><div>${esc(L.item)}</div><div>${esc(L.status)}</div><div>${esc(L.action)}</div></div>
         ${checks.map(c=>`
           <div class="check-row">
-            <div>${esc(c[0])}</div>
-            <div>${c[1]?'<span class="ok">✓ OK</span>':'<span class="no">✗ Missing</span>'}</div>
-            <div>${c[1]?'—':esc(c[2])}</div>
-          </div>
-        `).join('')}
+            <div>${esc(c.step)} ${esc(c.item)}</div>
+            <div>${c.ok?`<span class="ok">✓ ${esc(c.status)}</span>`:`<span class="no">✗ ${esc(c.status)}</span>`}</div>
+            <div>${c.ok?'—':esc(c.action)}</div>
+          </div>`).join('')}
       </div>
     </div>`;
   });
@@ -521,6 +486,133 @@ function renderResults(audits){
   document.getElementById('resultsBody').innerHTML=html;
   document.getElementById('results').style.display='block';
   document.getElementById('results').scrollIntoView({behavior:'smooth'});
+}
+
+function openBizPdf(index){
+  const audit=latestAudits[index];
+  if(!audit)return;
+  const html=buildPdfHtml(audit,index,latestAudits.length);
+  const title=(audit.profile.title||'Rank Report').replace(/[<>:"/\\|?*]+/g,'');
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  win.document.title=`${title} — Rank Report`;
+}
+
+function pdfStatus(ok,status){
+  return ok?`<span class="green">✓ ${esc(status)}</span>`:`<span class="red">✗ ${esc(status)}</span>`;
+}
+
+function buildPdfHtml(audit,index,total){
+  const L=t();
+  const p=audit.profile;
+  const ka=audit.keywordAudits[0];
+  const checks=buildChecklist(p,ka?.keyword);
+  const number1=ka?.number1;
+  const you=ka?.target;
+  const cats=getCategories(p);
+  const num1Cats=number1?.categories||getCategories(number1?.item||{});
+  const now=new Date().toISOString().slice(0,10)+' '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  const title=esc(p.title||'Business');
+  const query=ka?.query||'';
+  const pos=ka?.position;
+  const rankDisplay=pos?`#${pos}`:'20+';
+  const desc=pos?L.ranked(pos,ka.ranked.length,query):L.notFound(ka.ranked.length,query);
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>${title} — Rank Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:10mm}
+*{box-sizing:border-box}
+body{background:#fff;color:#111;font-family:'DM Mono',monospace;font-size:12px;margin:0}
+.page{width:190mm;min-height:277mm;margin:0 auto;padding:8mm 6mm;page-break-after:always;position:relative}
+.page:last-child{page-break-after:auto}
+.topline{position:absolute;top:3mm;left:6mm;right:6mm;display:flex;justify-content:space-between;font-size:9px;color:#222}
+h1{font-family:Syne,sans-serif;font-size:24px;line-height:1.05;margin:18px 0 18px;font-weight:800;letter-spacing:-.03em}
+h2{font-family:Syne,sans-serif;font-size:22px;margin:20px 0 8px;font-weight:800;letter-spacing:-.03em}
+.mono{font-family:'DM Mono',monospace}
+.muted{color:#666}
+.keyword{font-size:11px;color:#333;margin-bottom:8px;text-transform:uppercase}
+.rankbox{display:flex;align-items:center;gap:22px;margin:6px 0 14px}
+.rank{font-family:Syne,sans-serif;font-size:72px;color:#111;font-weight:800;line-height:.9;min-width:130px}
+.rank-title{font-family:Syne,sans-serif;font-size:18px;font-weight:800;margin-bottom:4px}
+.results{border:1px solid #ddd;width:100%;border-collapse:collapse}
+.results td{padding:5px 8px;border-bottom:1px solid #e5e5e5;vertical-align:middle}
+.results tr:last-child td{border-bottom:0}
+.results .target{background:#f4ffd8;color:#5d8200;font-weight:700}
+.pos{width:26px;text-align:right;color:#555}
+.rating{text-align:right;color:#333;width:90px;font-size:11px}
+.table{width:100%;border-collapse:collapse;border:1px solid #d0d0d0;margin-top:8px}
+.table th{background:#f5f5f5;text-align:left;padding:7px 9px;font-size:10px}
+.table td{border-top:1px solid #ddd;padding:7px 9px;vertical-align:top}
+.green{color:#5d8200;font-weight:700}
+.red{color:#c00;font-weight:700}
+.footer{position:absolute;bottom:3mm;left:6mm;right:6mm;display:flex;justify-content:space-between;font-size:9px;color:#222}
+@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.page{margin:0}}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="topline"><span>${esc(now)}</span><span>${title} — Rank Report</span></div>
+  <h1>${esc(L.businessOf(index+1,total))}<br>${title}</h1>
+  <div class="keyword">${esc(L.keyword(query))}</div>
+  <div class="rankbox">
+    <div class="rank">${esc(rankDisplay)}</div>
+    <div>
+      <div class="rank-title">${title}</div>
+      <div class="muted">${esc(desc)}</div>
+    </div>
+  </div>
+  <table class="results">
+    ${(ka?.ranked||[]).slice(0,20).map(r=>`
+      <tr class="${r.isTarget?'target':''}">
+        <td class="pos">${r.pos}</td>
+        <td>${esc(r.name)}${r.isTarget?' '+esc(L.you):''}</td>
+        <td class="rating">${r.rating!=null?'★ '+Number(r.rating).toFixed(1)+(r.reviews?' ('+r.reviews+')':''):''}</td>
+      </tr>`).join('')}
+  </table>
+  <div class="footer"><span>about:blank</span><span>1/2</span></div>
+</div>
+
+<div class="page">
+  <div class="topline"><span>${esc(now)}</span><span>${title} — Rank Report</span></div>
+  <h2>${esc(L.checklist)}</h2>
+  <table class="table">
+    <thead><tr><th style="width:11%">${esc(L.step)}</th><th style="width:31%">${esc(L.item)}</th><th style="width:30%">${esc(L.status)}</th><th>${esc(L.action)}</th></tr></thead>
+    <tbody>
+      ${checks.map(c=>`
+      <tr>
+        <td>${esc(c.step)}</td>
+        <td>${esc(c.item)}</td>
+        <td>${pdfStatus(c.ok,c.status)}</td>
+        <td>${c.ok?'—':esc(c.action)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+
+  <h2>${esc(L.yourProfileVs)}</h2>
+  <div class="muted" style="margin-bottom:8px">// ${title} vs ${esc(number1?.name||'—')}</div>
+  <table class="table">
+    <thead><tr><th style="width:22%">${esc(L.metric)}</th><th>${esc(L.youCol)} — ${title}</th><th>${esc(L.num1)} — ${esc(number1?.name||'—')}</th></tr></thead>
+    <tbody>
+      <tr><td>${esc(L.rating)}</td><td>${p.totalScore!=null?'★ '+esc(p.totalScore):'—'}</td><td>${number1?.rating!=null?'★ '+Number(number1.rating).toFixed(1):'—'}</td></tr>
+      <tr><td>${esc(L.reviews)}</td><td>${esc(p.reviewsCount??0)}</td><td>${esc(number1?.reviews??'—')}</td></tr>
+      <tr><td>${esc(L.website)}</td><td>${hasWebsite(p)?esc(L.yes):esc(L.no)}</td><td>${number1?.website?esc(L.yes):esc(L.no)}</td></tr>
+      <tr><td>${esc(L.phone)}</td><td>${hasPhone(p)?esc(L.yes):esc(L.no)}</td><td>${number1?.phone?esc(L.yes):esc(L.no)}</td></tr>
+      <tr><td>${esc(L.hours)}</td><td>${hasHours(p)?esc(L.yes):esc(L.no)}</td><td>${number1?.hours?esc(L.yes):esc(L.no)}</td></tr>
+      <tr><td>${esc(L.categories)}</td><td>${esc(cats.join(', ')||'—')}</td><td>${esc(num1Cats.join(', ')||'—')}</td></tr>
+    </tbody>
+  </table>
+  <div class="footer"><span>about:blank</span><span>2/2</span></div>
+</div>
+
+</body>
+</html>`;
 }
 </script>
 </body>
