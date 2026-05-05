@@ -2,964 +2,660 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Industry Discovery Scanner</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geo Rank Snapshot — Neighborhood vs City</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
-:root{--bg:#0a0a0a;--surface:#141414;--border:#222;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999}
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --border: #222;
+  --accent: #c8f135;
+  --text: #f0f0f0;
+  --muted: #999;
+  --bad: #ff4d4d;
+  --mid: #ffb347;
+  --good: #c8f135;
+  --top: #16a34a;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:Syne,sans-serif;min-height:100vh;padding:40px 20px}
-.container{max-width:960px;margin:0 auto}
-header{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:34px}
-.logo{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
-h1{font-size:clamp(34px,5vw,58px);font-weight:800;line-height:.92;letter-spacing:-.04em}
+.container{max-width:980px;margin:0 auto}
+header{border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:36px}
+.logo,.subtitle,label,.hint,.summary-line,.popup-list,.legend,.snap-card-label,.snap-card-loc,.point-block-title small,.point-list,.results-list-wrap h3{font-family:'DM Mono',monospace}
+.logo{font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:10px}
+.logo a{color:var(--muted);text-decoration:none;transition:color .15s}
+.logo a:hover{color:var(--accent)}
+h1{font-size:clamp(28px,5vw,46px);font-weight:800;line-height:.95;letter-spacing:-.03em}
 h1 span{color:var(--accent)}
-.subtitle{margin-top:12px;color:var(--muted);font-size:13px;font-family:'DM Mono',monospace}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px;margin-bottom:16px}
-label{display:block;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-input,textarea,select{width:100%;background:#050505;border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:12px 14px;outline:none}
-textarea{resize:vertical;line-height:1.6}
-input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+.subtitle{margin-top:10px;color:var(--muted);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px 28px;margin-bottom:16px}
 .field{margin-bottom:20px}.field:last-child{margin-bottom:0}
-.hint,.counter{margin-top:6px;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted)}
-.counter span{color:var(--accent)}
-.keyword-row{display:flex;gap:8px}
-.keyword-row input{flex:1}
-.btn-small{background:#202020;border:1px solid #333;color:var(--text);border-radius:3px;padding:11px 16px;font-family:'DM Mono',monospace;cursor:pointer}
-.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.tag{background:#1a1a1a;border:1px solid var(--border);border-radius:3px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:12px;display:flex;gap:8px;align-items:center}
-.tag button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:15px}
-.btn-run{width:100%;background:var(--accent);border:0;border-radius:3px;color:#000;font-family:Syne,sans-serif;font-weight:800;font-size:17px;padding:17px;cursor:pointer;margin-top:8px}
-.btn-run:disabled{opacity:.45;cursor:not-allowed}
-.status,.error{display:none;padding:14px 18px;border-radius:4px;margin-bottom:16px;font-family:'DM Mono',monospace;font-size:13px}
-.status{background:var(--surface);border:1px solid var(--border);color:var(--muted)}
-.error{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);color:var(--red)}
-.visible{display:block}
-.results{display:none;margin-top:34px}
-.summary{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:22px}
-.market-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:22px;margin-bottom:28px}
-.market-title{font-size:26px;font-weight:800;margin-bottom:8px}
-.market-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
-.stat{background:#0e0e0e;border:1px solid var(--border);padding:14px;border-radius:4px}
-.stat-num{font-size:26px;font-weight:800}
-.stat-label{font-family:'DM Mono',monospace;color:var(--muted);font-size:11px;margin-top:4px}
-.good{color:var(--accent)}.mid{color:var(--orange)}.bad{color:var(--red)}
-.section-title{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin:24px 0 8px}
-.table{width:100%;border-collapse:collapse;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;margin-top:8px}
-.table th{background:#1a1a1a;color:var(--muted);text-align:left;padding:9px;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
-.table td{border-top:1px solid var(--border);padding:8px 9px;vertical-align:top}
-.table tr.target{background:rgba(200,241,53,.07)}
-.badge{display:inline-block;padding:2px 7px;border-radius:2px;font-size:10px;font-weight:700}
-.badge-good{background:rgba(200,241,53,.15);color:var(--accent)}
-.badge-mid{background:rgba(255,179,71,.15);color:var(--orange)}
-.badge-bad{background:rgba(255,77,77,.12);color:var(--red)}
-.prospect{border-left:4px solid var(--accent)}
-.btn-pdf{background:none;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
-.btn-pdf:hover{background:var(--accent);color:#000}
-@media(max-width:800px){.market-grid{grid-template-columns:1fr 1fr}.table{font-size:10px}.keyword-row{display:block}.btn-small{width:100%;margin-top:8px}}
+label{display:block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+input,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--accent)}
+input[type=password]{letter-spacing:.1em}
+.hint{margin-top:6px;font-size:11px;color:var(--muted)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+.btn-run{width:100%;background:var(--accent);border:0;border-radius:3px;color:#0a0a0a;font-family:Syne,sans-serif;font-weight:800;font-size:16px;letter-spacing:.05em;padding:16px;cursor:pointer;margin-top:8px;transition:opacity .2s}
+.btn-run:hover{opacity:.9}
+.btn-run:disabled{opacity:.4;cursor:not-allowed}
+.status-bar{display:none;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:16px;font-family:'DM Mono',monospace;font-size:13px;color:var(--muted);align-items:center;gap:10px}
+.status-bar.visible{display:flex}
+.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{display:none;background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);border-radius:4px;padding:14px 18px;font-family:'DM Mono',monospace;font-size:13px;color:var(--bad);margin-bottom:16px}
+.error-box.visible{display:block}
+#results{display:none}
+.results-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.results-top h2{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.btn-save{background:none;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:8px 16px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.08em;transition:background .15s,color .15s}
+.btn-save:hover{background:var(--accent);color:#0a0a0a}
+.summary-line{font-size:11px;color:var(--muted);margin-bottom:18px}
+.snapshot-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+@media(max-width:600px){.snapshot-cards{grid-template-columns:1fr}}
+.snap-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:20px}
+.snap-card-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.snap-card-rank{font-size:48px;font-weight:800;line-height:1;margin-bottom:8px}
+.snap-card-loc{font-size:11px;color:var(--muted);line-height:1.4}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:11px;color:var(--muted)}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+#map{width:100%;height:520px;border-radius:4px;border:1px solid var(--border);margin-bottom:24px}
+.leaflet-popup-content-wrapper{background:#1a1a1a;color:var(--text);border:1px solid var(--border);border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,.5);font-family:'DM Mono',monospace}
+.leaflet-popup-tip{background:#1a1a1a}
+.leaflet-popup-content{margin:14px 16px;min-width:240px;max-width:340px}
+.popup-title{font-family:Syne,sans-serif;font-weight:800;font-size:13px;margin-bottom:4px;color:var(--accent)}
+.popup-sub{font-size:10px;color:var(--muted);margin-bottom:10px;letter-spacing:.05em;text-transform:uppercase}
+.popup-list{list-style:none;max-height:320px;overflow-y:auto}
+.popup-list li{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;line-height:1.3}
+.popup-list li:last-child{border-bottom:none}
+.popup-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;color:#000;font-family:Syne,sans-serif}
+.popup-name{flex:1;min-width:0}
+.popup-name .kind{font-size:9px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.popup-you{color:var(--accent);font-weight:800}
+.results-list-wrap{margin-top:24px}
+.results-list-wrap h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.point-block{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:18px;margin-bottom:12px}
+.point-block-head{display:flex;align-items:center;gap:14px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.point-rank-badge{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:800;font-size:20px;flex-shrink:0;color:#000}
+.point-rank-badge.gray{background:#333;color:#666}
+.point-block-title{flex:1}
+.point-block-title strong{display:block;font-family:Syne,sans-serif;font-size:15px;font-weight:700}
+.point-block-title small{font-size:11px;color:var(--muted)}
+.point-list{list-style:none;font-size:12px}
+.point-list li{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.point-list li:last-child{border-bottom:none}
+.point-list .rank-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;color:#000;font-family:Syne,sans-serif}
+.point-list .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.point-list .you{color:var(--accent);font-weight:700}
+.point-list .kind-tag{font-size:9px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--border);border-radius:2px;padding:2px 5px;flex-shrink:0}
+.point-list .kind-maps{color:var(--accent);border-color:rgba(200,241,53,.3)}
+@media print{
+  body{background:#fff;color:#000;padding:20px}
+  #inputSection,.btn-run,.btn-save,#map{display:none!important}
+  #results{display:block!important}
+  .card,.snap-card,.point-block{background:#fff;border-color:#ddd}
+  .leaflet-popup-content-wrapper{display:none}
+  .logo,.subtitle,label,.hint,.summary-line,.snap-card-label,.snap-card-loc,.popup-sub,.point-block-title small,.results-list-wrap h3{color:#555}
+  .point-list li{border-color:#eee}
+  .point-list .kind-tag{border-color:#ddd}
+}
 </style>
 </head>
 <body>
 <div class="container">
+
 <header>
-  <div class="logo">Industry Discovery Scanner</div>
-  <h1>Find weak<br><span>local markets.</span></h1>
-  <p class="subtitle">// scan top 20 Google Maps results — find weak profiles, easy traction, and call-worthy prospects</p>
+  <div class="logo">
+    <a href="/index.html">← Bulk Rank Checker</a>
+    &nbsp;/&nbsp; Geo Rank Snapshot
+  </div>
+  <h1>Searched from<br><span>two locations.</span></h1>
+  <p class="subtitle">// what does Google show someone searching from the business's neighborhood — vs. from the city center</p>
 </header>
 
 <div id="inputSection">
+
   <div class="card">
     <div class="field">
       <label>Apify API Token</label>
-      <input id="token" type="password" placeholder="apify_api_xxxx">
+      <input type="password" id="apifyToken" placeholder="apify_api_xxxx…" autocomplete="off">
     </div>
   </div>
 
   <div class="card">
     <div class="field">
-      <label>Seed Google Maps URLs — optional, one per line</label>
-      <textarea id="urls" rows="4" placeholder="Optional. Paste a business Maps URL if you want to include/mark a target."></textarea>
-      <div class="counter" id="urlCounter"><span>0</span> / 30 URLs</div>
-      <div class="hint">// optional. The scanner can run from city alone.</div>
+      <label>Business — Google Maps URL</label>
+      <input type="url" id="mapsUrl" placeholder="https://www.google.com/maps/place/…">
+      <div class="hint" id="coordsHint">// pin coordinates extracted automatically from URL</div>
     </div>
-  </div>
 
-  <div class="card">
-    <div class="field">
-      <label>Keywords / Industries</label>
-      <div class="keyword-row">
-        <input id="keywordInput" placeholder="e.g. junk removal">
-        <button class="btn-small" onclick="addKeyword()">+ Add</button>
+    <div class="two-col">
+      <div class="field">
+        <label>Keyword</label>
+        <input type="text" id="keyword" placeholder="e.g. gutter cleaning, plumber">
+        <div class="hint">// the exact phrase a customer would search</div>
       </div>
-      <div class="tags" id="tags"></div>
-    </div>
-
-    <div class="field">
-      <label>Search From</label>
-      <select id="searchFrom" onchange="toggleCity()">
-        <option value="city" selected>CITY — search keyword + city</option>
-        <option value="pin">PIN — search from seed business location</option>
-      </select>
-      <div id="cityBox" style="display:block;margin-top:10px">
-        <input id="city" placeholder="e.g. Spokane Valley">
-        <div class="hint">// city mode searches “keyword + city” from the geocoded city center</div>
+      <div class="field">
+        <label>City</label>
+        <input type="text" id="city" placeholder="e.g. Spokane">
+        <div class="hint">// city center is geocoded automatically</div>
       </div>
     </div>
 
-    <div class="field">
-      <label>Language</label>
-      <select id="language">
-        <option value="en" selected>English</option>
-        <option value="sv">Svenska</option>
-        <option value="es">Español</option>
-      </select>
+    <div class="two-col">
+      <div class="field">
+        <label>Country</label>
+        <select id="country">
+          <option value="us" selected>US United States</option>
+          <option value="se">SE Sweden</option>
+          <option value="gb">GB United Kingdom</option>
+          <option value="es">ES Spain</option>
+          <option value="ar">AR Argentina</option>
+          <option value="ca">CA Canada</option>
+          <option value="au">AU Australia</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Language</label>
+        <select id="language">
+          <option value="en" selected>en English</option>
+          <option value="sv">sv Svenska</option>
+          <option value="es">es Español</option>
+        </select>
+      </div>
     </div>
   </div>
 
-  <button id="runBtn" class="btn-run" onclick="runScan()">▶ Run Market Scan</button>
+  <button class="btn-run" id="runBtn" onclick="runSnapshot()">▶ Run 2-Point Snapshot</button>
 </div>
 
-<div id="status" class="status"></div>
-<div id="error" class="error"></div>
+<div class="status-bar" id="statusBar"><div class="spinner"></div><span id="statusText">Starting…</span></div>
+<div class="error-box" id="errorBox"></div>
 
-<div id="results" class="results">
-  <div id="resultsBody"></div>
+<div id="results">
+  <div class="results-top">
+    <h2 id="resultsTitle">Geo Rank Snapshot</h2>
+    <button class="btn-save" onclick="window.print()">⬇ Save as PDF</button>
+  </div>
+
+  <div class="summary-line" id="summaryLine"></div>
+
+  <div class="snapshot-cards" id="snapshotCards"></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div> #1–3 Top 3</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c8f135"></div> #4–7 Good</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffb347"></div> #8–15 Mid</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff4d4d"></div> #16–20 Low</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#333"></div> 20+ Invisible</div>
+  </div>
+
+  <div id="map"></div>
+
+  <div class="results-list-wrap">
+    <h3>// top 20 at each search location</h3>
+    <div id="pointBlocks"></div>
+  </div>
 </div>
+
 </div>
 
 <script>
-const BASE='https://api.apify.com/v2';
-const ACTOR='compass~crawler-google-places';
-let keywords=[];
-let latestMarkets=[];
+const BASE = 'https://api.apify.com/v2';
+const SEARCH_ACTOR = 'apify~google-search-scraper';
 
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
-function status(msg){const el=document.getElementById('status');el.textContent=msg;el.classList.add('visible')}
-function hideStatus(){document.getElementById('status').classList.remove('visible')}
-function showError(msg){const el=document.getElementById('error');el.textContent='⚠ '+msg;el.classList.add('visible')}
-function clearError(){document.getElementById('error').classList.remove('visible')}
-function normalize(s){return String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/&/g,'and').replace(/[^a-z0-9]/g,'')}
-function parseUrls(raw){return raw.split('\n').map(u=>u.trim()).filter(u=>u.includes('google.com/maps')||u.includes('maps.app.goo.gl')||u.includes('goo.gl/maps')).slice(0,30)}
-function avg(arr){const nums=arr.filter(n=>Number.isFinite(Number(n))).map(Number);return nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0}
-function median(arr){const nums=arr.filter(n=>Number.isFinite(Number(n))).map(Number).sort((a,b)=>a-b);if(!nums.length)return 0;const m=Math.floor(nums.length/2);return nums.length%2?nums[m]:(nums[m-1]+nums[m])/2}
+let map = null;
+let parsedCoords = null;
+let parsedName = null;
 
-document.getElementById('urls').addEventListener('input',function(){
-  const n=parseUrls(this.value).length;
-  document.getElementById('urlCounter').innerHTML=`<span>${n}</span> / 30 URLs`;
+// ── coord extraction ──
+function extractCoords(url){
+  let m = url.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  m = url.match(/!3d(-?\d{1,3}\.\d+).*?!4d(-?\d{1,3}\.\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  return null;
+}
+
+function extractName(url){
+  const m = url.match(/maps\/place\/([^/@]+)/);
+  return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : 'Business';
+}
+
+document.getElementById('mapsUrl').addEventListener('input', function(){
+  const coords = extractCoords(this.value.trim());
+  const hint = document.getElementById('coordsHint');
+  if (coords){
+    parsedCoords = coords;
+    parsedName = extractName(this.value.trim());
+    hint.textContent = `📍 ${parsedName} · ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+    hint.style.color = 'var(--accent)';
+  } else {
+    parsedCoords = null;
+    parsedName = null;
+    hint.textContent = '// pin coordinates extracted automatically from URL';
+    hint.style.color = 'var(--muted)';
+  }
 });
-document.getElementById('keywordInput').addEventListener('keydown',e=>{if(e.key==='Enter')addKeyword()});
 
-function addKeyword(){
-  const input=document.getElementById('keywordInput');
-  const val=input.value.trim();
-  if(!val||keywords.includes(val)){input.value='';return}
-  keywords.push(val);input.value='';renderTags();
+function setStatus(msg){
+  document.getElementById('statusBar').classList.add('visible');
+  document.getElementById('statusText').textContent = msg;
 }
-function removeKeyword(i){keywords.splice(i,1);renderTags()}
-function renderTags(){document.getElementById('tags').innerHTML=keywords.map((k,i)=>`<div class="tag">${esc(k)} <button onclick="removeKeyword(${i})">×</button></div>`).join('')}
-function toggleCity(){document.getElementById('cityBox').style.display=document.getElementById('searchFrom').value==='city'?'block':'none'}
+function hideStatus(){ document.getElementById('statusBar').classList.remove('visible'); }
+function showError(msg){
+  const b = document.getElementById('errorBox');
+  b.textContent = '⚠ ' + msg;
+  b.classList.add('visible');
+}
+function clearError(){ document.getElementById('errorBox').classList.remove('visible'); }
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+function esc(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function normalizeDomain(input){
+  let s = String(input || '').trim().toLowerCase();
+  s = s.replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0].split('?')[0].split('#')[0];
+  return s;
+}
+function cleanUrlDomain(url){
+  try { return normalizeDomain(new URL(url).hostname); }
+  catch { return normalizeDomain(url); }
+}
+function normalizeName(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
-async function startActor(token,input){
-  const res=await fetch(`${BASE}/acts/${ACTOR}/runs?token=${encodeURIComponent(token)}`,{
-    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)
+// ── Nominatim reverse geocode (lat/lng → neighborhood) ──
+// Free, CORS-enabled, no API key. Note: their usage policy asks for a User-Agent,
+// but browsers control that header. We'll keep volume low and respect their rate limit.
+async function reverseGeocode(lat, lng){
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16&addressdetails=1`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+  if (!res.ok) throw new Error(`Reverse geocoding failed: ${res.status}`);
+  const data = await res.json();
+  if (!data || !data.address) throw new Error('No address found for these coordinates.');
+  const a = data.address;
+  // Pick the most specific area name available
+  const neighborhood = a.neighbourhood || a.suburb || a.quarter || a.city_district
+                     || a.hamlet || a.village || a.town || a.city || a.county;
+  const city = a.city || a.town || a.village || a.municipality || a.county;
+  const state = a.state || a.region || '';
+  const country = a.country || '';
+  return { neighborhood, city, state, country, raw: a };
+}
+
+// ── Nominatim forward geocode (city name → lat/lng) ──
+async function forwardGeocode(query){
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+  if (!res.ok) throw new Error(`Geocoding failed: ${res.status}`);
+  const data = await res.json();
+  if (!data || !data.length) throw new Error(`Could not find coordinates for "${query}"`);
+  const r = data[0];
+  return {
+    lat: parseFloat(r.lat),
+    lng: parseFloat(r.lon),
+    displayName: r.display_name,
+    address: r.address || {}
+  };
+}
+
+// ── Build the location string Apify wants ──
+// Apify google-search-scraper uses Google's UULE encoding for the `location` field.
+// Format: "Place, Region, Country" e.g. "Spokane Valley, Washington, United States"
+function buildLocationString(neighborhood, city, state, country){
+  const parts = [];
+  if (neighborhood && neighborhood !== city) parts.push(neighborhood);
+  if (city) parts.push(city);
+  if (state) parts.push(state);
+  if (country) parts.push(country);
+  return parts.filter(Boolean).join(', ');
+}
+
+// ── Apify proxy (uses /api/proxy as in your other tools) ──
+async function startActor(token, input){
+  const res = await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/acts/${SEARCH_ACTOR}/runs?token=${token}`)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
   });
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`Apify HTTP ${res.status}`)}
-  const j=await res.json();return j.data;
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Apify HTTP ${res.status}`);
+  }
+  return (await res.json()).data;
 }
-async function pollRun(token,runId,label){
-  for(let i=0;i<80;i++){
+
+async function pollUntilDone(token, runId, label){
+  for (let i = 0; i < 72; i++){
     await sleep(5000);
-    const res=await fetch(`${BASE}/actor-runs/${runId}?token=${encodeURIComponent(token)}`);
-    const j=await res.json();
-    const s=j.data?.status;
-    status(`${label} — ${s} (${(i+1)*5}s)`);
-    if(s==='SUCCEEDED')return j.data.defaultDatasetId;
-    if(['FAILED','ABORTED','TIMED-OUT'].includes(s))throw new Error(`${label} ${s}`);
+    const res = await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/actor-runs/${runId}?token=${token}`)}`);
+    const data = await res.json();
+    const s = data.data.status;
+    setStatus(`${label} — ${s} (${(i+1)*5}s)…`);
+    if (s === 'SUCCEEDED') return data.data.defaultDatasetId;
+    if (['FAILED','ABORTED','TIMED-OUT'].includes(s)) throw new Error(`Apify run ${s}`);
   }
-  throw new Error(`${label} timed out`);
-}
-async function fetchDataset(token,datasetId,limit=500){
-  const res=await fetch(`${BASE}/datasets/${datasetId}/items?token=${encodeURIComponent(token)}&clean=true&limit=${limit}`);
-  return await res.json();
-}
-async function runActor(token,input,label,limit=500){
-  const run=await startActor(token,input);
-  const datasetId=await pollRun(token,run.id,label);
-  return await fetchDataset(token,datasetId,limit);
-}
-async function geocodeCity(city){
-  const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
-  const j=await res.json();
-  if(!j||!j[0])throw new Error(`Could not geocode city: ${city}`);
-  return {lat:Number(j[0].lat),lng:Number(j[0].lon)};
-}
-function profileLatLng(profile){
-  const lat=profile?.location?.lat??profile?.latitude??profile?.lat;
-  const lng=profile?.location?.lng??profile?.longitude??profile?.lng;
-  if(lat==null||lng==null)return null;
-  return {lat:Number(lat),lng:Number(lng)};
-}
-function canonicalName(s){
-  return normalize(String(s||'').replace(/\b(llc|inc|ltd|co|company|corp|corporation|ab|gmbh)\b/gi,' ').replace(/\b(the|of|in|near|at)\b/gi,' ').replace(/\s+/g,' '));
-}
-function wordMatchScore(a,b){
-  const A=canonicalName(a),B=canonicalName(b);
-  if(!A||!B)return 0;
-  if(A===B)return 1;
-  if(A.includes(B)||B.includes(A))return .95;
-  const wordsA=String(a||'').toLowerCase().split(/\s+/).map(canonicalName).filter(w=>w.length>2);
-  const wordsB=String(b||'').toLowerCase().split(/\s+/).map(canonicalName).filter(w=>w.length>2);
-  if(!wordsA.length||!wordsB.length)return 0;
-  let hits=0;
-  for(const w of wordsA){if(wordsB.some(x=>x===w||x.includes(w)||w.includes(x)))hits++}
-  return hits/Math.max(wordsA.length,wordsB.length);
-}
-function isSameBusiness(item,profile){
-  if(!profile)return false;
-  const itemPlaceId=item.placeId||item.place_id||item.cid;
-  const profilePlaceId=profile.placeId||profile.place_id||profile.cid;
-  if(itemPlaceId&&profilePlaceId&&String(itemPlaceId)===String(profilePlaceId))return true;
-  return wordMatchScore(item.title||item.name||'',profile.title||profile.name||'')>=0.6;
-}
-function getCategories(item){
-  const out=[];const add=x=>{if(!x)return;if(typeof x==='string')out.push(x.trim());else if(typeof x==='object')out.push(String(x.name||x.title||x.label||x.categoryName||'').trim())};
-  if(Array.isArray(item.categories))item.categories.forEach(add);
-  if(Array.isArray(item.additionalCategories))item.additionalCategories.forEach(add);
-  add(item.categoryName);add(item.category);
-  return [...new Set(out.filter(Boolean))];
-}
-function getPrimaryCategory(item){const cats=getCategories(item);return item?.categoryName||item?.category||cats[0]||'Unknown'}
-function getSecondaryCategories(item){const primary=getPrimaryCategory(item);return getCategories(item).filter(c=>c&&c!==primary)}
-function hasWebsite(item){return !!(item.website&&String(item.website).trim())}
-function hasPhone(item){return !!(item.phone||item.phoneUnformatted)}
-function hasHours(item){return !!(item.openingHours&&item.openingHours.length)}
-function photoCount(item){return item.imageCount||item.imagesCount||item.photosCount||(Array.isArray(item.imageUrls)?item.imageUrls.length:0)||0}
-function hasDescription(item){return !!(item.description&&String(item.description).trim().length>=120)}
-function hasServices(item){return !!(item.services?.length||item.additionalInfo?.Services||item.additionalInfo)}
-function hasPosts(item){return !!(item.posts?.length||item.updatesFromCustomers?.length||item.updatesCount)}
-
-function getProfileScore(b){
-  let score=0;
-
-  if(b.primaryCategory&&b.primaryCategory!=='Unknown')score+=18;
-  if((b.secondaryCategories||[]).length>=3)score+=12;
-  else if((b.secondaryCategories||[]).length>=1)score+=5;
-
-  if(b.hasDescription)score+=12;
-  if(b.reviews>=100)score+=18;
-  else if(b.reviews>=50)score+=14;
-  else if(b.reviews>=20)score+=10;
-  else if(b.reviews>=10)score+=6;
-
-  if(b.rating>=4.8&&b.reviews>=10)score+=10;
-  else if(b.rating>=4.5&&b.reviews>=10)score+=7;
-  else if(b.rating>=4.0&&b.reviews>=5)score+=4;
-
-  if(b.photos>=30)score+=10;
-  else if(b.photos>=10)score+=7;
-  else if(b.photos>=3)score+=3;
-
-  if(b.hasWebsite)score+=8;
-  else score-=20;
-
-  if(b.hasPhone)score+=5;
-  if(b.hasAddress)score+=5;
-  if(b.hasHours)score+=5;
-  if(b.hasServices)score+=3;
-  if(b.hasPosts)score+=2;
-
-  return Math.max(0,Math.min(100,Math.round(score)));
+  throw new Error('Timed out waiting for Apify run.');
 }
 
-function getTractionDifficulty(b,allBusinesses){
-  const above=allBusinesses.filter(x=>x.rank<b.rank);
-  if(!above.length)return 100;
-
-  const avgAboveScore=avg(above.map(x=>x.profileScore));
-  const avgAboveReviews=avg(above.map(x=>x.reviews));
-  const strongAbove=above.filter(x=>x.profileScore>=70||x.reviews>=200).length;
-  const weakAbove=above.filter(x=>x.profileScore<50).length;
-
-  let difficulty=0;
-  difficulty+=avgAboveScore*0.45;
-  difficulty+=Math.min(35,avgAboveReviews/10);
-  difficulty+=strongAbove*6;
-  difficulty-=weakAbove*5;
-
-  return Math.max(0,Math.min(100,Math.round(difficulty)));
+async function fetchDataset(token, datasetId){
+  const url = `${BASE}/datasets/${datasetId}/items?token=${token}&clean=true&limit=100`;
+  const res = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
+  if (!res.ok) throw new Error(`Could not fetch dataset: ${res.status}`);
+  return res.json();
 }
 
-function getIPPScore(b,allBusinesses){
-  let score=0;
-
-  if(b.rank>=8&&b.rank<=15)score+=30;
-  else if(b.rank>=6&&b.rank<=7)score+=15;
-  else if(b.rank>=16&&b.rank<=20)score+=10;
-
-  if(!b.hasWebsite)score+=20;
-  else if(b.profileScore<55)score+=10;
-
-  if(b.rating>=4.8&&b.reviews>=10)score+=20;
-  else if(b.rating>=4.5&&b.reviews>=10)score+=10;
-
-  if(b.reviews>=15&&b.reviews<=60)score+=20;
-  else if(b.reviews>=10&&b.reviews<=14)score+=10;
-  else if(b.reviews>=61&&b.reviews<=100)score+=10;
-
-  score+=(100-b.profileScore)*0.25;
-
-  const difficulty=getTractionDifficulty(b,allBusinesses);
-  if(difficulty<40)score+=20;
-  else if(difficulty<60)score+=10;
-  else if(difficulty>80)score-=15;
-
-  return Math.max(0,Math.min(100,Math.round(score)));
+// ── Result classification (from SEO Top 20 Checker) ──
+function isAdResult(item){
+  const text = [item.title, item.description, item.text, item.type, item.resultType, item.displayedUrl, item.url, item.siteName].join(' ').toLowerCase();
+  return item.isAdvertisement === true || item.isAd === true || item.ad === true || item.sponsored === true || item.paid === true
+    || text.includes('sponsored') || text.includes('annons') || text.includes('reklam') || text.includes('ad result') || text.includes('paid result');
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// WEBSITE WEAKNESS SCORING
-// Fetches the prospect's homepage and parses cheap signals to determine
-// how "brochure-like" the site is. Higher score = weaker site = better
-// pitch opportunity ("your site doesn't rank because of X, Y, Z").
-// Only runs for IPP candidates to keep the tool fast.
-// ─────────────────────────────────────────────────────────────────────
+function getResultKind(item){
+  const text = [item.type, item.resultType, item.title, item.url, item.displayedUrl, item.placeId, item.cid].join(' ').toLowerCase();
+  if (item.placeId || item.cid || text.includes('local') || text.includes('places') || text.includes('place')
+      || text.includes('maps') || text.includes('map pack') || text.includes('karta')) return 'maps';
+  return 'organic';
+}
 
-const CORS_PROXIES=[
-  url=>`https://corsproxy.io/?${encodeURIComponent(url)}`,
-  url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-];
+function getItemTitle(item){ return item.title || item.name || item.businessName || item.heading || item.text || '(unknown)'; }
+function getItemUrl(item){ return item.url || item.link || item.displayedUrl || item.website || item.domain || ''; }
+function getItemDomain(item){
+  const url = getItemUrl(item);
+  if (url) return cleanUrlDomain(url);
+  return cleanUrlDomain(item.displayedUrl || item.siteName || item.title || '');
+}
 
-async function fetchHtml(url,timeoutMs=12000){
-  // try each proxy in order until one works
-  for(const proxy of CORS_PROXIES){
-    try{
-      const ctrl=new AbortController();
-      const t=setTimeout(()=>ctrl.abort(),timeoutMs);
-      const res=await fetch(proxy(url),{signal:ctrl.signal});
-      clearTimeout(t);
-      if(!res.ok)continue;
-      const html=await res.text();
-      if(html&&html.length>200)return {ok:true,html,status:res.status};
-    }catch(e){}
+function extractRawResults(datasetItems){
+  const out = [];
+  for (const page of datasetItems){
+    if (Array.isArray(page.organicResults)) for (const r of page.organicResults) out.push({...r, resultType: r.resultType || 'organic'});
+    if (Array.isArray(page.localResults)) for (const r of page.localResults) out.push({...r, resultType: r.resultType || 'local'});
+    if (Array.isArray(page.placeResults)) for (const r of page.placeResults) out.push({...r, resultType: r.resultType || 'local'});
+    if (Array.isArray(page.mapResults)) for (const r of page.mapResults) out.push({...r, resultType: r.resultType || 'local'});
+    if (Array.isArray(page.results)) for (const r of page.results) out.push(r);
+    if (page.title || page.url || page.link || page.displayedUrl) out.push(page);
   }
-  return {ok:false,html:'',status:0};
+  return out;
 }
 
-async function fetchSitemap(siteUrl,timeoutMs=8000){
-  try{
-    const u=new URL(siteUrl);
-    const sitemapUrl=`${u.protocol}//${u.host}/sitemap.xml`;
-    const r=await fetchHtml(sitemapUrl,timeoutMs);
-    if(!r.ok)return {pageCount:null,servicePageCount:null};
-    const urls=Array.from(r.html.matchAll(/<loc>([^<]+)<\/loc>/gi)).map(m=>m[1]);
-    const servicePages=urls.filter(u=>/\/services?\//i.test(u)||/\/(plumb|paint|hvac|roof|electric|clean|repair|install|service)/i.test(u));
-    return {pageCount:urls.length||null,servicePageCount:servicePages.length};
-  }catch(e){return {pageCount:null,servicePageCount:null}}
-}
-
-async function fetchPageSpeed(url){
-  // Google PageSpeed Insights API — free, no key needed for low volume
-  try{
-    const api=`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&category=performance`;
-    const ctrl=new AbortController();
-    const t=setTimeout(()=>ctrl.abort(),20000);
-    const res=await fetch(api,{signal:ctrl.signal});
-    clearTimeout(t);
-    if(!res.ok)return null;
-    const data=await res.json();
-    const score=data?.lighthouseResult?.categories?.performance?.score;
-    return typeof score==='number'?Math.round(score*100):null;
-  }catch(e){return null}
-}
-
-function analyzeHtml(html,siteUrl,city,keyword){
-  if(!html)return null;
-  const lower=html.toLowerCase();
-  const cityLower=(city||'').toLowerCase();
-  const kwLower=(keyword||'').toLowerCase();
-
-  // Title
-  const titleMatch=html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  const title=titleMatch?titleMatch[1].replace(/\s+/g,' ').trim():'';
-  const titleLower=title.toLowerCase();
-
-  // H1
-  const h1Match=html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-  const h1=h1Match?h1Match[1].replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim():'';
-  const h1Lower=h1.toLowerCase();
-
-  // Schema detection (JSON-LD)
-  const ldMatches=Array.from(html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi));
-  let localBusinessSchema=false,serviceSchema=false,faqSchema=false,breadcrumbSchema=false;
-  for(const m of ldMatches){
-    const txt=m[1];
-    if(/"@type"\s*:\s*"(LocalBusiness|Plumber|RoofingContractor|HVACBusiness|Electrician|HousePainter|HomeAndConstructionBusiness|ProfessionalService|GeneralContractor)"/i.test(txt))localBusinessSchema=true;
-    if(/"@type"\s*:\s*"Service"/i.test(txt))serviceSchema=true;
-    if(/"@type"\s*:\s*"FAQPage"/i.test(txt))faqSchema=true;
-    if(/"@type"\s*:\s*"BreadcrumbList"/i.test(txt))breadcrumbSchema=true;
+function normalizeResults(datasetItems){
+  const raw = extractRawResults(datasetItems);
+  const noAds = raw.filter(item => !isAdResult(item));
+  const cleaned = [];
+  const seen = new Set();
+  for (const item of noAds){
+    const title = getItemTitle(item);
+    const url = getItemUrl(item);
+    const domain = getItemDomain(item);
+    const kind = getResultKind(item);
+    const key = `${kind}|${title}|${url}|${domain}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    cleaned.push({ title, url, domain, kind });
   }
-
-  // Open Graph
-  const ogTitle=/<meta[^>]+property=["']og:title["']/i.test(html);
-  const ogImage=/<meta[^>]+property=["']og:image["']/i.test(html);
-  const openGraph=ogTitle&&ogImage;
-
-  // Mobile viewport
-  const mobileViewport=/<meta[^>]+name=["']viewport["'][^>]*content=["'][^"']*width=device-width/i.test(html);
-
-  // HTTPS
-  const https=siteUrl.startsWith('https://');
-
-  // CMS / generator detection
-  let generator='';
-  const genMatch=html.match(/<meta[^>]+name=["']generator["'][^>]*content=["']([^"']+)["']/i);
-  if(genMatch)generator=genMatch[1];
-  else if(/wp-content|wp-includes/i.test(html))generator='WordPress';
-  else if(/static\.wixstatic\.com|wix\.com/i.test(html))generator='Wix';
-  else if(/squarespace/i.test(lower))generator='Squarespace';
-  else if(/cdn\.shopify\.com/i.test(html))generator='Shopify';
-  else if(/webflow\.com/i.test(html))generator='Webflow';
-
-  // Word count (strip tags + scripts/styles first)
-  const stripped=html
-    .replace(/<script[\s\S]*?<\/script>/gi,'')
-    .replace(/<style[\s\S]*?<\/style>/gi,'')
-    .replace(/<[^>]+>/g,' ')
-    .replace(/\s+/g,' ');
-  const wordCount=stripped.split(' ').filter(w=>w.length>1).length;
-
-  // Phone presence
-  const phoneVisible=/(\+?\d[\d\s\-().]{7,})/.test(stripped)&&/tel:|phone|call|ring/i.test(html);
-
-  // Address / city presence
-  const cityVisible=cityLower?stripped.toLowerCase().includes(cityLower):false;
-
-  // Form detection
-  const formDetected=/<form[\s>]/i.test(html)||/<input[^>]+type=["']email["']/i.test(html);
-
-  // Keyword/city in title and h1
-  const titleHasCity=cityLower?titleLower.includes(cityLower):false;
-  const titleHasKeyword=kwLower?kwLower.split(/\s+/).some(w=>w.length>2&&titleLower.includes(w)):false;
-  const h1HasCity=cityLower?h1Lower.includes(cityLower):false;
-  const h1HasKeyword=kwLower?kwLower.split(/\s+/).some(w=>w.length>2&&h1Lower.includes(w)):false;
-
-  return {
-    title,h1,
-    https,mobileViewport,
-    localBusinessSchema,serviceSchema,faqSchema,breadcrumbSchema,
-    openGraph,generator,
-    wordCount,
-    phoneVisible,cityVisible,formDetected,
-    titleHasCity,titleHasKeyword,h1HasCity,h1HasKeyword
-  };
+  return cleaned.slice(0, 20).map((r, i) => ({ ...r, position: i + 1 }));
 }
 
-function getWebsiteWeaknessScore(s){
-  if(!s)return null;
-  let score=0;
-
-  // Schema absence — strongest signal that no SEO work was done
-  if(!s.localBusinessSchema)score+=25;
-  if(!s.serviceSchema)score+=15;
-  if(!s.faqSchema)score+=8;
-  if(!s.breadcrumbSchema)score+=5;
-
-  // Title and H1 don't target city + service
-  if(!s.titleHasCity)score+=8;
-  if(!s.titleHasKeyword)score+=8;
-  if(!s.h1HasCity)score+=6;
-  if(!s.h1HasKeyword)score+=6;
-
-  // Site size
-  if(s.pageCount===1)score+=25;
-  else if(s.pageCount&&s.pageCount<4)score+=15;
-  else if(!s.pageCount)score+=10; // no sitemap = probably small
-
-  // Service pages (real SEO sites have these)
-  if(s.servicePageCount===0||s.servicePageCount===null)score+=10;
-
-  // Content depth
-  if(s.wordCount<300)score+=10;
-  else if(s.wordCount<600)score+=5;
-
-  // Trust + technical
-  if(!s.phoneVisible)score+=5;
-  if(!s.formDetected)score+=5;
-  if(!s.https)score+=20;
-  if(!s.mobileViewport)score+=15;
-  if(!s.openGraph)score+=4;
-
-  // PageSpeed (if available)
-  if(typeof s.pageSpeedMobile==='number'){
-    if(s.pageSpeedMobile<30)score+=12;
-    else if(s.pageSpeedMobile<50)score+=8;
-    else if(s.pageSpeedMobile<70)score+=4;
+// ── Find target match in results ──
+function findTargetMatch(results, businessName, businessDomain){
+  const normName = normalizeName(businessName);
+  const normDom = normalizeDomain(businessDomain);
+  let bestMatch = null;
+  for (const r of results){
+    const titleNorm = normalizeName(r.title);
+    const domainMatch = normDom && (r.domain === normDom || r.domain.endsWith('.' + normDom));
+    const nameMatch = normName && (titleNorm.includes(normName) || normName.includes(titleNorm));
+    if (domainMatch || nameMatch){
+      if (!bestMatch || r.position < bestMatch.position) bestMatch = r;
+    }
   }
-
-  // Builder hints (Wix/Squarespace skew toward brochures)
-  if(s.generator==='Wix'||s.generator==='Squarespace')score+=4;
-
-  return Math.min(100,Math.max(0,Math.round(score)));
+  return bestMatch;
 }
 
-async function analyzeWebsite(siteUrl,city,keyword){
-  if(!siteUrl)return null;
-  // normalize
-  let url=siteUrl.trim();
-  if(!/^https?:\/\//i.test(url))url='https://'+url;
+// ── Rank colors (consistent with your other tools) ──
+function rankColor(rank){
+  if (!rank || rank > 20) return '#333';
+  if (rank <= 3) return '#16a34a';
+  if (rank <= 7) return '#c8f135';
+  if (rank <= 15) return '#ffb347';
+  return '#ff4d4d';
+}
+function rankTextColor(rank){
+  if (!rank || rank > 20) return '#666';
+  return '#000';
+}
 
-  const [htmlResult,sitemapData,pageSpeed]=await Promise.all([
-    fetchHtml(url),
-    fetchSitemap(url),
-    fetchPageSpeed(url)
-  ]);
+// ── Main flow ──
+async function runSnapshot(){
+  clearError();
+  document.getElementById('results').style.display = 'none';
 
-  if(!htmlResult.ok){
-    // site unreachable — that itself is a strong "weak" signal
-    return {
-      reachable:false,url,
-      pageSpeedMobile:pageSpeed,
-      ...sitemapData,
-      weaknessScore:90 // unreachable = very weak
+  const token = document.getElementById('apifyToken').value.trim();
+  const keyword = document.getElementById('keyword').value.trim();
+  const cityInput = document.getElementById('city').value.trim();
+  const country = document.getElementById('country').value;
+  const language = document.getElementById('language').value;
+
+  if (!token) return showError('Apify token is required.');
+  if (!keyword) return showError('Keyword is required.');
+  if (!cityInput) return showError('City is required.');
+  if (!parsedCoords) return showError('Could not read coordinates from URL. Use a full Google Maps URL.');
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+
+  try {
+    // Step 1: Reverse-geocode the business pin to get neighborhood
+    setStatus('Resolving business neighborhood…');
+    const reverse = await reverseGeocode(parsedCoords.lat, parsedCoords.lng);
+
+    // Step 2: Forward-geocode the city to get city center
+    setStatus(`Locating ${cityInput} city center…`);
+    const cityGeo = await forwardGeocode(`${cityInput}, ${reverse.state || reverse.country || ''}`);
+    const cityRev = await reverseGeocode(cityGeo.lat, cityGeo.lng).catch(() => ({
+      neighborhood: cityInput, city: cityInput, state: reverse.state, country: reverse.country
+    }));
+
+    // Build the two location strings for Apify
+    const point1 = {
+      label: 'Business Neighborhood',
+      lat: parsedCoords.lat,
+      lng: parsedCoords.lng,
+      neighborhood: reverse.neighborhood,
+      city: reverse.city,
+      state: reverse.state,
+      country: reverse.country,
+      locationString: buildLocationString(reverse.neighborhood, reverse.city, reverse.state, reverse.country)
     };
-  }
+    const point2 = {
+      label: 'City Center',
+      lat: cityGeo.lat,
+      lng: cityGeo.lng,
+      neighborhood: cityRev.neighborhood || cityInput,
+      city: cityRev.city || cityInput,
+      state: cityRev.state || reverse.state,
+      country: cityRev.country || reverse.country,
+      locationString: buildLocationString(null, cityRev.city || cityInput, cityRev.state || reverse.state, cityRev.country || reverse.country)
+    };
 
-  const analysis=analyzeHtml(htmlResult.html,url,city,keyword);
-  const combined={
-    reachable:true,url,
-    pageSpeedMobile:pageSpeed,
-    ...sitemapData,
-    ...analysis
-  };
-  combined.weaknessScore=getWebsiteWeaknessScore(combined);
-  return combined;
-}
+    const businessDomain = ''; // we don't ask for it; rely on name match
+    const businessName = parsedName || 'Business';
 
-function buildPitchAngle(b){
-  if(!b.website)return 'No website at all — start from zero.';
-  const w=b.websiteAnalysis;
-  if(!w)return 'Website not yet analyzed.';
-  if(!w.reachable)return 'Their website is unreachable — broken or abandoned.';
-
-  const issues=[];
-  if(!w.localBusinessSchema)issues.push('no LocalBusiness schema');
-  if(!w.serviceSchema)issues.push('no Service schema');
-  if(!w.titleHasCity)issues.push('city missing from title tag');
-  if(!w.h1HasCity)issues.push('city missing from H1');
-  if(w.pageCount&&w.pageCount<4)issues.push(`only ${w.pageCount} pages indexed`);
-  if(w.servicePageCount===0)issues.push('no dedicated service pages');
-  if(w.wordCount&&w.wordCount<300)issues.push('thin homepage content');
-  if(typeof w.pageSpeedMobile==='number'&&w.pageSpeedMobile<50)issues.push(`slow mobile (PageSpeed ${w.pageSpeedMobile})`);
-  if(w.generator==='Wix'||w.generator==='Squarespace')issues.push(`${w.generator} template`);
-
-  if(!issues.length)return 'Their website is reasonable — focus pitch on GBP gaps.';
-  return `Their site looks fine but doesn't rank: ${issues.slice(0,4).join(', ')}.`;
-}
-
-function getFinalProspectScore(b){
-  // IPP already incorporates traction difficulty, so weight 65/35 with weakness
-  const ipp=b.ippScore||0;
-  const weakness=b.websiteAnalysis?.weaknessScore;
-  if(typeof weakness!=='number')return ipp; // no website data = use IPP only
-  return Math.round(ipp*0.65+weakness*0.35);
-}
-
-function buildCategoriesCounter(businesses){
-  const primary={},secondary={};
-  for(const b of businesses.slice(0,20)){
-    primary[b.primaryCategory]=(primary[b.primaryCategory]||0)+1;
-    for(const cat of b.secondaryCategories||[])secondary[cat]=(secondary[cat]||0)+1;
-  }
-  return {
-    primary:Object.entries(primary).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])),
-    secondary:Object.entries(secondary).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))
-  };
-}
-
-function makeBusiness(item,rank,targetProfile){
-  const b={
-    rank,
-    item,
-    name:item.title||item.name||'(unknown)',
-    rating:Number(item.totalScore??item.rating??0),
-    reviews:Number(item.reviewsCount??item.reviewCount??0),
-    website:item.website||'',
-    hasWebsite:hasWebsite(item),
-    primaryCategory:getPrimaryCategory(item),
-    secondaryCategories:getSecondaryCategories(item),
-    categories:getCategories(item),
-    photos:photoCount(item),
-    hasDescription:hasDescription(item),
-    hasPhone:hasPhone(item),
-    hasAddress:!!item.address,
-    hasHours:hasHours(item),
-    hasServices:hasServices(item),
-    hasPosts:hasPosts(item),
-    isTarget:isSameBusiness(item,targetProfile)
-  };
-  b.profileScore=getProfileScore(b);
-  return b;
-}
-
-function getMarketScore(businesses){
-  const top5=businesses.slice(0,5);
-  const top10=businesses.slice(0,10);
-  const leader=businesses[0]||{};
-  const avgTop5=avg(top5.map(b=>b.reviews));
-  const weakTop10=top10.filter(b=>b.profileScore<50||!b.hasWebsite).length;
-  const candidates=businesses.filter(b=>b.ippScore>=65).length;
-
-  // detect giants anywhere in top 20 — they will eventually dominate
-  const giants1000=businesses.filter(b=>b.reviews>=1000).length;
-  const giants500=businesses.filter(b=>b.reviews>=500).length;
-
-  let score=0;
-  if((leader.reviews||0)<200)score+=35;
-  else if((leader.reviews||0)<500)score+=15;
-  else if((leader.reviews||0)>1000)score-=25;
-
-  if(avgTop5<100)score+=30;
-  else if(avgTop5<200)score+=15;
-  else if(avgTop5>500)score-=20;
-
-  score+=weakTop10*4;
-  score+=candidates*10;
-
-  // CRITICAL: any giant in top 20 = market is gravitationally pulled toward them
-  if(giants1000>=1)score*=0.5;       // market killer
-  else if(giants500>=2)score*=0.7;   // heavy competition
-
-  return Math.max(0,Math.min(100,Math.round(score)));
-}
-
-function getVerdict(score){
-  if(score>=70)return {text:'OPEN MARKET',cls:'good'};
-  if(score>=45)return {text:'MIXED / TEST CAREFULLY',cls:'mid'};
-  return {text:'HARD / SKIP',cls:'bad'};
-}
-
-async function runScan(){
-  clearError();hideStatus();document.getElementById('results').style.display='none';
-
-  const token=document.getElementById('token').value.trim();
-  const urls=parseUrls(document.getElementById('urls').value);
-  const searchFrom=document.getElementById('searchFrom').value;
-  const city=document.getElementById('city').value.trim();
-  const lang=document.getElementById('language').value;
-
-  if(!token)return showError('Apify token is required.');
-  if(!keywords.length)return showError('Add at least one keyword.');
-  if(searchFrom==='city'&&!city)return showError('Enter city.');
-  if(searchFrom==='pin'&&!urls.length)return showError('PIN mode needs at least one Google Maps URL.');
-
-  const btn=document.getElementById('runBtn');btn.disabled=true;
-
-  try{
-    let cityCoords=null;
-    if(searchFrom==='city'){
-      status(`Geocoding ${city}`);
-      cityCoords=await geocodeCity(city);
+    // Step 3: Run two searches (same query, different `location` param)
+    const searches = [];
+    for (let i = 0; i < 2; i++){
+      const pt = i === 0 ? point1 : point2;
+      setStatus(`Searching from ${pt.locationString} (${i+1}/2)…`);
+      const input = {
+        queries: keyword,
+        resultsPerPage: 20,
+        maxPagesPerQuery: 1,
+        countryCode: country,
+        languageCode: language,
+        searchDomain: 'google.com',
+        mobileResults: false,
+        includeUnfilteredResults: false,
+        saveHtml: false,
+        saveHtmlToKeyValueStore: false,
+        location: pt.locationString
+      };
+      const run = await startActor(token, input);
+      const datasetId = await pollUntilDone(token, run.id, `Searching from ${pt.label}`);
+      const dataset = await fetchDataset(token, datasetId);
+      const results = normalizeResults(dataset);
+      const match = findTargetMatch(results, businessName, businessDomain);
+      searches.push({ ...pt, results, match, rank: match ? match.position : null });
     }
 
-    let targetProfiles=[];
-    if(urls.length){
-      for(let i=0;i<urls.length;i++){
-        status(`Fetching seed profile ${i+1}/${urls.length}`);
-        const profiles=await runActor(token,{
-          startUrls:[{url:urls[i]}],
-          maxCrawledPlacesPerSearch:1,
-          language:lang,
-          maxReviews:0,
-          maxImages:0,
-          scrapeReviewerInfo:false
-        },`Seed profile ${i+1}`,20);
-        if(profiles&&profiles[0])targetProfiles.push(profiles[0]);
-      }
-    }
-
-    const markets=[];
-
-    for(let k=0;k<keywords.length;k++){
-      const keyword=keywords[k];
-
-      let lat,lng,query,label;
-      if(searchFrom==='city'){
-        lat=cityCoords.lat;lng=cityCoords.lng;
-        query=`${keyword} ${city}`;
-        label=`${keyword} — ${city}`;
-      }else{
-        const profile=targetProfiles[0];
-        const coords=profileLatLng(profile);
-        if(!coords)throw new Error('Could not get seed profile coordinates.');
-        lat=coords.lat;lng=coords.lng;
-        query=keyword;
-        label=`${keyword} — PIN`;
-      }
-
-      status(`Scanning top 20: ${label}`);
-
-      const results=await runActor(token,{
-        searchStringsArray:[query],
-        lat:String(lat),
-        lng:String(lng),
-        zoom:searchFrom==='city'?12:14,
-        maxCrawledPlacesPerSearch:20,
-        language:lang,
-        maxReviews:0,
-        maxImages:0,
-        scrapeReviewerInfo:false,
-        scrapeContacts:false,
-        exportPlaceUrls:false,
-        additionalInfo:false
-      },`Market scan ${k+1}/${keywords.length}`,300);
-
-      const items=(results||[]).sort((a,b)=>(a.rank??999)-(b.rank??999)).slice(0,20);
-      let businesses=items.map((item,i)=>makeBusiness(item,i+1,targetProfiles[0]||null));
-
-      for(const b of businesses){
-        b.tractionDifficulty=getTractionDifficulty(b,businesses);
-        b.ippScore=getIPPScore(b,businesses);
-      }
-
-      const marketScore=getMarketScore(businesses);
-      const verdict=getVerdict(marketScore);
-      const top10=businesses.slice(0,10);
-      const candidates=businesses.filter(b=>b.ippScore>=65).sort((a,b)=>b.ippScore-a.ippScore);
-      const counter=buildCategoriesCounter(businesses);
-
-      // Phase 2: deep-dive only on IPP candidates with websites
-      // Skip website analysis entirely if market is hopeless (saves time + bandwidth)
-      const candidatesWithSites=candidates.filter(b=>b.website);
-      if(marketScore>=30&&candidatesWithSites.length){
-        status(`${label}: analyzing ${candidatesWithSites.length} candidate website(s)`);
-        const cityForCheck=searchFrom==='city'?city:'';
-        await Promise.all(candidatesWithSites.map(async b=>{
-          try{
-            b.websiteAnalysis=await analyzeWebsite(b.website,cityForCheck,keyword);
-          }catch(e){b.websiteAnalysis=null}
-        }));
-      }
-
-      // Final score + pitch angle for every candidate (with or without site analysis)
-      for(const b of candidates){
-        b.finalScore=getFinalProspectScore(b);
-        b.pitchAngle=buildPitchAngle(b);
-      }
-      // Re-sort candidates by final score (IPP + website weakness combined)
-      candidates.sort((a,b)=>b.finalScore-a.finalScore);
-
-      markets.push({
-        keyword,city,query,label,searchFrom,businesses,marketScore,verdict,candidates,counter,
-        leader:businesses[0]||null,
-        avgTop5Reviews:Math.round(avg(businesses.slice(0,5).map(b=>b.reviews))),
-        medianTop10Reviews:Math.round(median(top10.map(b=>b.reviews))),
-        weakTop10:top10.filter(b=>b.profileScore<50||!b.hasWebsite).length
-      });
-    }
-
-    latestMarkets=markets;
     hideStatus();
-    renderMarkets(markets);
+    renderResults(searches, keyword, businessName);
 
-  }catch(e){hideStatus();showError(e.message)}
-  finally{btn.disabled=false}
+  } catch (err){
+    hideStatus();
+    showError(err.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
-function scoreClass(n){return n>=70?'good':n>=45?'mid':'bad'}
-function profileBadge(score){return `<span class="badge ${score>=70?'badge-good':score>=50?'badge-mid':'badge-bad'}">${score}%</span>`}
-function ippBadge(score){return `<span class="badge ${score>=65?'badge-good':score>=40?'badge-mid':'badge-bad'}">${score}</span>`}
-function weaknessBadge(score){
-  if(typeof score!=='number')return '<span style="color:var(--muted)">—</span>';
-  // Higher weakness = better prospect, so colors are inverted vs other badges
-  return `<span class="badge ${score>=60?'badge-good':score>=35?'badge-mid':'badge-bad'}">${score}</span>`;
-}
-function finalBadge(score){
-  if(typeof score!=='number')return '<span style="color:var(--muted)">—</span>';
-  return `<span class="badge ${score>=65?'badge-good':score>=45?'badge-mid':'badge-bad'}">${score}</span>`;
-}
+// ── Render ──
+function renderResults(searches, keyword, businessName){
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('resultsTitle').textContent = `"${keyword}" — ${businessName}`;
 
-function renderMarkets(markets){
-  let html=`<div class="summary">// ${markets.length} market scans · ${new Date().toLocaleString()}</div>`;
+  const ts = new Date().toLocaleString();
+  document.getElementById('summaryLine').textContent = `// query: "${keyword}" · 2 search points · ${ts}`;
 
-  markets.forEach((m,idx)=>{
-    html+=`
-    <div class="market-card">
-      <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start">
-        <div>
-          <div class="market-title">${esc(m.label)}</div>
-          <div class="summary">// query: "${esc(m.query)}" · mode: ${esc(m.searchFrom.toUpperCase())}</div>
+  // Snapshot cards
+  document.getElementById('snapshotCards').innerHTML = searches.map(s => {
+    const rank = s.rank;
+    const rankDisplay = rank ? `#${rank}` : 'NO';
+    const color = rank ? rankColor(rank) : '#ff4d4d';
+    return `
+      <div class="snap-card">
+        <div class="snap-card-label">// ${esc(s.label)}</div>
+        <div class="snap-card-rank" style="color:${color}">${rankDisplay}</div>
+        <div class="snap-card-loc">
+          ${esc(s.locationString)}<br>
+          <span style="color:#666">${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</span>
         </div>
-        <button class="btn-pdf" onclick="openMarketPdf(${idx})">Open PDF</button>
       </div>
+    `;
+  }).join('');
 
-      <div class="market-grid">
-        <div class="stat"><div class="stat-num ${m.verdict.cls}">${m.marketScore}</div><div class="stat-label">market openness</div></div>
-        <div class="stat"><div class="stat-num ${m.verdict.cls}">${m.verdict.text}</div><div class="stat-label">verdict</div></div>
-        <div class="stat"><div class="stat-num">${m.candidates.length}</div><div class="stat-label">IPP candidates</div></div>
-        <div class="stat"><div class="stat-num">${m.weakTop10}/10</div><div class="stat-label">weak top 10</div></div>
-        <div class="stat"><div class="stat-num">${m.leader?.reviews??0}</div><div class="stat-label">leader reviews</div></div>
-        <div class="stat"><div class="stat-num">${m.avgTop5Reviews}</div><div class="stat-label">avg top 5 reviews</div></div>
-        <div class="stat"><div class="stat-num">${m.medianTop10Reviews}</div><div class="stat-label">median top 10 reviews</div></div>
-        <div class="stat"><div class="stat-num">${m.businesses.filter(b=>!b.hasWebsite).length}/20</div><div class="stat-label">no website</div></div>
-      </div>
+  // Map
+  if (map){ map.remove(); map = null; }
+  const centerLat = (searches[0].lat + searches[1].lat) / 2;
+  const centerLng = (searches[0].lng + searches[1].lng) / 2;
 
-      <div class="section-title">// call list — best IPP prospects</div>
-      <table class="table">
-        <thead><tr><th>Rank</th><th>Business</th><th>Final</th><th>IPP</th><th>Profile</th><th>Site Weakness</th><th>Rating</th><th>Reviews</th><th>Phone</th><th>Website</th><th>Pitch Angle</th></tr></thead>
-        <tbody>
-          ${m.candidates.length?m.candidates.map(b=>renderProspectRow(b)).join(''):`<tr><td colspan="9">No strong IPP candidates found.</td></tr>`}
-        </tbody>
-      </table>
+  map = L.map('map', { zoomControl: true, attributionControl: false }).setView([centerLat, centerLng], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, crossOrigin: true }).addTo(map);
+  setTimeout(() => map.invalidateSize(), 300);
 
-      <div class="section-title">// top 20 competitor analysis</div>
-      <table class="table">
-        <thead><tr><th>#</th><th>Name</th><th>Profile</th><th>IPP</th><th>Traction difficulty</th><th>Rating</th><th>Reviews</th><th>Website</th><th>Primary category</th></tr></thead>
-        <tbody>${m.businesses.map(b=>renderBusinessRow(b)).join('')}</tbody>
-      </table>
+  // Pins (with rank label)
+  searches.forEach((s, i) => {
+    const r = s.rank;
+    const color = rankColor(r);
+    const label = !r || r > 20 ? '20+' : `#${r}`;
+    const size = 60;
+    const fs = label.length > 3 ? 12 : 16;
 
-      <div class="section-title">// categories counter — primary</div>
-      <table class="table">
-        <thead><tr><th>Primary category</th><th>Used by top 20</th></tr></thead>
-        <tbody>${m.counter.primary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join('')}</tbody>
-      </table>
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="
+        background:${color};
+        color:${rankTextColor(r)};
+        border-radius:50%;
+        width:${size}px;height:${size}px;
+        display:flex;align-items:center;justify-content:center;
+        font-weight:800;font-size:${fs}px;
+        border:4px solid rgba(255,255,255,.95);
+        box-shadow:0 4px 14px rgba(0,0,0,.5);
+        font-family:Syne,sans-serif;
+      ">${label}</div>`,
+      iconSize: [size, size],
+      iconAnchor: [size/2, size/2]
+    });
 
-      <div class="section-title">// categories counter — secondary</div>
-      <table class="table">
-        <thead><tr><th>Secondary category</th><th>Used by top 20</th></tr></thead>
-        <tbody>${m.counter.secondary.length?m.counter.secondary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join(''):`<tr><td>—</td><td>0/20</td></tr>`}</tbody>
-      </table>
-    </div>`;
+    // Build popup with top 10 results
+    const top10 = s.results.slice(0, 10);
+    const liItems = top10.map(r => {
+      const isUs = s.match && r.position === s.match.position;
+      const bg = rankColor(r.position);
+      const kindLabel = r.kind === 'maps' ? 'Maps / Local' : 'Organic';
+      return `
+        <li>
+          <div class="popup-num" style="background:${bg};color:${rankTextColor(r.position)}">${r.position}</div>
+          <div class="popup-name">
+            <div class="${isUs ? 'popup-you' : ''}">${esc(r.title.substring(0, 50))}${isUs ? ' ◀' : ''}</div>
+            <div class="kind">${kindLabel} · ${esc(r.domain || '')}</div>
+          </div>
+        </li>
+      `;
+    }).join('');
+
+    const popup = `
+      <div class="popup-title">${s.rank ? `#${s.rank} for "${esc(keyword)}"` : `Not in top 20`}</div>
+      <div class="popup-sub">Searched from ${esc(s.locationString)}</div>
+      <ul class="popup-list">${liItems}</ul>
+    `;
+
+    L.marker([s.lat, s.lng], { icon }).addTo(map).bindPopup(popup, { maxWidth: 360 });
   });
 
-  document.getElementById('resultsBody').innerHTML=html;
-  document.getElementById('results').style.display='block';
-  document.getElementById('results').scrollIntoView({behavior:'smooth'});
-}
+  // Connect the two pins with a dashed line for visual flow
+  L.polyline([[searches[0].lat, searches[0].lng], [searches[1].lat, searches[1].lng]], {
+    color: '#444',
+    weight: 2,
+    dashArray: '6, 8'
+  }).addTo(map);
 
-function renderBusinessRow(b){
-  return `<tr class="${b.isTarget?'target':''}">
-    <td>${b.rank}</td>
-    <td><strong>${esc(b.name)}</strong>${b.isTarget?' ◀ TARGET':''}</td>
-    <td>${profileBadge(b.profileScore)}</td>
-    <td>${ippBadge(b.ippScore)}</td>
-    <td><span class="${scoreClass(100-b.tractionDifficulty)}">${b.tractionDifficulty}/100</span></td>
-    <td>${b.rating?`★ ${b.rating.toFixed(1)}`:'—'}</td>
-    <td>${b.reviews}</td>
-    <td>${b.hasWebsite?'Yes':'<span class="bad">No</span>'}</td>
-    <td>${esc(b.primaryCategory)}</td>
-  </tr>`;
-}
+  // Fit bounds
+  map.fitBounds([
+    [Math.min(searches[0].lat, searches[1].lat) - 0.01, Math.min(searches[0].lng, searches[1].lng) - 0.01],
+    [Math.max(searches[0].lat, searches[1].lat) + 0.01, Math.max(searches[0].lng, searches[1].lng) + 0.01]
+  ], { padding: [40, 40] });
 
-function renderProspectRow(b){
-  const phone=b.item.phone||b.item.phoneUnformatted||'—';
-  const websiteCell=b.website
-    ? `<a href="${esc(b.website)}" target="_blank" rel="noopener">Site</a>`
-    : '<span class="bad">No</span>';
-  const weakness=b.websiteAnalysis?.weaknessScore;
-  const pitch=b.pitchAngle||'—';
-  return `<tr class="prospect">
-    <td>${b.rank}</td>
-    <td><strong>${esc(b.name)}</strong></td>
-    <td>${finalBadge(b.finalScore)}</td>
-    <td>${ippBadge(b.ippScore)}</td>
-    <td>${profileBadge(b.profileScore)}</td>
-    <td>${weaknessBadge(weakness)}</td>
-    <td>${b.rating?`★ ${b.rating.toFixed(1)}`:'—'}</td>
-    <td>${b.reviews}</td>
-    <td>${esc(phone)}</td>
-    <td>${websiteCell}</td>
-    <td style="max-width:280px;font-size:11px;line-height:1.4">${esc(pitch)}</td>
-  </tr>`;
-}
+  // Detail blocks (full top 20 per point, for the PDF)
+  document.getElementById('pointBlocks').innerHTML = searches.map(s => {
+    const r = s.rank;
+    const badgeColor = r ? rankColor(r) : '#333';
+    const badgeText = r ? `#${r}` : '20+';
+    const badgeClass = r ? '' : 'gray';
 
-function openMarketPdf(index){
-  const m=latestMarkets[index];
-  if(!m)return;
-  const html=buildMarketPdf(m);
-  const win=window.open('','_blank');
-  win.document.write(html);
-  win.document.close();
-  win.document.title=`${m.label} — Market Scan`;
-}
+    const rows = s.results.map(item => {
+      const isUs = s.match && item.position === s.match.position;
+      const dotColor = rankColor(item.position);
+      const kindLabel = item.kind === 'maps' ? 'Maps' : 'Organic';
+      const kindClass = item.kind === 'maps' ? 'kind-maps' : '';
+      return `
+        <li>
+          <div class="rank-dot" style="background:${dotColor};color:${rankTextColor(item.position)}">${item.position}</div>
+          <div class="name${isUs ? ' you' : ''}">${esc(item.title)}${isUs ? ' ◀' : ''}</div>
+          <div class="kind-tag ${kindClass}">${kindLabel}</div>
+        </li>
+      `;
+    }).join('');
 
-function buildMarketPdf(m){
-  const now=new Date().toLocaleString();
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>${esc(m.label)} — Market Scan</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-@page{size:A4;margin:10mm}
-*{box-sizing:border-box}
-body{font-family:'DM Mono',monospace;color:#111;background:#fff;font-size:11px;margin:0}
-.page{width:190mm;min-height:277mm;margin:0 auto;padding:8mm 6mm;page-break-after:always}
-.page:last-child{page-break-after:auto}
-h1,h2{font-family:Syne,sans-serif;font-weight:800;letter-spacing:-.03em}
-h1{font-size:28px;line-height:1;margin:0 0 8px}
-h2{font-size:18px;margin:18px 0 8px}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
-.stat{border:1px solid #ddd;padding:10px}
-.num{font-family:Syne,sans-serif;font-size:24px;font-weight:800}
-.label{color:#666;font-size:9px;text-transform:uppercase}
-.good{color:#5d8200}.mid{color:#b36200}.bad{color:#c00}
-table{width:100%;border-collapse:collapse;border:1px solid #ddd;margin-top:6px}
-th{background:#f5f5f5;text-align:left;padding:5px;font-size:9px}
-td{border-top:1px solid #ddd;padding:5px;vertical-align:top}
-</style>
-</head>
-<body>
-<div class="page">
-  <h1>${esc(m.label)}</h1>
-  <div style="color:#666">// ${esc(now)} · query: "${esc(m.query)}" · mode: ${esc(m.searchFrom.toUpperCase())}</div>
-  <div class="grid">
-    <div class="stat"><div class="num ${m.verdict.cls}">${m.marketScore}</div><div class="label">market openness</div></div>
-    <div class="stat"><div class="num ${m.verdict.cls}" style="font-size:16px">${m.verdict.text}</div><div class="label">verdict</div></div>
-    <div class="stat"><div class="num">${m.candidates.length}</div><div class="label">IPP candidates</div></div>
-    <div class="stat"><div class="num">${m.weakTop10}/10</div><div class="label">weak top 10</div></div>
-    <div class="stat"><div class="num">${m.leader?.reviews??0}</div><div class="label">leader reviews</div></div>
-    <div class="stat"><div class="num">${m.avgTop5Reviews}</div><div class="label">avg top 5 reviews</div></div>
-    <div class="stat"><div class="num">${m.medianTop10Reviews}</div><div class="label">median top 10 reviews</div></div>
-    <div class="stat"><div class="num">${m.businesses.filter(b=>!b.hasWebsite).length}/20</div><div class="label">no website</div></div>
-  </div>
+    return `
+      <div class="point-block">
+        <div class="point-block-head">
+          <div class="point-rank-badge ${badgeClass}" style="background:${badgeColor};color:${rankTextColor(r)}">${badgeText}</div>
+          <div class="point-block-title">
+            <strong>${esc(s.label)}</strong>
+            <small>${esc(s.locationString)}</small>
+          </div>
+        </div>
+        <ul class="point-list">${rows}</ul>
+      </div>
+    `;
+  }).join('');
 
-  <h2>Call List — IPP Candidates</h2>
-  <table>
-    <thead><tr><th>Rank</th><th>Business</th><th>Final</th><th>IPP</th><th>Profile</th><th>Site Weakness</th><th>Rating</th><th>Reviews</th><th>Phone</th><th>Website</th><th>Pitch Angle</th></tr></thead>
-    <tbody>${m.candidates.length?m.candidates.map(b=>{
-      const phone=b.item.phone||b.item.phoneUnformatted||'—';
-      const websiteCell=b.website?`<a href="${esc(b.website)}" target="_blank">Site</a>`:'No';
-      const weakness=typeof b.websiteAnalysis?.weaknessScore==='number'?b.websiteAnalysis.weaknessScore:'—';
-      const finalScore=typeof b.finalScore==='number'?b.finalScore:'—';
-      const pitch=b.pitchAngle||'—';
-      return `<tr><td>${b.rank}</td><td>${esc(b.name)}</td><td>${finalScore}</td><td>${b.ippScore}</td><td>${b.profileScore}%</td><td>${weakness}</td><td>${b.rating?`★ ${b.rating.toFixed(1)}`:'—'}</td><td>${b.reviews}</td><td>${esc(phone)}</td><td>${websiteCell}</td><td style="max-width:240px">${esc(pitch)}</td></tr>`;
-    }).join(''):`<tr><td colspan="11">No strong candidates.</td></tr>`}</tbody>
-  </table>
-
-  <h2>Top 20 Competitor Analysis</h2>
-  <table>
-    <thead><tr><th>#</th><th>Name</th><th>Profile</th><th>IPP</th><th>Traction</th><th>Reviews</th><th>Website</th><th>Primary Category</th></tr></thead>
-    <tbody>${m.businesses.map(b=>`<tr><td>${b.rank}</td><td>${esc(b.name)}</td><td>${b.profileScore}%</td><td>${b.ippScore}</td><td>${b.tractionDifficulty}/100</td><td>${b.reviews}</td><td>${b.hasWebsite?'Yes':'No'}</td><td>${esc(b.primaryCategory)}</td></tr>`).join('')}</tbody>
-  </table>
-</div>
-
-<div class="page">
-  <h1>Categories Counter</h1>
-  <h2>Primary Categories</h2>
-  <table>
-    <thead><tr><th>Category</th><th>Used by top 20</th></tr></thead>
-    <tbody>${m.counter.primary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join('')}</tbody>
-  </table>
-  <h2>Secondary Categories</h2>
-  <table>
-    <thead><tr><th>Category</th><th>Used by top 20</th></tr></thead>
-    <tbody>${m.counter.secondary.length?m.counter.secondary.map(([cat,count])=>`<tr><td>${esc(cat)}</td><td>${count}/20</td></tr>`).join(''):`<tr><td>—</td><td>0/20</td></tr>`}</tbody>
-  </table>
-</div>
-</body>
-</html>`;
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 </body>
