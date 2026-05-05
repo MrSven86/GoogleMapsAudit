@@ -395,7 +395,23 @@ function extractRawResults(datasetItems){
 }
 
 function normalizeResults(datasetItems){
+  // DIAGNOSTIC — log raw structure so we can see what Apify returns
+  console.log('=== RAW APIFY RESPONSE ===');
+  console.log('Top-level keys per page:', datasetItems.map(p => Object.keys(p)));
+  console.log('Full first page:', datasetItems[0]);
+  if (datasetItems[0]) {
+    console.log('organicResults count:', datasetItems[0].organicResults?.length || 0);
+    console.log('localResults count:', datasetItems[0].localResults?.length || 0);
+    console.log('placeResults count:', datasetItems[0].placeResults?.length || 0);
+    console.log('mapResults count:', datasetItems[0].mapResults?.length || 0);
+    console.log('peopleAlsoAsk count:', datasetItems[0].peopleAlsoAsk?.length || 0);
+    console.log('relatedQueries count:', datasetItems[0].relatedQueries?.length || 0);
+  }
+
   const raw = extractRawResults(datasetItems);
+  console.log('After extractRawResults:', raw.length, 'items');
+  console.log('Sample raw item:', raw[0]);
+
   const noAds = raw.filter(item => !isAdResult(item));
   const cleaned = [];
   const seen = new Set();
@@ -409,6 +425,8 @@ function normalizeResults(datasetItems){
     seen.add(key);
     cleaned.push({ title, url, domain, kind });
   }
+  console.log('After dedup:', cleaned.length, 'items');
+  console.log('Kinds breakdown:', cleaned.reduce((acc, x) => { acc[x.kind] = (acc[x.kind] || 0) + 1; return acc; }, {}));
   return cleaned.slice(0, 40).map((r, i) => ({ ...r, position: i + 1 }));
 }
 
@@ -589,6 +607,11 @@ function renderResults(searches, keyword, businessName, businessDomain){
     const webExtra = !businessDomain
       ? '<div style="font-size:10px;color:#666;margin-top:4px">no website to check</div>'
       : (web ? '' : '<div style="font-size:10px;color:#ff4d4d;margin-top:4px">not in top 40</div>');
+
+    // Count breakdown for diagnostic visibility
+    const kindCounts = s.results.reduce((acc, r) => { acc[r.kind] = (acc[r.kind] || 0) + 1; return acc; }, {});
+    const debugLine = `${s.results.length} total results · ${kindCounts.organic || 0} organic · ${kindCounts.maps || 0} local pack`;
+
     return `
       <div class="snap-card">
         <div class="snap-card-label">// ${esc(s.label)}</div>
@@ -603,6 +626,7 @@ function renderResults(searches, keyword, businessName, businessDomain){
             ${webExtra}
           </div>
         </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;font-family:'DM Mono',monospace">// ${debugLine}</div>
         <div class="snap-card-loc" style="margin-top:14px">
           ${esc(s.locationString)}<br>
           <span style="color:#666">${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</span>
