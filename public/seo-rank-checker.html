@@ -208,13 +208,14 @@ input[type=password]{letter-spacing:.1em}
   <div id="map"></div>
 
   <div class="results-list-wrap">
-    <h3>// top 20 at each search location</h3>
+    <h3>// top 40 at each search location</h3>
     <div id="pointBlocks"></div>
   </div>
 </div>
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 const BASE = 'https://api.apify.com/v2';
 const SEARCH_ACTOR = 'apify~google-search-scraper';
@@ -408,7 +409,7 @@ function normalizeResults(datasetItems){
     seen.add(key);
     cleaned.push({ title, url, domain, kind });
   }
-  return cleaned.slice(0, 20).map((r, i) => ({ ...r, position: i + 1 }));
+  return cleaned.slice(0, 40).map((r, i) => ({ ...r, position: i + 1 }));
 }
 
 // ── Find target matches: separate signals for website (organic) and GBP (Maps) ──
@@ -531,8 +532,8 @@ async function runSnapshot(){
       setStatus(`Searching from ${pt.locationString} (${i+1}/2)…`);
       const input = {
         queries: keyword,
-        resultsPerPage: 20,
-        maxPagesPerQuery: 1,
+        resultsPerPage: 40,
+        maxPagesPerQuery: 2,
         countryCode: country,
         languageCode: language,
         searchDomain: 'google.com',
@@ -587,7 +588,7 @@ function renderResults(searches, keyword, businessName, businessDomain){
     const webColor = web ? rankColor(web) : '#666';
     const webExtra = !businessDomain
       ? '<div style="font-size:10px;color:#666;margin-top:4px">no website to check</div>'
-      : (web ? '' : '<div style="font-size:10px;color:#ff4d4d;margin-top:4px">not in top 20</div>');
+      : (web ? '' : '<div style="font-size:10px;color:#ff4d4d;margin-top:4px">not in top 40</div>');
     return `
       <div class="snap-card">
         <div class="snap-card-label">// ${esc(s.label)}</div>
@@ -649,8 +650,8 @@ function renderResults(searches, keyword, businessName, businessDomain){
       iconAnchor: [size/2, size/2]
     });
 
-    // Build popup with top 10 results, highlight both website AND gbp matches
-    const top10 = s.results.slice(0, 10);
+    // Build popup with top 15 results, highlight both website AND gbp matches
+    const top10 = s.results.slice(0, 15);
     const liItems = top10.map(r => {
       const isWebsiteHit = s.websiteMatch && r.position === s.websiteMatch.position;
       const isGbpHit = s.gbpMatch && r.position === s.gbpMatch.position;
@@ -670,8 +671,8 @@ function renderResults(searches, keyword, businessName, businessDomain){
     }).join('');
 
     const summaryLine = [
-      gbp ? `GBP at #${gbp}` : 'GBP not in top 20',
-      businessDomain ? (web ? `Website at #${web}` : 'Website not in top 20') : null
+      gbp ? `GBP at #${gbp}` : 'GBP not in top 40',
+      businessDomain ? (web ? `Website at #${web}` : 'Website not in top 40') : null
     ].filter(Boolean).join(' · ');
 
     const popup = `
@@ -696,7 +697,7 @@ function renderResults(searches, keyword, businessName, businessDomain){
     [Math.max(searches[0].lat, searches[1].lat) + 0.01, Math.max(searches[0].lng, searches[1].lng) + 0.01]
   ], { padding: [40, 40] });
 
-  // Detail blocks (full top 20 per point, for the PDF)
+  // Detail blocks (full top 40 per point, for the PDF)
   document.getElementById('pointBlocks').innerHTML = searches.map(s => {
     const gbp = s.gbpRank;
     const web = s.websiteRank;
@@ -735,8 +736,8 @@ function renderResults(searches, keyword, businessName, businessDomain){
             <strong>${esc(s.label)}</strong>
             <small>${esc(s.locationString)}</small>
             <small style="display:block;margin-top:4px;color:var(--accent)">
-              GBP: ${gbp ? `#${gbp} in Local Pack` : 'not in top 20'}
-              · Website: ${businessDomain ? (web ? `#${web} in organic` : 'not in top 20') : 'no domain provided'}
+              GBP: ${gbp ? `#${gbp} in Local Pack` : 'not in top 40'}
+              · Website: ${businessDomain ? (web ? `#${web} in organic` : 'not in top 40') : 'no domain provided'}
             </small>
           </div>
         </div>
