@@ -58,8 +58,12 @@ input[type=password]{letter-spacing:.1em}
 @media(max-width:600px){.snapshot-cards{grid-template-columns:1fr}}
 .snap-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:20px}
 .snap-card-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
-.snap-card-rank{font-size:48px;font-weight:800;line-height:1;margin-bottom:8px}
+.snap-card-rank{font-size:42px;font-weight:800;line-height:1;margin-bottom:4px}
 .snap-card-loc{font-size:11px;color:var(--muted);line-height:1.4}
+.dual-rank{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:10px 0}
+.rank-block{display:flex;flex-direction:column;align-items:flex-start}
+.rank-block-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.dual-badges{display:flex;gap:8px;flex-shrink:0}
 .legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:11px;color:var(--muted)}
 .legend-item{display:flex;align-items:center;gap:6px}
 .legend-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
@@ -133,6 +137,12 @@ input[type=password]{letter-spacing:.1em}
       <div class="hint" id="coordsHint">// pin coordinates extracted automatically from URL</div>
     </div>
 
+    <div class="field">
+      <label>Business Website (optional but recommended)</label>
+      <input type="text" id="websiteDomain" placeholder="e.g. spokanelegendarygutters.com">
+      <div class="hint">// checks if their website appears in organic results — separate from their GBP appearing in the Local Pack</div>
+    </div>
+
     <div class="two-col">
       <div class="field">
         <label>Keyword</label>
@@ -192,6 +202,7 @@ input[type=password]{letter-spacing:.1em}
     <div class="legend-item"><div class="legend-dot" style="background:#ffb347"></div> #8–15 Mid</div>
     <div class="legend-item"><div class="legend-dot" style="background:#ff4d4d"></div> #16–20 Low</div>
     <div class="legend-item"><div class="legend-dot" style="background:#333"></div> 20+ Invisible</div>
+    <div class="legend-item" style="margin-left:auto;color:var(--muted);font-size:10px">// pin color = Local Pack rank · click pin for full breakdown</div>
   </div>
 
   <div id="map"></div>
@@ -400,20 +411,48 @@ function normalizeResults(datasetItems){
   return cleaned.slice(0, 20).map((r, i) => ({ ...r, position: i + 1 }));
 }
 
-// ── Find target match in results ──
-function findTargetMatch(results, businessName, businessDomain){
+// ── Find target matches: separate signals for website (organic) and GBP (Maps) ──
+// Returns { website: {position, ...}, gbp: {position, ...} } — each null if not found
+function findTargetMatches(results, businessName, businessDomain){
   const normName = normalizeName(businessName);
   const normDom = normalizeDomain(businessDomain);
-  let bestMatch = null;
+
+  let websiteHit = null; // best organic match by domain
+  let gbpHit = null;     // best Maps/Local Pack match by name
+
   for (const r of results){
     const titleNorm = normalizeName(r.title);
-    const domainMatch = normDom && (r.domain === normDom || r.domain.endsWith('.' + normDom));
-    const nameMatch = normName && (titleNorm.includes(normName) || normName.includes(titleNorm));
-    if (domainMatch || nameMatch){
-      if (!bestMatch || r.position < bestMatch.position) bestMatch = r;
+    const isOrganic = r.kind === 'organic';
+    const isMaps = r.kind === 'maps';
+
+    // Domain match — only count for organic results (website ranking)
+    const domainMatch = normDom && (
+      r.domain === normDom ||
+      r.domain.endsWith('.' + normDom) ||
+      normDom.endsWith('.' + r.domain)
+    );
+    if (domainMatch && isOrganic){
+      if (!websiteHit || r.position < websiteHit.position) websiteHit = r;
+    }
+
+    // Name match — only count for maps/local pack results (GBP ranking)
+    // Substring match in either direction handles "Legendary Gutters" matching "Legendary Gutters Spokane"
+    const nameMatch = normName && titleNorm && (
+      titleNorm.includes(normName) ||
+      normName.includes(titleNorm)
+    );
+    if (nameMatch && isMaps){
+      if (!gbpHit || r.position < gbpHit.position) gbpHit = r;
+    }
+
+    // Edge case: if domain match hits a maps result, also count it as GBP
+    // (Google sometimes shows the website domain in the local pack)
+    if (domainMatch && isMaps && !gbpHit){
+      gbpHit = r;
     }
   }
-  return bestMatch;
+
+  return { website: websiteHit, gbp: gbpHit };
 }
 
 // ── Rank colors (consistent with your other tools) ──
@@ -482,7 +521,7 @@ async function runSnapshot(){
       locationString: buildLocationString(null, cityRev.city || cityInput, cityRev.state || reverse.state, cityRev.country || reverse.country)
     };
 
-    const businessDomain = ''; // we don't ask for it; rely on name match
+    const businessDomain = document.getElementById('websiteDomain').value.trim();
     const businessName = parsedName || 'Business';
 
     // Step 3: Run two searches (same query, different `location` param)
@@ -507,12 +546,19 @@ async function runSnapshot(){
       const datasetId = await pollUntilDone(token, run.id, `Searching from ${pt.label}`);
       const dataset = await fetchDataset(token, datasetId);
       const results = normalizeResults(dataset);
-      const match = findTargetMatch(results, businessName, businessDomain);
-      searches.push({ ...pt, results, match, rank: match ? match.position : null });
+      const matches = findTargetMatches(results, businessName, businessDomain);
+      searches.push({
+        ...pt,
+        results,
+        websiteMatch: matches.website,
+        gbpMatch: matches.gbp,
+        websiteRank: matches.website ? matches.website.position : null,
+        gbpRank: matches.gbp ? matches.gbp.position : null
+      });
     }
 
     hideStatus();
-    renderResults(searches, keyword, businessName);
+    renderResults(searches, keyword, businessName, businessDomain);
 
   } catch (err){
     hideStatus();
@@ -523,23 +569,40 @@ async function runSnapshot(){
 }
 
 // ── Render ──
-function renderResults(searches, keyword, businessName){
+function renderResults(searches, keyword, businessName, businessDomain){
   document.getElementById('results').style.display = 'block';
   document.getElementById('resultsTitle').textContent = `"${keyword}" — ${businessName}`;
 
   const ts = new Date().toLocaleString();
-  document.getElementById('summaryLine').textContent = `// query: "${keyword}" · 2 search points · ${ts}`;
+  const domainLabel = businessDomain ? ` · website: ${businessDomain}` : ' · no website provided';
+  document.getElementById('summaryLine').textContent = `// query: "${keyword}" · 2 search points${domainLabel} · ${ts}`;
 
-  // Snapshot cards
+  // Snapshot cards — TWO ranks per location: GBP and Website
   document.getElementById('snapshotCards').innerHTML = searches.map(s => {
-    const rank = s.rank;
-    const rankDisplay = rank ? `#${rank}` : 'NO';
-    const color = rank ? rankColor(rank) : '#ff4d4d';
+    const gbp = s.gbpRank;
+    const web = s.websiteRank;
+    const gbpDisplay = gbp ? `#${gbp}` : '—';
+    const webDisplay = web ? `#${web}` : '—';
+    const gbpColor = gbp ? rankColor(gbp) : '#666';
+    const webColor = web ? rankColor(web) : '#666';
+    const webExtra = !businessDomain
+      ? '<div style="font-size:10px;color:#666;margin-top:4px">no website to check</div>'
+      : (web ? '' : '<div style="font-size:10px;color:#ff4d4d;margin-top:4px">not in top 20</div>');
     return `
       <div class="snap-card">
         <div class="snap-card-label">// ${esc(s.label)}</div>
-        <div class="snap-card-rank" style="color:${color}">${rankDisplay}</div>
-        <div class="snap-card-loc">
+        <div class="dual-rank">
+          <div class="rank-block">
+            <div class="rank-block-label">Local Pack (GBP)</div>
+            <div class="snap-card-rank" style="color:${gbpColor}">${gbpDisplay}</div>
+          </div>
+          <div class="rank-block">
+            <div class="rank-block-label">Organic (Website)</div>
+            <div class="snap-card-rank" style="color:${webColor}">${webDisplay}</div>
+            ${webExtra}
+          </div>
+        </div>
+        <div class="snap-card-loc" style="margin-top:14px">
           ${esc(s.locationString)}<br>
           <span style="color:#666">${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</span>
         </div>
@@ -556,9 +619,14 @@ function renderResults(searches, keyword, businessName){
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, crossOrigin: true }).addTo(map);
   setTimeout(() => map.invalidateSize(), 300);
 
-  // Pins (with rank label)
+  // Pins — show the worst (most visible problem) of the two ranks for the pin color
+  // Reasoning: if you rank #2 in Local Pack but #25 organic, the pin should reflect that there's still a gap
   searches.forEach((s, i) => {
-    const r = s.rank;
+    const gbp = s.gbpRank;
+    const web = s.websiteRank;
+    // Use GBP rank for pin color since that's what most prospects care about first
+    // But show both in popup
+    const r = gbp; // primary signal
     const color = rankColor(r);
     const label = !r || r > 20 ? '20+' : `#${r}`;
     const size = 60;
@@ -581,26 +649,34 @@ function renderResults(searches, keyword, businessName){
       iconAnchor: [size/2, size/2]
     });
 
-    // Build popup with top 10 results
+    // Build popup with top 10 results, highlight both website AND gbp matches
     const top10 = s.results.slice(0, 10);
     const liItems = top10.map(r => {
-      const isUs = s.match && r.position === s.match.position;
+      const isWebsiteHit = s.websiteMatch && r.position === s.websiteMatch.position;
+      const isGbpHit = s.gbpMatch && r.position === s.gbpMatch.position;
+      const isUs = isWebsiteHit || isGbpHit;
       const bg = rankColor(r.position);
       const kindLabel = r.kind === 'maps' ? 'Maps / Local' : 'Organic';
+      const youLabel = isWebsiteHit ? ' ◀ YOUR SITE' : (isGbpHit ? ' ◀ YOUR GBP' : '');
       return `
         <li>
           <div class="popup-num" style="background:${bg};color:${rankTextColor(r.position)}">${r.position}</div>
           <div class="popup-name">
-            <div class="${isUs ? 'popup-you' : ''}">${esc(r.title.substring(0, 50))}${isUs ? ' ◀' : ''}</div>
+            <div class="${isUs ? 'popup-you' : ''}">${esc(r.title.substring(0, 50))}${youLabel}</div>
             <div class="kind">${kindLabel} · ${esc(r.domain || '')}</div>
           </div>
         </li>
       `;
     }).join('');
 
+    const summaryLine = [
+      gbp ? `GBP at #${gbp}` : 'GBP not in top 20',
+      businessDomain ? (web ? `Website at #${web}` : 'Website not in top 20') : null
+    ].filter(Boolean).join(' · ');
+
     const popup = `
-      <div class="popup-title">${s.rank ? `#${s.rank} for "${esc(keyword)}"` : `Not in top 20`}</div>
-      <div class="popup-sub">Searched from ${esc(s.locationString)}</div>
+      <div class="popup-title">Searched from ${esc(s.label)}</div>
+      <div class="popup-sub">${esc(summaryLine)}</div>
       <ul class="popup-list">${liItems}</ul>
     `;
 
@@ -622,20 +698,27 @@ function renderResults(searches, keyword, businessName){
 
   // Detail blocks (full top 20 per point, for the PDF)
   document.getElementById('pointBlocks').innerHTML = searches.map(s => {
-    const r = s.rank;
-    const badgeColor = r ? rankColor(r) : '#333';
-    const badgeText = r ? `#${r}` : '20+';
-    const badgeClass = r ? '' : 'gray';
+    const gbp = s.gbpRank;
+    const web = s.websiteRank;
+
+    // Two badges side by side instead of one
+    const gbpBadgeColor = gbp ? rankColor(gbp) : '#333';
+    const gbpBadgeText = gbp ? `#${gbp}` : '—';
+    const webBadgeColor = web ? rankColor(web) : '#333';
+    const webBadgeText = web ? `#${web}` : (businessDomain ? '—' : 'n/a');
 
     const rows = s.results.map(item => {
-      const isUs = s.match && item.position === s.match.position;
+      const isWebsiteHit = s.websiteMatch && item.position === s.websiteMatch.position;
+      const isGbpHit = s.gbpMatch && item.position === s.gbpMatch.position;
+      const isUs = isWebsiteHit || isGbpHit;
       const dotColor = rankColor(item.position);
       const kindLabel = item.kind === 'maps' ? 'Maps' : 'Organic';
       const kindClass = item.kind === 'maps' ? 'kind-maps' : '';
+      const youLabel = isWebsiteHit ? ' ◀ YOUR SITE' : (isGbpHit ? ' ◀ YOUR GBP' : '');
       return `
         <li>
           <div class="rank-dot" style="background:${dotColor};color:${rankTextColor(item.position)}">${item.position}</div>
-          <div class="name${isUs ? ' you' : ''}">${esc(item.title)}${isUs ? ' ◀' : ''}</div>
+          <div class="name${isUs ? ' you' : ''}">${esc(item.title)}${youLabel}</div>
           <div class="kind-tag ${kindClass}">${kindLabel}</div>
         </li>
       `;
@@ -644,10 +727,17 @@ function renderResults(searches, keyword, businessName){
     return `
       <div class="point-block">
         <div class="point-block-head">
-          <div class="point-rank-badge ${badgeClass}" style="background:${badgeColor};color:${rankTextColor(r)}">${badgeText}</div>
+          <div class="dual-badges">
+            <div class="point-rank-badge${gbp ? '' : ' gray'}" style="background:${gbpBadgeColor};color:${rankTextColor(gbp)}">${gbpBadgeText}</div>
+            <div class="point-rank-badge${web ? '' : ' gray'}" style="background:${webBadgeColor};color:${rankTextColor(web)}">${webBadgeText}</div>
+          </div>
           <div class="point-block-title">
             <strong>${esc(s.label)}</strong>
             <small>${esc(s.locationString)}</small>
+            <small style="display:block;margin-top:4px;color:var(--accent)">
+              GBP: ${gbp ? `#${gbp} in Local Pack` : 'not in top 20'}
+              · Website: ${businessDomain ? (web ? `#${web} in organic` : 'not in top 20') : 'no domain provided'}
+            </small>
           </div>
         </div>
         <ul class="point-list">${rows}</ul>
