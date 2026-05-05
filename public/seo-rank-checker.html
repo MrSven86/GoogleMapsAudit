@@ -219,6 +219,7 @@ input[type=password]{letter-spacing:.1em}
 <script>
 const BASE = 'https://api.apify.com/v2';
 const SEARCH_ACTOR = 'apify~google-search-scraper';
+const MAPS_ACTOR = 'compass~crawler-google-places';
 
 let map = null;
 let parsedCoords = null;
@@ -326,8 +327,8 @@ function buildLocationString(neighborhood, city, state, country){
 }
 
 // ── Apify proxy (uses /api/proxy as in your other tools) ──
-async function startActor(token, input){
-  const res = await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/acts/${SEARCH_ACTOR}/runs?token=${token}`)}`, {
+async function startActor(token, input, actor = SEARCH_ACTOR){
+  const res = await fetch(`/api/proxy?url=${encodeURIComponent(`${BASE}/acts/${actor}/runs?token=${token}`)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input)
@@ -396,22 +397,14 @@ function extractRawResults(datasetItems){
 
 function normalizeResults(datasetItems){
   // DIAGNOSTIC — log raw structure so we can see what Apify returns
-  console.log('=== RAW APIFY RESPONSE ===');
+  console.log('=== RAW APIFY RESPONSE (search) ===');
   console.log('Top-level keys per page:', datasetItems.map(p => Object.keys(p)));
-  console.log('Full first page:', datasetItems[0]);
   if (datasetItems[0]) {
     console.log('organicResults count:', datasetItems[0].organicResults?.length || 0);
     console.log('localResults count:', datasetItems[0].localResults?.length || 0);
-    console.log('placeResults count:', datasetItems[0].placeResults?.length || 0);
-    console.log('mapResults count:', datasetItems[0].mapResults?.length || 0);
-    console.log('peopleAlsoAsk count:', datasetItems[0].peopleAlsoAsk?.length || 0);
-    console.log('relatedQueries count:', datasetItems[0].relatedQueries?.length || 0);
   }
 
   const raw = extractRawResults(datasetItems);
-  console.log('After extractRawResults:', raw.length, 'items');
-  console.log('Sample raw item:', raw[0]);
-
   const noAds = raw.filter(item => !isAdResult(item));
   const cleaned = [];
   const seen = new Set();
@@ -425,9 +418,32 @@ function normalizeResults(datasetItems){
     seen.add(key);
     cleaned.push({ title, url, domain, kind });
   }
-  console.log('After dedup:', cleaned.length, 'items');
-  console.log('Kinds breakdown:', cleaned.reduce((acc, x) => { acc[x.kind] = (acc[x.kind] || 0) + 1; return acc; }, {}));
   return cleaned.slice(0, 40).map((r, i) => ({ ...r, position: i + 1 }));
+}
+
+// ── Maps actor result normalizer ──
+// compass~crawler-google-places returns place objects sorted by `rank` field.
+// We shape them to match the search-actor output so they merge cleanly.
+function normalizeMapsResults(datasetItems){
+  console.log('=== RAW APIFY RESPONSE (maps) ===');
+  console.log('Items returned:', datasetItems.length);
+  if (datasetItems[0]) console.log('Sample maps item keys:', Object.keys(datasetItems[0]));
+
+  // Sort by rank field (lower = higher position)
+  const sorted = (datasetItems || []).slice().sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+
+  return sorted.map(item => ({
+    title: item.title || item.name || '(unknown)',
+    url: item.website || item.url || '',
+    domain: cleanUrlDomain(item.website || ''),
+    kind: 'maps',
+    // Maps-specific extras for richer display
+    rating: item.totalScore ?? item.rating ?? null,
+    reviews: item.reviewsCount ?? item.reviewCount ?? null,
+    address: item.address || '',
+    phone: item.phone || item.phoneUnformatted || '',
+    placeId: item.placeId || item.cid || null
+  }));
 }
 
 // ── Find target matches: separate signals for website (organic) and GBP (Maps) ──
@@ -543,12 +559,18 @@ async function runSnapshot(){
     const businessDomain = document.getElementById('websiteDomain').value.trim();
     const businessName = parsedName || 'Business';
 
-    // Step 3: Run two searches (same query, different `location` param)
+    // Step 3: For each location, run BOTH actors in parallel:
+    //   - apify~google-search-scraper with location → organic web results
+    //   - compass~crawler-google-places at lat/lng → Local Pack (GBP) results
+    // Then merge into one unified result set: Local Pack listed first (positions 1-N),
+    // then organic results (positions N+1 onward) — matching how Google actually displays.
     const searches = [];
     for (let i = 0; i < 2; i++){
       const pt = i === 0 ? point1 : point2;
-      setStatus(`Searching from ${pt.locationString} (${i+1}/2)…`);
-      const input = {
+      setStatus(`Searching from ${pt.locationString} — running organic + maps in parallel (${i+1}/2)…`);
+
+      // --- Actor 1: organic search ---
+      const searchInput = {
         queries: keyword,
         resultsPerPage: 40,
         maxPagesPerQuery: 2,
@@ -561,18 +583,61 @@ async function runSnapshot(){
         saveHtmlToKeyValueStore: false,
         location: pt.locationString
       };
-      const run = await startActor(token, input);
-      const datasetId = await pollUntilDone(token, run.id, `Searching from ${pt.label}`);
-      const dataset = await fetchDataset(token, datasetId);
-      const results = normalizeResults(dataset);
-      const matches = findTargetMatches(results, businessName, businessDomain);
+
+      // --- Actor 2: maps / Local Pack at lat/lng ---
+      const mapsInput = {
+        searchStringsArray: [keyword],
+        lat: String(pt.lat),
+        lng: String(pt.lng),
+        zoom: 13,
+        maxCrawledPlacesPerSearch: 20,
+        language: language,
+        maxImages: 0,
+        maxReviews: 0,
+        scrapeContacts: false,
+        scrapeDirections: false,
+        additionalInfo: false,
+        exportPlaceUrls: false
+      };
+
+      // Fire both in parallel
+      const [searchRun, mapsRun] = await Promise.all([
+        startActor(token, searchInput, SEARCH_ACTOR),
+        startActor(token, mapsInput, MAPS_ACTOR)
+      ]);
+
+      // Wait for both to complete
+      const [searchDatasetId, mapsDatasetId] = await Promise.all([
+        pollUntilDone(token, searchRun.id, `${pt.label}: organic search`),
+        pollUntilDone(token, mapsRun.id, `${pt.label}: maps search`)
+      ]);
+
+      // Fetch both result sets
+      const [searchDataset, mapsDataset] = await Promise.all([
+        fetchDataset(token, searchDatasetId),
+        fetchDataset(token, mapsDatasetId)
+      ]);
+
+      // Normalize both into the same shape
+      const organicResults = normalizeResults(searchDataset);
+      const mapsResults = normalizeMapsResults(mapsDataset);
+
+      // Merge: Local Pack first (it's what shows at top of Google), then organic
+      // Re-position so positions go 1..N continuously
+      const merged = [...mapsResults, ...organicResults.filter(r => r.kind === 'organic')]
+        .map((r, idx) => ({ ...r, position: idx + 1 }));
+
+      const matches = findTargetMatches(merged, businessName, businessDomain);
       searches.push({
         ...pt,
-        results,
+        results: merged,
         websiteMatch: matches.website,
         gbpMatch: matches.gbp,
         websiteRank: matches.website ? matches.website.position : null,
-        gbpRank: matches.gbp ? matches.gbp.position : null
+        gbpRank: matches.gbp ? matches.gbp.position : null,
+        // for diagnostic display
+        mapsCount: mapsResults.length,
+        organicCount: organicResults.filter(r => r.kind === 'organic').length
       });
     }
 
