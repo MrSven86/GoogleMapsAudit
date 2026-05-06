@@ -101,29 +101,30 @@ async function handler(req, res) {
 
   const startedAt = Date.now();
 
-  // crawlerbros/bbb-scraper actual input schema (from Apify console UI):
-  //   keywords              (string)   — search term
-  //   locations             (array)    — list of location strings, NOT a single string
-  //   country               (string)   — "United States" (full name, not code)
-  //   maxRecordsGlobal      (number)   — total cap across all locations
-  //   maxRecordsPerLocation (number)   — cap per individual location
-  //   minRating             (string)   — "Any" | "A+" | etc
-  //   accreditedOnly        (boolean)
-  //   proxyConfiguration    — residential US recommended
+  // crawlerbros/bbb-scraper EXACT input shape (verified from console JSON view):
+  //   keywords           (string, required)
+  //   maxRecordsGlobal   (number)
+  //   minRating          (string) — lowercase "any" | "A+" | "A" | etc
+  //   accreditedOnly     (boolean)
+  //   proxyConfiguration (object, required) — residential US
+  //
+  // Optional Form-only fields (locations, country, maxRecordsPerLocation)
+  // are filled in via the UI but appear to be optional in the JSON shape.
+  // We send them anyway in case they help — actor will ignore unknown fields.
   const locationString = state ? `${city}, ${state}` : city;
   const input = {
     keywords: keyword,
-    locations: [locationString],          // <-- array, not string
-    country: 'United States',              // <-- full name
     maxRecordsGlobal: maxResults,
-    maxRecordsPerLocation: maxResults,    // <-- must also set this or it caps at 50
-    minRating: 'Any',
+    minRating: 'any',
     accreditedOnly: false,
     proxyConfiguration: {
       useApifyProxy: true,
       apifyProxyGroups: ['RESIDENTIAL'],
       apifyProxyCountry: 'US',
     },
+    // Best-effort location fields — actor accepts these in the Form view.
+    locations: [locationString],
+    maxRecordsPerLocation: maxResults,
   };
 
   try {
