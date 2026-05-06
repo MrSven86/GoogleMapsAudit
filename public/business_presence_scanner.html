@@ -665,6 +665,10 @@ async function pollGbpStatus() {
 async function fetchGbpResults(datasetId) {
   if (!gbpPollContext) return;
   const { token, businesses: payloadBusinesses, indices } = gbpPollContext;
+  // Read city/state fresh in case user changed them — matching uses these
+  // as a "address contains city" confidence boost
+  const city = document.getElementById('city').value.trim();
+  const state = document.getElementById('state').value.trim();
   try {
     const res = await fetch('/api/gbp-results', {
       method: 'POST',
@@ -672,6 +676,8 @@ async function fetchGbpResults(datasetId) {
       body: JSON.stringify({
         apifyToken: token,
         datasetId,
+        city,
+        state,
         businesses: payloadBusinesses,
       }),
     });
