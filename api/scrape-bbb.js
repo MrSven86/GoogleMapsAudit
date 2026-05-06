@@ -101,32 +101,25 @@ async function handler(req, res) {
 
   const startedAt = Date.now();
 
-  // BBB's crawlerbros actor is URL-driven, not keyword-driven.
-  // Build BOTH the category URL and the search URL — category URLs typically
-  // return many more results (~115 vs ~3), but they only exist for the
-  // canonical category names BBB recognizes. We pass both as startUrls so the
-  // actor scrapes whichever resolves to a valid page.
-  const stateLower = state.toLowerCase().replace(/\s+/g, '-');
-  const cityLower = city.toLowerCase().replace(/\s+/g, '-');
-  const keywordSlug = keyword.toLowerCase().replace(/\s+/g, '-');
-
-  const categoryUrl = state
-    ? `https://www.bbb.org/us/${stateLower}/${cityLower}/category/${keywordSlug}`
-    : null;
-  const searchUrl = `https://www.bbb.org/search?find_text=${encodeURIComponent(keyword)}&find_loc=${encodeURIComponent(state ? `${city}, ${state}` : city)}&find_country=USA`;
-
-  // crawlerbros/bbb-scraper accepts startUrls. We send both — the actor will
-  // attempt both and return businesses from whichever yields data.
-  const startUrls = [];
-  if (categoryUrl) startUrls.push({ url: categoryUrl });
-  startUrls.push({ url: searchUrl });
-
+  // crawlerbros/bbb-scraper input (from official Apify API docs):
+  //   keywords          (string)  — search term, e.g. "gutter cleaning"
+  //   location          (string)  — e.g. "Spokane, WA"
+  //   maxRecordsGlobal  (number)  — total cap across all pages (NOT maxItems/maxResults)
+  //   minRating         (string)  — "any" | "A+" | "A" | etc
+  //   accreditedOnly    (boolean) — filter by BBB Accredited
+  //   proxyConfiguration        — required, residential US recommended
+  const location = state ? `${city}, ${state}` : city;
   const input = {
-    startUrls,
-    maxItems: maxResults,
-    maxResults,
-    maxConcurrency: 5,
-    proxyConfiguration: { useApifyProxy: true },
+    keywords: keyword,
+    location,
+    maxRecordsGlobal: maxResults,
+    minRating: 'any',
+    accreditedOnly: false,
+    proxyConfiguration: {
+      useApifyProxy: true,
+      apifyProxyGroups: ['RESIDENTIAL'],
+      apifyProxyCountry: 'US',
+    },
   };
 
   try {
@@ -143,8 +136,8 @@ async function handler(req, res) {
       requestedMax: maxResults,
       total: businesses.length,
       elapsedMs,
-      // Diagnostic so we can see which URLs the actor tried
-      urlsTried: startUrls.map(u => u.url),
+      // Diagnostic — confirms what we actually sent the actor
+      inputSent: { keywords: input.keywords, location: input.location, maxRecordsGlobal: input.maxRecordsGlobal },
       rawItemCount: (items || []).length,
       businesses,
     });
