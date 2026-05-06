@@ -231,9 +231,9 @@ a:hover{text-decoration:underline}
   </div>
 
   <div class="action-bar">
-    <div class="selected-count">// <strong id="selectedCount">0</strong> selected (max 20 per GBP check)</div>
+    <div class="selected-count">// <strong id="selectedCount">0</strong> selected (max 100 per GBP check)</div>
     <div class="actions">
-      <button class="btn-secondary" onclick="checkGbpForSelected()">Check GBP for selected (max 20)</button>
+      <button class="btn-secondary" onclick="checkGbpForSelected()">Check GBP for selected (max 100)</button>
       <button class="btn-secondary danger" onclick="deselectAll()">Deselect all</button>
     </div>
   </div>
@@ -553,13 +553,16 @@ function updateSelectedCount() {
   document.getElementById('selectedCount').textContent = selectedIndices.size;
 }
 
-// ── GBP check on selected ──
+// ── GBP check on selected (async polling, same architecture as scrape) ──
+let gbpPollContext = null; // { runId, businesses, indices, token, source: 'gbp' }
+
 async function checkGbpForSelected() {
   clearError();
   hideNotice();
 
   if (!selectedIndices.size) return showError('Select at least one row');
-  if (selectedIndices.size > 20) return showError(`Max 20 per check (you selected ${selectedIndices.size}). Deselect some.`);
+  // Async architecture removes the 20-cap. Allow up to 100 per batch.
+  if (selectedIndices.size > 100) return showError(`Max 100 per check (you selected ${selectedIndices.size}). Deselect some.`);
 
   const token = document.getElementById('apifyToken').value.trim();
   const city = document.getElementById('city').value.trim();
@@ -577,11 +580,12 @@ async function checkGbpForSelected() {
     websiteHost: businesses[i].websiteHost,
   }));
 
-  showLiveStatus(`Checking GBP for ${indices.length} selected business(es)…`);
   pollStartedAt = Date.now();
+  pollAttempts = 0;
+  showLiveStatus(`Starting GBP check for <strong>${indices.length}</strong> business(es)…`);
 
   try {
-    const res = await fetch('/api/check-gbp', {
+    const res = await fetch('/api/gbp-start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ apifyToken: token, city, state, language, businesses: payloadBusinesses }),
@@ -589,6 +593,92 @@ async function checkGbpForSelected() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
 
+    currentRunId = data.runId;
+    gbpPollContext = { runId: data.runId, businesses: payloadBusinesses, indices, token };
+    showLiveStatus(
+      `GBP check started · <strong>${esc(currentRunId)}</strong>`,
+      `Status: ${data.status} · Polling every 5s. Maps lookups for ${indices.length} businesses typically take 2-8 min.`
+    );
+    schedulePollGbp();
+  } catch (e) {
+    showLiveStatus(`Failed to start GBP check`, e.message, 'failed');
+    showError(`Could not start GBP check: ${e.message}`);
+  }
+}
+
+function schedulePollGbp() {
+  pollTimer = setTimeout(pollGbpStatus, POLL_INTERVAL_MS);
+}
+
+async function pollGbpStatus() {
+  if (!gbpPollContext) return;
+  pollAttempts++;
+  updateElapsed();
+
+  if (pollAttempts > MAX_POLL_ATTEMPTS) {
+    showLiveStatus(`Timed out waiting for GBP check after 20 minutes`, '', 'failed');
+    showError('GBP check polling exceeded 20 min. Run ID: ' + gbpPollContext.runId);
+    return;
+  }
+
+  const { token, runId } = gbpPollContext;
+  try {
+    const url = `/api/scrape-status?runId=${encodeURIComponent(runId)}&apifyToken=${encodeURIComponent(token)}`;
+    const res = await fetch(url);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+
+    const status = data.status;
+    const elapsedSec = data.elapsedSec || 0;
+
+    if (status === 'SUCCEEDED') {
+      showLiveStatus(
+        `<strong>GBP check done</strong> in ${elapsedSec}s · matching profiles…`,
+        `Run: ${runId} · dataset: ${data.datasetId}`,
+        'done'
+      );
+      await fetchGbpResults(data.datasetId);
+      return;
+    }
+
+    if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(status)) {
+      showLiveStatus(`GBP check ${status} after ${elapsedSec}s`, `Run: ${runId}`, 'failed');
+      showError(`GBP check ${status}. Run ID: ${runId}`);
+      gbpPollContext = null;
+      return;
+    }
+
+    showLiveStatus(
+      `GBP check is <strong>${esc(status)}</strong> · ${elapsedSec}s elapsed inside Apify`,
+      `Poll #${pollAttempts} · checking again in 5s · run ID: ${runId}`
+    );
+    schedulePollGbp();
+  } catch (e) {
+    showLiveStatus(
+      `Poll error: ${e.message} · retrying…`,
+      `Poll #${pollAttempts} · run ID: ${runId}`
+    );
+    schedulePollGbp();
+  }
+}
+
+async function fetchGbpResults(datasetId) {
+  if (!gbpPollContext) return;
+  const { token, businesses: payloadBusinesses, indices } = gbpPollContext;
+  try {
+    const res = await fetch('/api/gbp-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apifyToken: token,
+        datasetId,
+        businesses: payloadBusinesses,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+
+    // Merge GBP fields back onto the original business rows by index
     data.results.forEach((r, j) => {
       const origIdx = indices[j];
       Object.assign(businesses[origIdx], {
@@ -607,11 +697,14 @@ async function checkGbpForSelected() {
     });
 
     hideLiveStatus();
-    showNotice(`✓ GBP check done · ${data.gbpFoundCount} found · ${data.noGbpCount} no GBP · ${(data.elapsedMs / 1000).toFixed(1)}s`);
+    showNotice(`✓ GBP check done · ${data.gbpFoundCount} found · ${data.noGbpCount} no GBP (out of ${data.checked} checked)`);
     renderTable();
   } catch (e) {
-    hideLiveStatus();
-    showError(`GBP check failed: ${e.message}`);
+    showLiveStatus('Failed to fetch GBP results', e.message, 'failed');
+    showError(`Could not fetch GBP results: ${e.message}`);
+  } finally {
+    gbpPollContext = null;
+    currentRunId = null;
   }
 }
 
