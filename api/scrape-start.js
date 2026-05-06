@@ -38,15 +38,13 @@ const SOURCES = {
     }),
   },
   yellowpages: {
-    actor: 'automation-lab~yellowpages-scraper',
+    // Swapped from automation-lab to trudax — better established (4.6K users),
+    // cheaper ($2/1000 results), clean 3-field input schema.
+    actor: 'trudax~yellow-pages-us-scraper',
     buildInput: ({ keyword, city, state, maxResults }) => ({
-      searchQuery: keyword,
+      search: keyword,
       location: state ? `${city}, ${state}` : city,
-      searchTerm: keyword,
-      searchTerms: [keyword],
-      maxResults,
       maxItems: maxResults,
-      extractEmails: false,
     }),
   },
 };
