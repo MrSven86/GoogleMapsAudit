@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Directory Scanner — One source at a time</title>
+<title>Directory Scanner v4 — Polling architecture</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -21,7 +21,7 @@
 body{background:var(--bg);color:var(--text);font-family:Syne,sans-serif;min-height:100vh;padding:40px 20px}
 .container{max-width:1180px;margin:0 auto}
 header{border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:30px}
-.logo,.subtitle,label,.hint,.status,.error,.summary,.source-label,.btn-link,.kind-tag,.empty,.notice{font-family:'DM Mono',monospace}
+.logo,.subtitle,label,.hint,.status,.error,.summary,.source-label,.kind-tag,.empty,.notice,.poll-info{font-family:'DM Mono',monospace}
 .logo{font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:10px}
 h1{font-size:clamp(28px,5vw,46px);font-weight:800;line-height:.95;letter-spacing:-.03em}
 h1 span{color:var(--accent)}
@@ -51,14 +51,26 @@ input[type=password]{letter-spacing:.1em}
 .btn-secondary:disabled{opacity:.3;cursor:not-allowed}
 .btn-secondary.danger{border-color:var(--red);color:var(--red)}
 .btn-secondary.danger:hover{background:var(--red);color:#000}
-.status{display:none;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:14px;font-size:13px;color:var(--muted);align-items:center;gap:10px}
-.status.visible{display:flex}
-.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+
+/* Live status panel — much richer than before */
+.live-status{display:none;background:var(--surface);border:1px solid var(--accent);border-radius:4px;padding:18px 22px;margin-bottom:14px}
+.live-status.visible{display:block}
+.live-status-row{display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap}
+.live-status-row:last-child{margin-bottom:0}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.spinner.done{border-top-color:var(--accent);border-color:var(--accent);animation:none}
+.spinner.failed{border-top-color:var(--red);border-color:var(--red);animation:none}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error{display:none;background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);border-radius:4px;padding:14px 18px;font-size:13px;color:var(--red);margin-bottom:14px}
+.live-text{font-family:'DM Mono',monospace;font-size:13px;color:var(--text);flex:1}
+.live-text strong{color:var(--accent)}
+.poll-info{font-size:11px;color:var(--muted)}
+.elapsed{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent);font-weight:700}
+
+.error{display:none;background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);border-radius:4px;padding:14px 18px;font-size:13px;color:var(--red);margin-bottom:14px;font-family:'DM Mono',monospace}
 .error.visible{display:block}
 .notice{display:none;background:rgba(119,170,255,.08);border:1px solid rgba(119,170,255,.3);border-radius:4px;padding:12px 16px;font-size:12px;color:var(--blue);margin-bottom:14px}
 .notice.visible{display:block}
+
 #results{display:none;margin-top:24px}
 .results-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .results-top h2{font-size:20px;font-weight:800}
@@ -93,9 +105,9 @@ a:hover{text-decoration:underline}
 <div class="container">
 
 <header>
-  <div class="logo">DIRECTORY SCANNER · single-source · pick one, scrape, filter, then check GBP</div>
-  <h1>Pick a source.<br><span>Scrape it.</span> Filter. Check GBP.</h1>
-  <p class="subtitle">// one source at a time keeps each run under 60s. After scraping, filter the list, select what you want, and run the GBP check on selected only.</p>
+  <div class="logo">DIRECTORY SCANNER v4 · polling architecture · no more 60s timeouts</div>
+  <h1>Pick a source.<br><span>Wait it out.</span> Filter. Check GBP.</h1>
+  <p class="subtitle">// scrape runs in the background and can take 1-15 minutes. Page polls every 5s. Don't close the tab.</p>
 </header>
 
 <div id="inputSection">
@@ -125,10 +137,10 @@ a:hover{text-decoration:underline}
       <div class="field">
         <label>Max Results</label>
         <select id="maxResults">
-          <option value="50">50 (fast test)</option>
+          <option value="50">50 (fast)</option>
           <option value="100" selected>100</option>
           <option value="200">200</option>
-          <option value="500">500 (max)</option>
+          <option value="500">500</option>
         </select>
       </div>
       <div class="field">
@@ -163,10 +175,22 @@ a:hover{text-decoration:underline}
     </div>
   </div>
 
-  <button class="btn-run" id="runBtn" onclick="runScrape()">▶ Scrape selected source</button>
+  <button class="btn-run" id="runBtn" onclick="startScrape()">▶ Start scrape (background job)</button>
 </div>
 
-<div class="status" id="status"><div class="spinner"></div><span id="statusText">Working…</span></div>
+<!-- Live status while polling -->
+<div class="live-status" id="liveStatus">
+  <div class="live-status-row">
+    <div class="spinner" id="liveSpinner"></div>
+    <div class="live-text" id="liveText">Starting…</div>
+    <div class="elapsed" id="liveElapsed">0s</div>
+  </div>
+  <div class="live-status-row">
+    <div class="poll-info" id="livePollInfo"></div>
+    <button class="btn-secondary danger" id="cancelBtn" onclick="cancelPolling()" style="margin-left:auto">Cancel polling</button>
+  </div>
+</div>
+
 <div class="error" id="error"></div>
 <div class="notice" id="notice"></div>
 
@@ -219,9 +243,14 @@ a:hover{text-decoration:underline}
 
 <script>
 // ── State ──
-let businesses = [];          // accumulated rows from scrapes (potentially multiple sources)
+let businesses = [];
 let selectedIndices = new Set();
-let lastScrape = null;
+let pollTimer = null;
+let pollStartedAt = null;
+let currentRunId = null;
+let pollAttempts = 0;
+const POLL_INTERVAL_MS = 5000;
+const MAX_POLL_ATTEMPTS = 240; // 240 × 5s = 20 min max wait
 
 // ── Source picker UI ──
 document.querySelectorAll('.source-option').forEach(opt => {
@@ -238,12 +267,22 @@ function getSelectedSource() {
 }
 
 // ── UI helpers ──
-function setStatus(msg) {
-  const el = document.getElementById('status');
+function showLiveStatus(text, pollInfo = '', state = 'running') {
+  const el = document.getElementById('liveStatus');
   el.classList.add('visible');
-  document.getElementById('statusText').textContent = msg;
+  document.getElementById('liveText').innerHTML = text;
+  document.getElementById('livePollInfo').textContent = pollInfo;
+  const sp = document.getElementById('liveSpinner');
+  sp.classList.remove('done', 'failed');
+  if (state === 'done') sp.classList.add('done');
+  if (state === 'failed') sp.classList.add('failed');
 }
-function hideStatus() { document.getElementById('status').classList.remove('visible'); }
+function hideLiveStatus() { document.getElementById('liveStatus').classList.remove('visible'); }
+function updateElapsed() {
+  if (!pollStartedAt) return;
+  const sec = Math.floor((Date.now() - pollStartedAt) / 1000);
+  document.getElementById('liveElapsed').textContent = `${sec}s`;
+}
 function showError(msg) {
   const el = document.getElementById('error');
   el.textContent = '⚠ ' + msg;
@@ -260,8 +299,8 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
-// ── Scrape flow ──
-async function runScrape() {
+// ── Step 1: Start the scrape ──
+async function startScrape() {
   clearError();
   hideNotice();
 
@@ -276,23 +315,114 @@ async function runScrape() {
   if (!city) return showError('City required');
   if (!keyword) return showError('Keyword required');
 
-  const btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  setStatus(`Scraping ${source.toUpperCase()} for "${keyword}" in ${city}${state ? ', ' + state : ''}…`);
+  document.getElementById('runBtn').disabled = true;
+  pollStartedAt = Date.now();
+  pollAttempts = 0;
+  showLiveStatus(`Starting <strong>${source.toUpperCase()}</strong> scrape for "${esc(keyword)}" in ${esc(city)}…`, 'Sending request to Apify…');
 
   try {
-    const res = await fetch(`/api/scrape-${source}`, {
+    const res = await fetch('/api/scrape-start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apifyToken: token, keyword, city, state, maxResults }),
+      body: JSON.stringify({ apifyToken: token, source, keyword, city, state, maxResults }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
 
-    lastScrape = data;
-    // Append to accumulated list with source tracking
-    const newOnes = (data.businesses || []).map(b => ({ ...b, _selected: false }));
-    // Dedup by name + phone within the accumulated list
+    currentRunId = data.runId;
+    showLiveStatus(
+      `Apify run started · <strong>${esc(currentRunId)}</strong>`,
+      `Status: ${data.status} · Polling every 5s. This can take 1-15 min depending on source and result count.`
+    );
+    // Begin polling
+    schedulePoll(token, source);
+  } catch (e) {
+    showLiveStatus(`Failed to start scrape`, e.message, 'failed');
+    showError(`Could not start scrape: ${e.message}`);
+    document.getElementById('runBtn').disabled = false;
+  }
+}
+
+// ── Step 2: Poll the status ──
+function schedulePoll(token, source) {
+  pollTimer = setTimeout(() => pollStatus(token, source), POLL_INTERVAL_MS);
+}
+
+async function pollStatus(token, source) {
+  if (!currentRunId) return;
+  pollAttempts++;
+  updateElapsed();
+
+  if (pollAttempts > MAX_POLL_ATTEMPTS) {
+    showLiveStatus(`Timed out waiting for Apify after 20 minutes`, '', 'failed');
+    showError('Polling exceeded 20 min. The Apify run may still complete — check Apify console with run ID: ' + currentRunId);
+    document.getElementById('runBtn').disabled = false;
+    return;
+  }
+
+  try {
+    const url = `/api/scrape-status?runId=${encodeURIComponent(currentRunId)}&apifyToken=${encodeURIComponent(token)}`;
+    const res = await fetch(url);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+
+    const status = data.status;
+    const elapsedSec = data.elapsedSec || 0;
+
+    if (status === 'SUCCEEDED') {
+      showLiveStatus(
+        `<strong>${esc(source.toUpperCase())} scrape done</strong> in ${elapsedSec}s · fetching results…`,
+        `Run: ${currentRunId} · dataset: ${data.datasetId}`,
+        'done'
+      );
+      await fetchResults(token, source, data.datasetId);
+      return;
+    }
+
+    if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(status)) {
+      showLiveStatus(
+        `Apify run ${status} after ${elapsedSec}s`,
+        `Run: ${currentRunId}`,
+        'failed'
+      );
+      showError(`Apify run ${status}. Check Apify console for details. Run ID: ${currentRunId}`);
+      document.getElementById('runBtn').disabled = false;
+      return;
+    }
+
+    // Still running — update status and poll again
+    showLiveStatus(
+      `Apify run is <strong>${esc(status)}</strong> · ${elapsedSec}s elapsed inside Apify`,
+      `Poll #${pollAttempts} · checking again in 5s · run ID: ${currentRunId}`
+    );
+    schedulePoll(token, source);
+  } catch (e) {
+    // Single transient error → keep polling, but show warning
+    showLiveStatus(
+      `Poll error: ${e.message} · retrying…`,
+      `Poll #${pollAttempts} · run ID: ${currentRunId}`
+    );
+    schedulePoll(token, source);
+  }
+}
+
+function cancelPolling() {
+  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+  currentRunId = null;
+  showLiveStatus('Polling cancelled (Apify run may still be running)', '', 'failed');
+  document.getElementById('runBtn').disabled = false;
+}
+
+// ── Step 3: Fetch and merge results ──
+async function fetchResults(token, source, datasetId) {
+  try {
+    const url = `/api/scrape-results?datasetId=${encodeURIComponent(datasetId)}&apifyToken=${encodeURIComponent(token)}&source=${encodeURIComponent(source)}`;
+    const res = await fetch(url);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+
+    // Append to accumulated list, dedup by name + phone
+    const newOnes = (data.businesses || []).map(b => ({ ...b }));
     const seen = new Set(businesses.map(b => `${(b.name || '').toLowerCase()}|${(b.phone || '').replace(/\D/g, '')}`));
     let added = 0;
     for (const b of newOnes) {
@@ -303,14 +433,15 @@ async function runScrape() {
       added++;
     }
 
-    hideStatus();
-    showNotice(`✓ ${source.toUpperCase()}: ${data.total} returned, ${added} new (${businesses.length} total) · ${(data.elapsedMs / 1000).toFixed(1)}s`);
+    hideLiveStatus();
+    showNotice(`✓ ${source.toUpperCase()}: ${data.total} returned, ${added} new (${businesses.length} total)`);
     renderResults();
   } catch (e) {
-    hideStatus();
-    showError(`${source.toUpperCase()} scrape failed: ${e.message}`);
+    showLiveStatus('Failed to fetch results', e.message, 'failed');
+    showError(`Could not fetch results: ${e.message}`);
   } finally {
-    btn.disabled = false;
+    document.getElementById('runBtn').disabled = false;
+    currentRunId = null;
   }
 }
 
@@ -375,7 +506,6 @@ function categoryMatchesKeyword(cat) {
   if (!cat) return false;
   const kw = document.getElementById('keyword').value.trim().toLowerCase();
   const c = cat.toLowerCase();
-  // Lightweight check — a more thorough version lives server-side
   return kw.split(/\s+/).filter(w => w.length > 3).some(w => c.includes(w));
 }
 
@@ -385,7 +515,6 @@ function sourceDataCell(b) {
   if (b.accredited) bits.push(`<span class="kind-tag match">accredited</span>`);
   if (b.yearsInBusiness) bits.push(`<span class="kind-tag">${esc(b.yearsInBusiness)} yrs</span>`);
   if (b.rating != null) bits.push(`<span class="kind-tag">★ ${esc(b.rating)} (${b.reviews || 0})</span>`);
-  if (b.priceRange) bits.push(`<span class="kind-tag">${esc(b.priceRange)}</span>`);
   if (b.ownerName) bits.push(`<span class="kind-tag" title="owner">👤 ${esc(b.ownerName)}</span>`);
   return bits.join(' ') || '<span style="color:#444">—</span>';
 }
@@ -408,7 +537,6 @@ function toggleSelect(idx) {
 function toggleSelectAll() {
   const checked = document.getElementById('selectAll').checked;
   if (checked) {
-    // Select all currently visible (filtered) rows
     businesses.forEach((b, i) => { if (passesFilter(b)) selectedIndices.add(i); });
   } else {
     selectedIndices.clear();
@@ -431,7 +559,7 @@ async function checkGbpForSelected() {
   hideNotice();
 
   if (!selectedIndices.size) return showError('Select at least one row');
-  if (selectedIndices.size > 20) return showError(`Max 20 per check (you selected ${selectedIndices.size}). Deselect some or run in batches.`);
+  if (selectedIndices.size > 20) return showError(`Max 20 per check (you selected ${selectedIndices.size}). Deselect some.`);
 
   const token = document.getElementById('apifyToken').value.trim();
   const city = document.getElementById('city').value.trim();
@@ -449,7 +577,8 @@ async function checkGbpForSelected() {
     websiteHost: businesses[i].websiteHost,
   }));
 
-  setStatus(`Checking GBP for ${indices.length} selected business(es)…`);
+  showLiveStatus(`Checking GBP for ${indices.length} selected business(es)…`);
+  pollStartedAt = Date.now();
 
   try {
     const res = await fetch('/api/check-gbp', {
@@ -460,7 +589,6 @@ async function checkGbpForSelected() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
 
-    // Merge GBP data back onto the businesses list at the original indices
     data.results.forEach((r, j) => {
       const origIdx = indices[j];
       Object.assign(businesses[origIdx], {
@@ -478,11 +606,11 @@ async function checkGbpForSelected() {
       });
     });
 
-    hideStatus();
+    hideLiveStatus();
     showNotice(`✓ GBP check done · ${data.gbpFoundCount} found · ${data.noGbpCount} no GBP · ${(data.elapsedMs / 1000).toFixed(1)}s`);
     renderTable();
   } catch (e) {
-    hideStatus();
+    hideLiveStatus();
     showError(`GBP check failed: ${e.message}`);
   }
 }
@@ -519,6 +647,9 @@ function clearResults() {
   renderResults();
   hideNotice();
 }
+
+// Tick the elapsed clock once per second while polling
+setInterval(updateElapsed, 1000);
 </script>
 </body>
 </html>
