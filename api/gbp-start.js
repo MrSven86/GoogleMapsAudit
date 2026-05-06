@@ -38,12 +38,21 @@ async function handler(req, res) {
   }
 
   const locationQuery = state ? `${city}, ${state}` : city;
-  const searchStrings = businesses.map(b => `${b.name} ${locationQuery}`.trim());
+  // CRITICAL FIX: search by NAME ONLY, let locationQuery do geo-filtering.
+  // Previous "Vista Window Cleaning Spokane, WA" was being treated as one
+  // long literal string by Maps, often returning unrelated results.
+  // Just "Vista Window Cleaning" + locationQuery="Spokane, WA" is what
+  // a real user would do in Google Maps.
+  const searchStrings = businesses.map(b => String(b.name).trim());
 
   const input = {
     searchStringsArray: searchStrings,
     locationQuery,
-    maxCrawledPlacesPerSearch: 3,
+    // CRITICAL FIX: was 3, now 15. Maps often returns the right business
+    // at position #5-#10, especially for businesses with common names or
+    // many lookalikes ("LeafFilter Gutter Protection" appears as multiple
+    // franchise locations — we need to see all of them to find the right one).
+    maxCrawledPlacesPerSearch: 15,
     language,
     maxReviews: 0,
     maxImages: 0,
