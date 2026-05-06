@@ -1,36 +1,524 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Business Presence Scanner — Real Pipeline</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Directory Scanner — One source at a time</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0a;--surface:#141414;--border:#222;--accent:#c8f135;--red:#ff4d4d;--orange:#ffb347;--text:#f0f0f0;--muted:#999;--blue:#77aaff}*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--text);font-family:Syne,sans-serif;min-height:100vh;padding:40px 20px}.container{max-width:1120px;margin:0 auto}header{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:34px}.logo{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}h1{font-size:clamp(34px,5vw,64px);font-weight:800;line-height:.9;letter-spacing:-.04em}h1 span{color:var(--accent)}.subtitle{margin-top:12px;color:var(--muted);font-size:13px;font-family:'DM Mono',monospace}.card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px;margin-bottom:16px}label{display:block;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}input,textarea,select{width:100%;background:#050505;border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:12px 14px;outline:none}textarea{resize:vertical;line-height:1.6}input:focus,textarea:focus,select:focus{border-color:var(--accent)}.field{margin-bottom:20px}.field:last-child{margin-bottom:0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.hint{margin-top:6px;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.45}.checks{display:flex;flex-wrap:wrap;gap:8px}.check{font-family:'DM Mono',monospace;font-size:12px;background:#0e0e0e;border:1px solid var(--border);padding:9px 11px;border-radius:3px}.check input{width:auto;margin-right:6px}.btn-run{width:100%;background:var(--accent);border:0;border-radius:3px;color:#000;font-family:Syne,sans-serif;font-weight:800;font-size:17px;padding:17px;cursor:pointer;margin-top:8px}.btn-run:disabled{opacity:.45;cursor:not-allowed}.status,.error{display:none;padding:14px 18px;border-radius:4px;margin-bottom:16px;font-family:'DM Mono',monospace;font-size:13px}.status{background:var(--surface);border:1px solid var(--border);color:var(--muted)}.error{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);color:var(--red)}.visible{display:block}.results{display:none;margin-top:34px}.summary{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:22px}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}.stat{background:#0e0e0e;border:1px solid var(--border);padding:14px;border-radius:4px}.stat-num{font-size:28px;font-weight:800}.stat-label{font-family:'DM Mono',monospace;color:var(--muted);font-size:10px;margin-top:4px;text-transform:uppercase}.good{color:var(--accent)}.mid{color:var(--orange)}.bad{color:var(--red)}.blue{color:var(--blue)}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.btn{background:none;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;text-transform:uppercase;letter-spacing:.08em}.btn:hover{background:var(--accent);color:#000}.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:4px}.table{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:12px;min-width:1150px}.table th{background:#1a1a1a;color:var(--muted);text-align:left;padding:9px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;position:sticky;top:0}.table td{border-top:1px solid var(--border);padding:8px 9px;vertical-align:top}.badge{display:inline-block;padding:2px 7px;border-radius:2px;font-size:10px;font-weight:700;white-space:nowrap}.b-no{background:rgba(255,77,77,.14);color:var(--red)}.b-rank{background:rgba(255,179,71,.14);color:var(--orange)}.b-cat{background:rgba(119,170,255,.14);color:var(--blue)}.b-weak{background:rgba(200,241,53,.12);color:var(--accent)}.b-low{background:#222;color:var(--muted)}.sources{font-size:10px;color:var(--muted)}.debug{display:none;background:#050505;border:1px solid var(--border);padding:14px;white-space:pre-wrap;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:16px;max-height:420px;overflow:auto}@media(max-width:850px){.grid,.grid2,.stats{grid-template-columns:1fr}.card{padding:18px}}
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --border: #222;
+  --accent: #c8f135;
+  --red: #ff4d4d;
+  --orange: #ffb347;
+  --blue: #77aaff;
+  --text: #f0f0f0;
+  --muted: #999;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Syne,sans-serif;min-height:100vh;padding:40px 20px}
+.container{max-width:1180px;margin:0 auto}
+header{border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:30px}
+.logo,.subtitle,label,.hint,.status,.error,.summary,.source-label,.btn-link,.kind-tag,.empty,.notice{font-family:'DM Mono',monospace}
+.logo{font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:10px}
+h1{font-size:clamp(28px,5vw,46px);font-weight:800;line-height:.95;letter-spacing:-.03em}
+h1 span{color:var(--accent)}
+.subtitle{margin-top:10px;color:var(--muted);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:22px 24px;margin-bottom:14px}
+.field{margin-bottom:18px}.field:last-child{margin-bottom:0}
+label{display:block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+input,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:11px 14px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+input[type=password]{letter-spacing:.1em}
+.hint{margin-top:6px;font-size:11px;color:var(--muted)}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.three-col,.two-col{grid-template-columns:1fr}}
+.source-picker{display:flex;gap:10px;flex-wrap:wrap}
+.source-option{flex:1;min-width:180px;background:var(--bg);border:2px solid var(--border);border-radius:4px;padding:14px 16px;cursor:pointer;transition:all .15s}
+.source-option:hover{border-color:var(--muted)}
+.source-option.selected{border-color:var(--accent);background:rgba(200,241,53,.06)}
+.source-option input{display:none}
+.source-name{font-weight:800;font-size:15px;margin-bottom:4px}
+.source-label{font-size:10px;color:var(--muted);letter-spacing:.05em}
+.btn-run{width:100%;background:var(--accent);border:0;border-radius:3px;color:#0a0a0a;font-family:Syne,sans-serif;font-weight:800;font-size:16px;letter-spacing:.05em;padding:16px;cursor:pointer;margin-top:8px;transition:opacity .2s}
+.btn-run:hover{opacity:.9}
+.btn-run:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{background:none;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:9px 14px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.05em;text-transform:uppercase}
+.btn-secondary:hover{background:var(--accent);color:#0a0a0a}
+.btn-secondary:disabled{opacity:.3;cursor:not-allowed}
+.btn-secondary.danger{border-color:var(--red);color:var(--red)}
+.btn-secondary.danger:hover{background:var(--red);color:#000}
+.status{display:none;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:14px;font-size:13px;color:var(--muted);align-items:center;gap:10px}
+.status.visible{display:flex}
+.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{display:none;background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);border-radius:4px;padding:14px 18px;font-size:13px;color:var(--red);margin-bottom:14px}
+.error.visible{display:block}
+.notice{display:none;background:rgba(119,170,255,.08);border:1px solid rgba(119,170,255,.3);border-radius:4px;padding:12px 16px;font-size:12px;color:var(--blue);margin-bottom:14px}
+.notice.visible{display:block}
+#results{display:none;margin-top:24px}
+.results-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.results-top h2{font-size:20px;font-weight:800}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.summary{font-size:11px;color:var(--muted);margin-bottom:14px}
+.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.filter-bar input{flex:1;min-width:200px}
+.checkbox-cell{display:flex;align-items:center;justify-content:center}
+.checkbox-cell input{width:16px;height:16px;cursor:pointer}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:4px}
+.table{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:12px;min-width:900px}
+.table th{background:#1a1a1a;color:var(--muted);text-align:left;padding:10px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);position:sticky;top:0}
+.table td{padding:10px 12px;border-top:1px solid var(--border);vertical-align:top}
+.table tr:hover td{background:rgba(255,255,255,.02)}
+.table tr.selected td{background:rgba(200,241,53,.06)}
+.name-cell{min-width:200px}
+.name-cell strong{display:block;font-size:13px;color:var(--text);margin-bottom:3px}
+.name-cell small{color:var(--muted);font-size:10px}
+.kind-tag{display:inline-block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:2px;padding:2px 6px;color:var(--muted)}
+.kind-tag.match{color:var(--accent);border-color:rgba(200,241,53,.3)}
+.kind-tag.nogbp{color:var(--red);border-color:rgba(255,77,77,.3)}
+.kind-tag.cat{color:var(--blue);border-color:rgba(119,170,255,.3)}
+.empty{padding:30px;text-align:center;color:var(--muted);font-size:13px}
+.action-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:14px 0;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+.selected-count{font-family:'DM Mono',monospace;font-size:13px;color:var(--muted)}
+.selected-count strong{color:var(--accent)}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
 </style>
 </head>
-<body><div class="container">
-<header><div class="logo">Business Presence Scanner / Real Pipeline</div><h1>Find businesses<br><span>missing on Maps.</span></h1><p class="subtitle">// multi-source discovery → master list → Google Business Profile check → Maps keyword rank cross-reference</p></header>
+<body>
+<div class="container">
+
+<header>
+  <div class="logo">DIRECTORY SCANNER · single-source · pick one, scrape, filter, then check GBP</div>
+  <h1>Pick a source.<br><span>Scrape it.</span> Filter. Check GBP.</h1>
+  <p class="subtitle">// one source at a time keeps each run under 60s. After scraping, filter the list, select what you want, and run the GBP check on selected only.</p>
+</header>
+
 <div id="inputSection">
-  <div class="card"><div class="field"><label>Apify API Token</label><input id="token" type="password" placeholder="apify_api_xxxx"></div></div>
-  <div class="card"><div class="grid"><div class="field"><label>City</label><input id="city" value="Bangor" placeholder="Bangor"></div><div class="field"><label>Region / State</label><input id="region" value="Maine" placeholder="Maine / ME / Stockholm"></div><div class="field"><label>Main Category Keyword</label><input id="keyword" value="roofer" placeholder="roofer"></div></div><div class="grid"><div class="field"><label>Country</label><select id="country"><option value="us" selected>US</option><option value="se">SE</option><option value="gb">GB</option><option value="ca">CA</option><option value="au">AU</option><option value="ar">AR</option><option value="es">ES</option></select></div><div class="field"><label>Language</label><select id="language"><option value="en" selected>English</option><option value="sv">Svenska</option><option value="es">Español</option></select></div><div class="field"><label>Max Companies</label><select id="maxCompanies"><option value="25">25 test</option><option value="50" selected>50 normal</option><option value="100">100 heavy</option><option value="150">150 very heavy</option></select></div></div></div>
-  <div class="card"><div class="field"><label>Sources</label><div class="checks" id="sources"><label class="check"><input type="checkbox" value="google" checked> Google</label><label class="check"><input type="checkbox" value="yelp" checked> Yelp</label><label class="check"><input type="checkbox" value="bbb" checked> BBB</label><label class="check"><input type="checkbox" value="yellowpages" checked> Yellow Pages</label><label class="check"><input type="checkbox" value="angi" checked> Angi</label><label class="check"><input type="checkbox" value="facebook" checked> Facebook</label><label class="check"><input type="checkbox" value="nextdoor"> Nextdoor</label></div><div class="hint">// discovery uses Google Search + server-side page extraction from directory pages when possible. Facebook/Angi may expose less because they often block public HTML extraction.</div></div><div class="grid2"><div class="field"><label>Ranking Depth</label><select id="rankDepth"><option value="40">Top 40</option><option value="80" selected>Top 80</option><option value="120">Top 120</option></select></div><div class="field"><label>Discovery Mode</label><select id="deepDiscovery"><option value="true" selected>Deep discovery: fetch directory pages</option><option value="false">Fast: snippets only</option></select></div></div></div>
-  <div class="card"><div class="field"><label>Manual Master List — optional but strongest, one per line</label><textarea id="manualList" rows="5" placeholder="ABC Roofing | https://abcroofing.com | (555) 123-1234&#10;Bangor Roof Repair&#10;Smith & Sons Roofing"></textarea><div class="hint">// use this to guarantee the scanner has companies to check. The source discovery then adds more from directories.</div></div></div>
-  <button id="runBtn" class="btn-run" onclick="runScan()">▶ Run Real Presence Scan</button>
+  <div class="card">
+    <div class="field">
+      <label>Apify API Token</label>
+      <input type="password" id="apifyToken" placeholder="apify_api_xxxx…" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="three-col">
+      <div class="field">
+        <label>City</label>
+        <input id="city" placeholder="Spokane">
+      </div>
+      <div class="field">
+        <label>State / Region</label>
+        <input id="state" placeholder="WA">
+      </div>
+      <div class="field">
+        <label>Keyword / Industry</label>
+        <input id="keyword" placeholder="gutter cleaning">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field">
+        <label>Max Results</label>
+        <select id="maxResults">
+          <option value="50">50 (fast test)</option>
+          <option value="100" selected>100</option>
+          <option value="200">200</option>
+          <option value="500">500 (max)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Language (for GBP check)</label>
+        <select id="language">
+          <option value="en" selected>English</option>
+          <option value="es">Español</option>
+          <option value="sv">Svenska</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Source — pick exactly one per run</label>
+    <div class="source-picker" id="sourcePicker">
+      <label class="source-option selected">
+        <input type="radio" name="source" value="bbb" checked>
+        <div class="source-name">BBB</div>
+        <div class="source-label">// Better Business Bureau · accreditation, owner, rating</div>
+      </label>
+      <label class="source-option">
+        <input type="radio" name="source" value="yelp">
+        <div class="source-name">Yelp</div>
+        <div class="source-label">// reviews, ratings, categories</div>
+      </label>
+      <label class="source-option">
+        <input type="radio" name="source" value="yellowpages">
+        <div class="source-name">Yellow Pages</div>
+        <div class="source-label">// phone, website, years in business</div>
+      </label>
+    </div>
+  </div>
+
+  <button class="btn-run" id="runBtn" onclick="runScrape()">▶ Scrape selected source</button>
 </div>
-<div id="status" class="status"></div><div id="error" class="error"></div>
-<div id="results" class="results"><div class="actions"><button class="btn" onclick="exportCsv()">Export CSV</button><button class="btn" onclick="window.print()">Save PDF</button><button class="btn" onclick="toggleDebug()">Debug</button></div><div id="summary"></div><div id="stats" class="stats"></div><div class="table-wrap"><table class="table"><thead><tr><th>Score</th><th>Lead Type</th><th>Company</th><th>Sources</th><th>GBP?</th><th>Ranks?</th><th>Rank</th><th>Primary Category</th><th>Reviews</th><th>Website</th><th>Pitch Line</th></tr></thead><tbody id="rows"></tbody></table></div><pre id="debug" class="debug"></pre></div>
+
+<div class="status" id="status"><div class="spinner"></div><span id="statusText">Working…</span></div>
+<div class="error" id="error"></div>
+<div class="notice" id="notice"></div>
+
+<div id="results">
+  <div class="results-top">
+    <h2 id="resultsTitle">Results</h2>
+    <div class="actions">
+      <button class="btn-secondary" onclick="exportCsv()">Export CSV</button>
+      <button class="btn-secondary" onclick="clearResults()">Clear</button>
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="filter-bar">
+    <input id="filterText" placeholder="Filter by name, address, phone…" oninput="renderTable()">
+    <label class="kind-tag" style="cursor:pointer;font-size:11px;padding:6px 10px"><input type="checkbox" id="filterNoWebsite" onchange="renderTable()" style="width:auto;margin-right:6px;vertical-align:middle"> No website only</label>
+    <label class="kind-tag" style="cursor:pointer;font-size:11px;padding:6px 10px"><input type="checkbox" id="filterGbpChecked" onchange="renderTable()" style="width:auto;margin-right:6px;vertical-align:middle"> GBP-checked only</label>
+    <label class="kind-tag" style="cursor:pointer;font-size:11px;padding:6px 10px"><input type="checkbox" id="filterNoGbp" onchange="renderTable()" style="width:auto;margin-right:6px;vertical-align:middle"> No GBP only</label>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="checkbox-cell"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+          <th>Business</th>
+          <th>Phone</th>
+          <th>Website</th>
+          <th>Source data</th>
+          <th>GBP</th>
+          <th>GBP rating / reviews</th>
+          <th>GBP category</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="action-bar">
+    <div class="selected-count">// <strong id="selectedCount">0</strong> selected (max 20 per GBP check)</div>
+    <div class="actions">
+      <button class="btn-secondary" onclick="checkGbpForSelected()">Check GBP for selected (max 20)</button>
+      <button class="btn-secondary danger" onclick="deselectAll()">Deselect all</button>
+    </div>
+  </div>
 </div>
+
+</div>
+
 <script>
-let latest=null;
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function status(msg){const el=document.getElementById('status');el.textContent=msg;el.classList.add('visible')}
-function hideStatus(){document.getElementById('status').classList.remove('visible')}
-function showError(msg){const el=document.getElementById('error');el.textContent='⚠ '+msg;el.classList.add('visible')}
-function clearError(){document.getElementById('error').classList.remove('visible')}
-function selectedSources(){return [...document.querySelectorAll('#sources input:checked')].map(x=>x.value)}
-async function runScan(){clearError();document.getElementById('results').style.display='none';const btn=document.getElementById('runBtn');btn.disabled=true;status('Running pipeline. This can take 5–20 minutes depending on sources, max companies, and Apify speed.');try{const body={apifyToken:document.getElementById('token').value.trim(),city:document.getElementById('city').value.trim(),region:document.getElementById('region').value.trim(),keyword:document.getElementById('keyword').value.trim(),country:document.getElementById('country').value,language:document.getElementById('language').value,maxCompanies:Number(document.getElementById('maxCompanies').value),rankDepth:Number(document.getElementById('rankDepth').value),deepDiscovery:document.getElementById('deepDiscovery').value==='true',manualList:document.getElementById('manualList').value,sources:selectedSources()};const res=await fetch('/api/presence-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await res.json();if(!res.ok||data.error)throw new Error(data.error||'Scan failed');latest=data;hideStatus();render(data)}catch(e){hideStatus();showError(e.message)}finally{btn.disabled=false}}
-function badge(status){const map={NO_GBP:['b-no','NO GBP'],HAS_GBP_NOT_RANKING:['b-rank','NOT RANKING'],CATEGORY_MISMATCH:['b-cat','CATEGORY MISMATCH'],WEAK_PROFILE:['b-weak','WEAK PROFILE'],LOW_PRIORITY:['b-low','LOW PRIORITY']};const x=map[status]||['b-low',status];return `<span class="badge ${x[0]}">${x[1]}</span>`}
-function render(data){document.getElementById('results').style.display='block';const ctx=data.marketContext||{};const ctxLine=ctx.marketMedianReviews!=null?` · market median: ${ctx.marketMedianReviews} reviews · leader: ${ctx.marketTop1Reviews} reviews · weak threshold: <${ctx.weakReviewsThreshold}`:'';document.getElementById('summary').innerHTML=`<div class="summary">// ${esc(data.total)} companies checked · ${esc(data.mapsRankingCount)} Maps ranking results${esc(ctxLine)} · sources: ${data.sourceReports.map(s=>`${s.source}:${s.companies||0}`).join(' / ')}</div>`;const s=data.summary||{};document.getElementById('stats').innerHTML=`<div class="stat"><div class="stat-num bad">${s.NO_GBP||0}</div><div class="stat-label">No GBP</div></div><div class="stat"><div class="stat-num mid">${s.HAS_GBP_NOT_RANKING||0}</div><div class="stat-label">Not Ranking</div></div><div class="stat"><div class="stat-num blue">${s.CATEGORY_MISMATCH||0}</div><div class="stat-label">Category Mismatch</div></div><div class="stat"><div class="stat-num good">${s.WEAK_PROFILE||0}</div><div class="stat-label">Weak Profile</div></div><div class="stat"><div class="stat-num">${data.total||0}</div><div class="stat-label">Total Checked</div></div>`;document.getElementById('rows').innerHTML=data.rows.map(r=>`<tr><td><strong>${r.leadScore}</strong></td><td>${badge(r.status)}</td><td><strong>${esc(r.name)}</strong><br><span class="sources">Matched: ${esc(r.gbpName||'—')} (${r.matchScore||0}%)</span></td><td><span class="sources">${esc((r.sources||[]).join(', '))}</span></td><td>${r.hasGbp?'YES':'NO'}</td><td>${r.ranks?'YES':'NO'}</td><td>${r.rank||''}</td><td>${esc(r.primaryCategory||'')}</td><td>${r.rating||''} / ${r.reviews||0}</td><td>${r.website?`<a href="${esc(r.website)}" target="_blank">${esc((new URL(r.website.startsWith('http')?r.website:'https://'+r.website)).hostname.replace(/^www\./,''))}</a>`:''}</td><td>${esc(r.pitch||'')}</td></tr>`).join('');document.getElementById('debug').textContent=JSON.stringify(data,null,2)}
-function exportCsv(){if(!latest)return;const cols=['leadScore','status','name','sources','hasGbp','gbpName','matchScore','ranks','rank','primaryCategory','rating','reviews','website','phone','address','pitch'];const csv=[cols.join(',')].concat(latest.rows.map(r=>cols.map(c=>`"${String(Array.isArray(r[c])?r[c].join('|'):(r[c]??'')).replace(/"/g,'""')}"`).join(','))).join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`presence-scan-${latest.keyword}-${latest.city}.csv`.replace(/\s+/g,'-').toLowerCase();a.click()}
-function toggleDebug(){const el=document.getElementById('debug');el.style.display=el.style.display==='block'?'none':'block'}
-</script></body></html>
+// ── State ──
+let businesses = [];          // accumulated rows from scrapes (potentially multiple sources)
+let selectedIndices = new Set();
+let lastScrape = null;
+
+// ── Source picker UI ──
+document.querySelectorAll('.source-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('.source-option').forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+    opt.querySelector('input[type=radio]').checked = true;
+  });
+});
+
+function getSelectedSource() {
+  const r = document.querySelector('input[name=source]:checked');
+  return r ? r.value : 'bbb';
+}
+
+// ── UI helpers ──
+function setStatus(msg) {
+  const el = document.getElementById('status');
+  el.classList.add('visible');
+  document.getElementById('statusText').textContent = msg;
+}
+function hideStatus() { document.getElementById('status').classList.remove('visible'); }
+function showError(msg) {
+  const el = document.getElementById('error');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+}
+function clearError() { document.getElementById('error').classList.remove('visible'); }
+function showNotice(msg) {
+  const el = document.getElementById('notice');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+function hideNotice() { document.getElementById('notice').classList.remove('visible'); }
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+// ── Scrape flow ──
+async function runScrape() {
+  clearError();
+  hideNotice();
+
+  const source = getSelectedSource();
+  const token = document.getElementById('apifyToken').value.trim();
+  const city = document.getElementById('city').value.trim();
+  const state = document.getElementById('state').value.trim();
+  const keyword = document.getElementById('keyword').value.trim();
+  const maxResults = Number(document.getElementById('maxResults').value);
+
+  if (!token) return showError('Apify token required');
+  if (!city) return showError('City required');
+  if (!keyword) return showError('Keyword required');
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  setStatus(`Scraping ${source.toUpperCase()} for "${keyword}" in ${city}${state ? ', ' + state : ''}…`);
+
+  try {
+    const res = await fetch(`/api/scrape-${source}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apifyToken: token, keyword, city, state, maxResults }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+
+    lastScrape = data;
+    // Append to accumulated list with source tracking
+    const newOnes = (data.businesses || []).map(b => ({ ...b, _selected: false }));
+    // Dedup by name + phone within the accumulated list
+    const seen = new Set(businesses.map(b => `${(b.name || '').toLowerCase()}|${(b.phone || '').replace(/\D/g, '')}`));
+    let added = 0;
+    for (const b of newOnes) {
+      const key = `${(b.name || '').toLowerCase()}|${(b.phone || '').replace(/\D/g, '')}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      businesses.push(b);
+      added++;
+    }
+
+    hideStatus();
+    showNotice(`✓ ${source.toUpperCase()}: ${data.total} returned, ${added} new (${businesses.length} total) · ${(data.elapsedMs / 1000).toFixed(1)}s`);
+    renderResults();
+  } catch (e) {
+    hideStatus();
+    showError(`${source.toUpperCase()} scrape failed: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Filter + render ──
+function passesFilter(b) {
+  const q = document.getElementById('filterText').value.trim().toLowerCase();
+  if (q) {
+    const haystack = `${b.name} ${b.address || ''} ${b.phone || ''} ${b.website || ''}`.toLowerCase();
+    if (!haystack.includes(q)) return false;
+  }
+  if (document.getElementById('filterNoWebsite').checked && b.website) return false;
+  if (document.getElementById('filterGbpChecked').checked && b.gbpFound === undefined) return false;
+  if (document.getElementById('filterNoGbp').checked && b.gbpFound !== false) return false;
+  return true;
+}
+
+function renderResults() {
+  document.getElementById('results').style.display = businesses.length ? 'block' : 'none';
+  document.getElementById('resultsTitle').textContent = `${businesses.length} businesses · ${[...new Set(businesses.map(b => b.source))].join(' + ').toUpperCase()}`;
+  document.getElementById('summary').textContent = `// ${businesses.length} unique businesses across ${[...new Set(businesses.map(b => b.source))].length} source(s)`;
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const filtered = businesses.map((b, idx) => ({ b, idx })).filter(({ b }) => passesFilter(b));
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">No businesses match the filters</td></tr>';
+    updateSelectedCount();
+    return;
+  }
+  tbody.innerHTML = filtered.map(({ b, idx }) => {
+    const checked = selectedIndices.has(idx) ? 'checked' : '';
+    const rowClass = selectedIndices.has(idx) ? 'selected' : '';
+    const phone = b.phone ? esc(b.phone) : '<span style="color:#444">—</span>';
+    const website = b.website ? `<a href="${esc(b.website.startsWith('http') ? b.website : 'https://' + b.website)}" target="_blank" rel="noopener">${esc(b.websiteHost || b.website)}</a>` : '<span style="color:#444">—</span>';
+    const sourceData = sourceDataCell(b);
+    const gbp = gbpCell(b);
+    const gbpStats = b.gbpFound ? `${b.gbpRating || '—'} / ${b.gbpReviews ?? '—'}` : '<span style="color:#444">—</span>';
+    const gbpCat = b.gbpFound
+      ? `<span class="kind-tag ${categoryMatchesKeyword(b.gbpPrimaryCategory) ? 'match' : 'cat'}">${esc(b.gbpPrimaryCategory || '—')}</span>`
+      : '<span style="color:#444">—</span>';
+    return `<tr class="${rowClass}">
+      <td class="checkbox-cell"><input type="checkbox" ${checked} onchange="toggleSelect(${idx})"></td>
+      <td class="name-cell">
+        <strong>${esc(b.name)}</strong>
+        <small>${esc(b.address || '')}</small>
+        <div style="margin-top:4px"><span class="kind-tag">${esc(b.source)}</span>${b.profileUrl ? ` <a href="${esc(b.profileUrl)}" target="_blank" rel="noopener" style="font-size:10px">profile →</a>` : ''}</div>
+      </td>
+      <td>${phone}</td>
+      <td>${website}</td>
+      <td>${sourceData}</td>
+      <td>${gbp}</td>
+      <td>${gbpStats}</td>
+      <td>${gbpCat}</td>
+    </tr>`;
+  }).join('');
+  updateSelectedCount();
+}
+
+function categoryMatchesKeyword(cat) {
+  if (!cat) return false;
+  const kw = document.getElementById('keyword').value.trim().toLowerCase();
+  const c = cat.toLowerCase();
+  // Lightweight check — a more thorough version lives server-side
+  return kw.split(/\s+/).filter(w => w.length > 3).some(w => c.includes(w));
+}
+
+function sourceDataCell(b) {
+  const bits = [];
+  if (b.bbbRating) bits.push(`<span class="kind-tag">BBB ${esc(b.bbbRating)}</span>`);
+  if (b.accredited) bits.push(`<span class="kind-tag match">accredited</span>`);
+  if (b.yearsInBusiness) bits.push(`<span class="kind-tag">${esc(b.yearsInBusiness)} yrs</span>`);
+  if (b.rating != null) bits.push(`<span class="kind-tag">★ ${esc(b.rating)} (${b.reviews || 0})</span>`);
+  if (b.priceRange) bits.push(`<span class="kind-tag">${esc(b.priceRange)}</span>`);
+  if (b.ownerName) bits.push(`<span class="kind-tag" title="owner">👤 ${esc(b.ownerName)}</span>`);
+  return bits.join(' ') || '<span style="color:#444">—</span>';
+}
+
+function gbpCell(b) {
+  if (b.gbpFound === undefined) return '<span style="color:#666;font-size:10px">not checked</span>';
+  if (b.gbpFound) {
+    return `<span class="kind-tag match">✓ Found (${b.gbpMatchScore}%)</span>${b.gbpMapsUrl ? ` <a href="${esc(b.gbpMapsUrl)}" target="_blank" rel="noopener" style="font-size:10px">view →</a>` : ''}`;
+  }
+  return '<span class="kind-tag nogbp">NO GBP</span>';
+}
+
+// ── Selection ──
+function toggleSelect(idx) {
+  if (selectedIndices.has(idx)) selectedIndices.delete(idx);
+  else selectedIndices.add(idx);
+  renderTable();
+}
+
+function toggleSelectAll() {
+  const checked = document.getElementById('selectAll').checked;
+  if (checked) {
+    // Select all currently visible (filtered) rows
+    businesses.forEach((b, i) => { if (passesFilter(b)) selectedIndices.add(i); });
+  } else {
+    selectedIndices.clear();
+  }
+  renderTable();
+}
+
+function deselectAll() {
+  selectedIndices.clear();
+  renderTable();
+}
+
+function updateSelectedCount() {
+  document.getElementById('selectedCount').textContent = selectedIndices.size;
+}
+
+// ── GBP check on selected ──
+async function checkGbpForSelected() {
+  clearError();
+  hideNotice();
+
+  if (!selectedIndices.size) return showError('Select at least one row');
+  if (selectedIndices.size > 20) return showError(`Max 20 per check (you selected ${selectedIndices.size}). Deselect some or run in batches.`);
+
+  const token = document.getElementById('apifyToken').value.trim();
+  const city = document.getElementById('city').value.trim();
+  const state = document.getElementById('state').value.trim();
+  const language = document.getElementById('language').value;
+
+  if (!token) return showError('Apify token required');
+  if (!city) return showError('City required');
+
+  const indices = [...selectedIndices];
+  const payloadBusinesses = indices.map(i => ({
+    name: businesses[i].name,
+    phone: businesses[i].phone,
+    website: businesses[i].website,
+    websiteHost: businesses[i].websiteHost,
+  }));
+
+  setStatus(`Checking GBP for ${indices.length} selected business(es)…`);
+
+  try {
+    const res = await fetch('/api/check-gbp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apifyToken: token, city, state, language, businesses: payloadBusinesses }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+
+    // Merge GBP data back onto the businesses list at the original indices
+    data.results.forEach((r, j) => {
+      const origIdx = indices[j];
+      Object.assign(businesses[origIdx], {
+        gbpFound: r.gbpFound,
+        gbpMatchScore: r.gbpMatchScore,
+        gbpName: r.gbpName,
+        gbpRating: r.gbpRating,
+        gbpReviews: r.gbpReviews,
+        gbpPrimaryCategory: r.gbpPrimaryCategory,
+        gbpCategories: r.gbpCategories,
+        gbpAddress: r.gbpAddress,
+        gbpPhone: r.gbpPhone,
+        gbpWebsite: r.gbpWebsite,
+        gbpMapsUrl: r.gbpMapsUrl,
+      });
+    });
+
+    hideStatus();
+    showNotice(`✓ GBP check done · ${data.gbpFoundCount} found · ${data.noGbpCount} no GBP · ${(data.elapsedMs / 1000).toFixed(1)}s`);
+    renderTable();
+  } catch (e) {
+    hideStatus();
+    showError(`GBP check failed: ${e.message}`);
+  }
+}
+
+// ── CSV export ──
+function exportCsv() {
+  if (!businesses.length) return;
+  const cols = [
+    'source', 'name', 'phone', 'website', 'address',
+    'rating', 'reviews', 'bbbRating', 'accredited', 'yearsInBusiness', 'ownerName',
+    'gbpFound', 'gbpMatchScore', 'gbpName', 'gbpRating', 'gbpReviews', 'gbpPrimaryCategory', 'gbpAddress', 'gbpPhone', 'gbpWebsite', 'gbpMapsUrl',
+    'profileUrl',
+  ];
+  const csv = [cols.join(',')].concat(
+    businesses.map(b => cols.map(c => {
+      const v = b[c];
+      const s = Array.isArray(v) ? v.join('|') : (v == null ? '' : String(v));
+      return `"${s.replace(/"/g, '""')}"`;
+    }).join(','))
+  ).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const city = document.getElementById('city').value.trim().replace(/\s+/g, '-').toLowerCase();
+  const kw = document.getElementById('keyword').value.trim().replace(/\s+/g, '-').toLowerCase();
+  a.download = `directory-scan-${kw}-${city}.csv`;
+  a.click();
+}
+
+function clearResults() {
+  if (!confirm('Clear all scraped results?')) return;
+  businesses = [];
+  selectedIndices.clear();
+  renderResults();
+  hideNotice();
+}
+</script>
+</body>
+</html>
