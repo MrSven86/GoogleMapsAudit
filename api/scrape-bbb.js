@@ -101,19 +101,23 @@ async function handler(req, res) {
 
   const startedAt = Date.now();
 
-  // crawlerbros/bbb-scraper input (from official Apify API docs):
-  //   keywords          (string)  — search term, e.g. "gutter cleaning"
-  //   location          (string)  — e.g. "Spokane, WA"
-  //   maxRecordsGlobal  (number)  — total cap across all pages (NOT maxItems/maxResults)
-  //   minRating         (string)  — "any" | "A+" | "A" | etc
-  //   accreditedOnly    (boolean) — filter by BBB Accredited
-  //   proxyConfiguration        — required, residential US recommended
-  const location = state ? `${city}, ${state}` : city;
+  // crawlerbros/bbb-scraper actual input schema (from Apify console UI):
+  //   keywords              (string)   — search term
+  //   locations             (array)    — list of location strings, NOT a single string
+  //   country               (string)   — "United States" (full name, not code)
+  //   maxRecordsGlobal      (number)   — total cap across all locations
+  //   maxRecordsPerLocation (number)   — cap per individual location
+  //   minRating             (string)   — "Any" | "A+" | etc
+  //   accreditedOnly        (boolean)
+  //   proxyConfiguration    — residential US recommended
+  const locationString = state ? `${city}, ${state}` : city;
   const input = {
     keywords: keyword,
-    location,
+    locations: [locationString],          // <-- array, not string
+    country: 'United States',              // <-- full name
     maxRecordsGlobal: maxResults,
-    minRating: 'any',
+    maxRecordsPerLocation: maxResults,    // <-- must also set this or it caps at 50
+    minRating: 'Any',
     accreditedOnly: false,
     proxyConfiguration: {
       useApifyProxy: true,
@@ -137,7 +141,13 @@ async function handler(req, res) {
       total: businesses.length,
       elapsedMs,
       // Diagnostic — confirms what we actually sent the actor
-      inputSent: { keywords: input.keywords, location: input.location, maxRecordsGlobal: input.maxRecordsGlobal },
+      inputSent: {
+        keywords: input.keywords,
+        locations: input.locations,
+        country: input.country,
+        maxRecordsGlobal: input.maxRecordsGlobal,
+        maxRecordsPerLocation: input.maxRecordsPerLocation,
+      },
       rawItemCount: (items || []).length,
       businesses,
     });
