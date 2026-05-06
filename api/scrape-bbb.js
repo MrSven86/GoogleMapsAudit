@@ -34,6 +34,21 @@ async function runActorSync(token, actor, input, timeoutSeconds = 50) {
   return r.json();
 }
 
+// Address may come back as a string OR an object like {street, city, state, postalCode}.
+// Convert any object form into a flat readable string.
+function flattenAddress(a) {
+  if (!a) return '';
+  if (typeof a === 'string') return a.trim();
+  if (typeof a !== 'object') return String(a);
+  const parts = [
+    a.street || a.streetAddress || a.line1 || a.address1 || a.address,
+    a.city || a.locality || a.addressLocality,
+    a.state || a.region || a.addressRegion,
+    a.postalCode || a.zip || a.postal,
+  ].filter(Boolean).map(s => String(s).trim());
+  return [...new Set(parts)].join(', ');
+}
+
 // The BBB actor's output shape varies slightly. Normalize defensively —
 // fall back through several candidate field names so we don't lose data
 // if the actor ever changes its schema.
@@ -42,7 +57,7 @@ function normalizeBbbItem(x) {
   const profileUrl = x.profileUrl || x.url || x.bbbUrl || '';
   const phone = x.phone || x.phoneNumber || x.telephone || '';
   const website = x.website || x.websiteUrl || '';
-  const address = x.address || x.fullAddress || x.location || '';
+  const address = flattenAddress(x.address || x.fullAddress || x.location);
   const rating = x.rating || x.bbbRating || x.grade || '';
   const accredited = x.accredited === true || x.isAccredited === true || /accredited/i.test(String(x.accreditation || ''));
   const yearsInBusiness = x.yearsInBusiness || x.years || null;
@@ -53,11 +68,11 @@ function normalizeBbbItem(x) {
     phone: String(phone).trim(),
     website: String(website).trim(),
     websiteHost: website ? host(website) : '',
-    address: String(address).trim(),
+    address: address,
     bbbRating: String(rating).trim(),
     accredited,
     yearsInBusiness,
-    categories: categories.filter(Boolean),
+    categories: categories.filter(Boolean).map(c => typeof c === 'string' ? c : (c?.name || c?.title || String(c))),
     ownerName: String(ownerName).trim(),
     profileUrl: String(profileUrl).trim(),
     source: 'bbb',
@@ -86,19 +101,32 @@ async function handler(req, res) {
 
   const startedAt = Date.now();
 
-  // BBB actor input — this is `crawlerbros/bbb-scraper`'s expected input shape.
-  // Common fields across BBB scrapers: search/keyword, location, country, maxItems.
-  // We send several aliases so it works regardless of which the actor expects.
-  const location = state ? `${city}, ${state}` : city;
+  // BBB's crawlerbros actor is URL-driven, not keyword-driven.
+  // Build BOTH the category URL and the search URL — category URLs typically
+  // return many more results (~115 vs ~3), but they only exist for the
+  // canonical category names BBB recognizes. We pass both as startUrls so the
+  // actor scrapes whichever resolves to a valid page.
+  const stateLower = state.toLowerCase().replace(/\s+/g, '-');
+  const cityLower = city.toLowerCase().replace(/\s+/g, '-');
+  const keywordSlug = keyword.toLowerCase().replace(/\s+/g, '-');
+
+  const categoryUrl = state
+    ? `https://www.bbb.org/us/${stateLower}/${cityLower}/category/${keywordSlug}`
+    : null;
+  const searchUrl = `https://www.bbb.org/search?find_text=${encodeURIComponent(keyword)}&find_loc=${encodeURIComponent(state ? `${city}, ${state}` : city)}&find_country=USA`;
+
+  // crawlerbros/bbb-scraper accepts startUrls. We send both — the actor will
+  // attempt both and return businesses from whichever yields data.
+  const startUrls = [];
+  if (categoryUrl) startUrls.push({ url: categoryUrl });
+  startUrls.push({ url: searchUrl });
+
   const input = {
-    search: keyword,
-    keyword,
-    location,
-    city,
-    state,
-    country: country === 'USA' || country === 'US' ? 'USA' : country,
+    startUrls,
     maxItems: maxResults,
     maxResults,
+    maxConcurrency: 5,
+    proxyConfiguration: { useApifyProxy: true },
   };
 
   try {
@@ -115,6 +143,9 @@ async function handler(req, res) {
       requestedMax: maxResults,
       total: businesses.length,
       elapsedMs,
+      // Diagnostic so we can see which URLs the actor tried
+      urlsTried: startUrls.map(u => u.url),
+      rawItemCount: (items || []).length,
       businesses,
     });
   } catch (e) {
