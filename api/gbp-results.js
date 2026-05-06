@@ -32,13 +32,40 @@ function similarity(a, b) {
   const A = norm(a), B = norm(b);
   if (!A || !B) return 0;
   if (A === B) return 1;
+  // Strong containment: one fully contains the other
   if (A.includes(B) || B.includes(A)) return 0.94;
-  const wa = new Set(A.split(' ').filter(w => w.length > 2));
-  const wb = new Set(B.split(' ').filter(w => w.length > 2));
-  if (!wa.size || !wb.size) return 0;
-  let hits = 0;
-  for (const w of wa) if (wb.has(w) || [...wb].some(x => x.includes(w) || w.includes(x))) hits++;
-  return hits / Math.max(wa.size, wb.size);
+
+  // Word-level matching with partial-overlap support
+  const wa = A.split(' ').filter(w => w.length > 2);
+  const wb = B.split(' ').filter(w => w.length > 2);
+  if (!wa.length || !wb.length) return 0;
+
+  // For each word in the shorter list, find best partial match in longer list
+  // Score: 1.0 for exact word match, 0.7 for partial (substring), 0 otherwise
+  const [shorter, longer] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
+  let totalScore = 0;
+  for (const w of shorter) {
+    let bestWordScore = 0;
+    for (const x of longer) {
+      if (w === x) { bestWordScore = 1; break; }
+      if (x.includes(w) || w.includes(x)) bestWordScore = Math.max(bestWordScore, 0.7);
+    }
+    totalScore += bestWordScore;
+  }
+  // Score = average per word, weighted slightly toward shorter side
+  // (so "Vista" matches "Vista Window Cleaning LLC" with high confidence
+  //  even though there are 3 unmatched words on the longer side)
+  return totalScore / shorter.length;
+}
+
+// Bonus signal: does the address contain the expected city/state?
+// Used to boost matches when address partially confirms the location.
+function addressContainsCity(address, city, state) {
+  const a = String(address || '').toLowerCase();
+  if (!a) return false;
+  const c = String(city || '').toLowerCase().trim();
+  const s = String(state || '').toLowerCase().trim();
+  return (c && a.includes(c)) || (s && a.includes(s));
 }
 
 function categories(x) {
@@ -70,10 +97,15 @@ function mapsRow(x) {
   };
 }
 
-function bestMatch(business, mapsResults) {
+// bestMatch now takes city/state context. Address-confirms-location is a
+// secondary signal: a 0.65 name-match in the right city is more trustworthy
+// than a 0.65 name-match somewhere else.
+function bestMatch(business, mapsResults, city, state) {
   let best = null;
   for (const m of mapsResults) {
     let score = similarity(business.name, m.name);
+
+    // Hard signals — override name match if they hit
     if (business.websiteHost && m.websiteHost && business.websiteHost === m.websiteHost) {
       score = Math.max(score, 0.98);
     }
@@ -83,9 +115,21 @@ function bestMatch(business, mapsResults) {
         score = Math.max(score, 0.95);
       }
     }
+
+    // Soft signal — address confirms city/state. Adds +0.10 to the score,
+    // capped at 0.99. This is what catches "Vista Window Cleaning" matching
+    // when the GBP name is "Vista Window Cleaning LLC" + address shows "Spokane Valley, WA"
+    if (addressContainsCity(m.address, city, state)) {
+      score = Math.min(0.99, score + 0.10);
+    }
+
     if (!best || score > best.score) best = { score, item: m };
   }
-  return best && best.score >= 0.78 ? best : null;
+  // CRITICAL FIX: threshold lowered from 0.78 to 0.65.
+  // Combined with the address-confirm bonus above, a true match in the
+  // right city now scores ~0.75-0.85, while false matches in other cities
+  // stay below 0.65 and get filtered out.
+  return best && best.score >= 0.65 ? best : null;
 }
 
 async function handler(req, res) {
@@ -99,6 +143,8 @@ async function handler(req, res) {
 
   const token = String(body.apifyToken || '').trim();
   const datasetId = String(body.datasetId || '').trim();
+  const city = String(body.city || '').trim();
+  const state = String(body.state || body.region || '').trim();
   const businesses = Array.isArray(body.businesses) ? body.businesses : [];
 
   if (!token) return json(res, 400, { error: 'Missing apifyToken' });
@@ -118,7 +164,7 @@ async function handler(req, res) {
     const profiles = (items || []).map(mapsRow).filter(p => p.name);
 
     const results = businesses.map(b => {
-      const match = bestMatch(b, profiles);
+      const match = bestMatch(b, profiles, city, state);
       const gbp = match?.item || null;
       return {
         ...b,
