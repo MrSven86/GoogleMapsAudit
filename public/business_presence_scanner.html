@@ -588,7 +588,7 @@ async function checkGbpForSelected() {
     const res = await fetch('/api/gbp-start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apifyToken: token, city, state, language, businesses: payloadBusinesses }),
+body: JSON.stringify({ apifyToken: token, city, state, language, keyword, businesses: payloadBusinesses }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
