@@ -1,17 +1,6 @@
 // Vercel Serverless Function: POST /api/gbp-start
-// NEW STRATEGY: keyword-rank.
-//
-// Old approach (broken): searched Maps once per business name, missed cases
-// where YP name and Google name differed (e.g. "Cline's Air Conditioning Service"
-// on YP vs "Cline's Heating and Air" on Google → never returned, marked as no-GBP
-// when the business actually has 263 reviews and ranks #1).
-//
-// New approach: ONE Maps search for keyword + city, get top 100 ranking
-// businesses. Then in /api/gbp-results, match each input business against
-// those 100 by phone/website/strong-name. This gives us:
-//   - Whether the business has a GBP at all
-//   - WHERE they rank for their primary keyword (the actual SEO question)
-// Both signals from a single Apify run.
+// STRATEGY: keyword-rank.
+// ONE Maps search for keyword in city, get top 100 ranking businesses.
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 const MAPS_ACTOR = 'compass~crawler-google-places';
@@ -39,20 +28,19 @@ async function handler(req, res) {
 
   if (!token) return json(res, 400, { error: 'Missing Apify token' });
   if (!city) return json(res, 400, { error: 'Missing city' });
-  if (!keyword) {
-    return json(res, 400, {
-      error: 'Missing keyword. New keyword-rank architecture requires keyword (the industry/category that was used in the YP scrape, e.g. "hvac" or "roofing").',
-    });
-  }
+  if (!keyword) return json(res, 400, { error: 'Missing keyword' });
 
   const locationQuery = state ? `${city}, ${state}` : city;
 
-  // ONE search, top 100 places. Cost: ~$0.70 per scan (vs many $ before).
-  // 100 is enough depth — if a business doesn't crack top 100 for its primary
-  // keyword in its own city, it's effectively invisible.
+  // CRITICAL: combine keyword + location into ONE search phrase, like a real
+  // Google Maps user types. The actor's behavior with short generic keywords
+  // (e.g. "hvac") + separate locationQuery is unreliable — sometimes returns
+  // 1-5 results instead of 100. Combined phrase is robust.
+  const combinedSearch = `${keyword} ${locationQuery}`;
+
   const input = {
-    searchStringsArray: [keyword],
-    locationQuery,
+    searchStringsArray: [combinedSearch],
+    locationQuery,                       // kept as secondary geo signal
     maxCrawledPlacesPerSearch: 100,
     language,
     maxReviews: 0,
@@ -89,6 +77,7 @@ async function handler(req, res) {
       actor: MAPS_ACTOR,
       strategy: 'keyword-rank',
       keyword,
+      combinedSearch,
       locationQuery,
     });
   } catch (e) {
