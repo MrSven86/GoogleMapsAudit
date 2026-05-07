@@ -1,22 +1,29 @@
 // Vercel Serverless Function: POST /api/gbp-results
-// NEW STRATEGY: keyword-rank.
-//
-// Receives:
-//   - datasetId from a completed keyword-rank Apify run (top 100 ranking
-//     businesses for keyword + city)
-//   - businesses array (the YP listings the user wants to qualify)
-//
-// For each business, find a match in the top 100 via:
-//   1. Phone digit match (last 7 digits)         — strongest
-//   2. Website host match                         — strongest
-//   3. Strong name similarity (≥0.85) + addr in city  — fallback
-//
-// Returns three useful states per business:
-//   - gbpFound=true, rank ≤ 20:   has GBP, ranks well (NOT a lead for SEO)
-//   - gbpFound=true, rank 21+:    has GBP but invisible (STRONG SEO lead)
-//   - gbpFound=false:             not in top 100 (probably no GBP — verify before pitching)
+// STRATEGY: keyword-rank — match each input business against top-100
+// ranking GBPs for keyword + city.
 
 const APIFY_BASE = 'https://api.apify.com/v2';
+
+// Hosts that are shared by millions of unrelated businesses — matching on
+// these as a "website" signal is meaningless. e.g. two HVAC companies could
+// both have facebook.com/<theirpage> URLs without being the same business.
+// Match-by-website only counts when the host is genuinely first-party.
+const SHARED_HOSTS = new Set([
+  // Social
+  'facebook.com', 'fb.com', 'instagram.com', 'twitter.com', 'x.com',
+  'linkedin.com', 'tiktok.com', 'youtube.com', 'pinterest.com',
+  // Directories / aggregators
+  'yelp.com', 'yellowpages.com', 'bbb.org', 'localsearch.com',
+  'mapquest.com', 'foursquare.com', 'manta.com', 'usaircon.com',
+  'superpages.com', 'whitepages.com', 'merchantcircle.com', 'nextdoor.com',
+  'angi.com', 'angieslist.com', 'thumbtack.com', 'homeadvisor.com',
+  'houzz.com', 'citysearch.com', 'kudzu.com', 'hotfrog.com',
+  'cylex.us.com', 'bizapedia.com', 'dexknows.com',
+  // Review/booking
+  'tripadvisor.com', 'opentable.com', 'booking.com', 'expedia.com',
+  // Generic
+  'google.com', 'sites.google.com', 'goo.gl',
+]);
 
 function json(res, status, body) {
   res.statusCode = status;
@@ -25,11 +32,20 @@ function json(res, status, body) {
 }
 
 function host(url) {
-  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+  try { return new URL(url).hostname.replace(/^www\./, '').toLowerCase(); }
+  catch { return ''; }
+}
+
+function isFirstPartyHost(h) {
+  if (!h) return false;
+  // Match host or any subdomain of a shared host
+  for (const shared of SHARED_HOSTS) {
+    if (h === shared || h.endsWith('.' + shared)) return false;
+  }
+  return true;
 }
 
 function digits(s) { return String(s || '').replace(/\D/g, ''); }
-
 function phoneMatches(a, b) {
   const da = digits(a), db = digits(b);
   return da.length >= 7 && db.length >= 7 && da.slice(-7) === db.slice(-7);
@@ -51,22 +67,20 @@ function similarity(a, b) {
   if (!A || !B) return 0;
   if (A === B) return 1;
   if (A.includes(B) || B.includes(A)) return 0.94;
-
   const wa = A.split(' ').filter(w => w.length > 2);
   const wb = B.split(' ').filter(w => w.length > 2);
   if (!wa.length || !wb.length) return 0;
-
   const [shorter, longer] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
-  let totalScore = 0;
+  let total = 0;
   for (const w of shorter) {
-    let bestWordScore = 0;
+    let best = 0;
     for (const x of longer) {
-      if (w === x) { bestWordScore = 1; break; }
-      if (x.includes(w) || w.includes(x)) bestWordScore = Math.max(bestWordScore, 0.7);
+      if (w === x) { best = 1; break; }
+      if (x.includes(w) || w.includes(x)) best = Math.max(best, 0.7);
     }
-    totalScore += bestWordScore;
+    total += best;
   }
-  return totalScore / shorter.length;
+  return total / shorter.length;
 }
 
 function categories(x) {
@@ -83,14 +97,15 @@ function categories(x) {
 }
 
 function mapsRow(x, rankPosition) {
+  const w = x.website || x.websiteUrl || '';
   return {
     rankPosition,
     name: x.title || x.name || '',
     placeId: x.placeId || x.cid || '',
     rating: Number(x.totalScore || x.rating || 0) || null,
     reviews: Number(x.reviewsCount || x.reviewCount || 0) || null,
-    website: x.website || x.websiteUrl || '',
-    websiteHost: x.website ? host(x.website) : '',
+    website: w,
+    websiteHost: w ? host(w) : '',
     phone: x.phone || x.phoneUnformatted || '',
     address: x.address || '',
     primaryCategory: x.categoryName || x.category || categories(x)[0] || '',
@@ -99,25 +114,23 @@ function mapsRow(x, rankPosition) {
   };
 }
 
-// Match an input business against the rankings. Returns the ranked profile
-// + match metadata, or null if not found in top 100.
 function matchInRanking(business, rankings, city, state) {
   const businessHost = business.website ? host(business.website) : '';
+  // Only count host-match if BOTH sides are first-party domains.
+  // Two facebook.com URLs are not a match. Two real-domain URLs are.
+  const businessHostUseful = isFirstPartyHost(businessHost);
 
-  // Pass 1: hard signals — phone or website host. These are unambiguous.
+  // Pass 1: hard signals
   for (const m of rankings) {
     if (business.phone && m.phone && phoneMatches(business.phone, m.phone)) {
       return { profile: m, matchType: 'phone' };
     }
-    if (businessHost && m.websiteHost && businessHost === m.websiteHost) {
+    if (businessHostUseful && m.websiteHost && businessHost === m.websiteHost && isFirstPartyHost(m.websiteHost)) {
       return { profile: m, matchType: 'website' };
     }
   }
 
-  // Pass 2: strong name similarity + address confirms locality.
-  // Threshold raised to 0.85 (vs. 0.65 in the old per-name search) because
-  // here we're choosing among 100 different real businesses — false matches
-  // are easier and we want to be conservative.
+  // Pass 2: strong name similarity + locality
   const c = String(city || '').toLowerCase();
   const s = String(state || '').toLowerCase();
   let best = null;
@@ -163,9 +176,6 @@ async function handler(req, res) {
       return json(res, r.status, { error: `Apify HTTP ${r.status}: ${detail.slice(0, 300)}` });
     }
     const items = await r.json();
-    // Apify preserves order from the search — first item = rank #1.
-    // Ghost listings (no phone/website/address) get their rank skipped because
-    // they don't represent real ranking positions in the local pack.
     const rankings = (items || [])
       .map((x, i) => mapsRow(x, i + 1))
       .filter(p => p.name && (p.phone || p.website || p.address));
@@ -212,7 +222,7 @@ async function handler(req, res) {
       ok: true,
       strategy: 'keyword-rank',
       datasetId,
-      rankingsReturned: rankings.length,
+      rankingsReturned: rankings.length,   // <-- check this field. If <20, the search was too weak.
       checked: businesses.length,
       gbpFoundCount: found.length,
       gbpInTop10: found.filter(r => r.gbpRankPosition <= 10).length,
