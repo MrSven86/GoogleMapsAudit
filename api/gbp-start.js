@@ -1,6 +1,17 @@
 // Vercel Serverless Function: POST /api/gbp-start
-// Starts an Apify Google Maps run for a batch of business names.
-// Returns runId immediately; client polls /api/scrape-status, then /api/gbp-results.
+// NEW STRATEGY: keyword-rank.
+//
+// Old approach (broken): searched Maps once per business name, missed cases
+// where YP name and Google name differed (e.g. "Cline's Air Conditioning Service"
+// on YP vs "Cline's Heating and Air" on Google → never returned, marked as no-GBP
+// when the business actually has 263 reviews and ranks #1).
+//
+// New approach: ONE Maps search for keyword + city, get top 100 ranking
+// businesses. Then in /api/gbp-results, match each input business against
+// those 100 by phone/website/strong-name. This gives us:
+//   - Whether the business has a GBP at all
+//   - WHERE they rank for their primary keyword (the actual SEO question)
+// Both signals from a single Apify run.
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 const MAPS_ACTOR = 'compass~crawler-google-places';
@@ -24,35 +35,25 @@ async function handler(req, res) {
   const city = String(body.city || '').trim();
   const state = String(body.state || body.region || '').trim();
   const language = String(body.language || 'en').trim();
-  const businesses = Array.isArray(body.businesses) ? body.businesses : [];
-
-  // Async architecture has no Vercel timeout pressure — allow much larger batches.
-  // 100 search-strings is comfortable for the Maps actor (~3-8 minutes).
-  const maxBatch = Math.min(100, Math.max(1, Number(body.maxBatch || 100)));
+  const keyword = String(body.keyword || '').trim();
 
   if (!token) return json(res, 400, { error: 'Missing Apify token' });
   if (!city) return json(res, 400, { error: 'Missing city' });
-  if (!businesses.length) return json(res, 400, { error: 'No businesses provided' });
-  if (businesses.length > maxBatch) {
-    return json(res, 400, { error: `Too many businesses (max ${maxBatch}). Split into batches.` });
+  if (!keyword) {
+    return json(res, 400, {
+      error: 'Missing keyword. New keyword-rank architecture requires keyword (the industry/category that was used in the YP scrape, e.g. "hvac" or "roofing").',
+    });
   }
 
   const locationQuery = state ? `${city}, ${state}` : city;
-  // CRITICAL FIX: search by NAME ONLY, let locationQuery do geo-filtering.
-  // Previous "Vista Window Cleaning Spokane, WA" was being treated as one
-  // long literal string by Maps, often returning unrelated results.
-  // Just "Vista Window Cleaning" + locationQuery="Spokane, WA" is what
-  // a real user would do in Google Maps.
-  const searchStrings = businesses.map(b => String(b.name).trim());
 
+  // ONE search, top 100 places. Cost: ~$0.70 per scan (vs many $ before).
+  // 100 is enough depth — if a business doesn't crack top 100 for its primary
+  // keyword in its own city, it's effectively invisible.
   const input = {
-    searchStringsArray: searchStrings,
+    searchStringsArray: [keyword],
     locationQuery,
-    // CRITICAL FIX: was 3, now 15. Maps often returns the right business
-    // at position #5-#10, especially for businesses with common names or
-    // many lookalikes ("LeafFilter Gutter Protection" appears as multiple
-    // franchise locations — we need to see all of them to find the right one).
-    maxCrawledPlacesPerSearch: 15,
+    maxCrawledPlacesPerSearch: 100,
     language,
     maxReviews: 0,
     maxImages: 0,
@@ -86,8 +87,9 @@ async function handler(req, res) {
       status: run.status,
       startedAt: run.startedAt,
       actor: MAPS_ACTOR,
-      // Echo input back so client can correlate businesses to results
-      searchedFor: businesses.length,
+      strategy: 'keyword-rank',
+      keyword,
+      locationQuery,
     });
   } catch (e) {
     return json(res, 500, { error: e.message || String(e) });
