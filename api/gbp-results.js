@@ -1,9 +1,20 @@
 // Vercel Serverless Function: POST /api/gbp-results
-// Fetches Maps actor results from a completed Apify run, matches each input
-// business against the returned profiles, returns merged result rows.
+// NEW STRATEGY: keyword-rank.
 //
-// Called by the client AFTER /api/scrape-status reports SUCCEEDED.
-// POST so we can pass the original businesses array (for name matching).
+// Receives:
+//   - datasetId from a completed keyword-rank Apify run (top 100 ranking
+//     businesses for keyword + city)
+//   - businesses array (the YP listings the user wants to qualify)
+//
+// For each business, find a match in the top 100 via:
+//   1. Phone digit match (last 7 digits)         — strongest
+//   2. Website host match                         — strongest
+//   3. Strong name similarity (≥0.85) + addr in city  — fallback
+//
+// Returns three useful states per business:
+//   - gbpFound=true, rank ≤ 20:   has GBP, ranks well (NOT a lead for SEO)
+//   - gbpFound=true, rank 21+:    has GBP but invisible (STRONG SEO lead)
+//   - gbpFound=false:             not in top 100 (probably no GBP — verify before pitching)
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 
@@ -15,6 +26,13 @@ function json(res, status, body) {
 
 function host(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+}
+
+function digits(s) { return String(s || '').replace(/\D/g, ''); }
+
+function phoneMatches(a, b) {
+  const da = digits(a), db = digits(b);
+  return da.length >= 7 && db.length >= 7 && da.slice(-7) === db.slice(-7);
 }
 
 function norm(s) {
@@ -51,14 +69,6 @@ function similarity(a, b) {
   return totalScore / shorter.length;
 }
 
-function addressContainsCity(address, city, state) {
-  const a = String(address || '').toLowerCase();
-  if (!a) return false;
-  const c = String(city || '').toLowerCase().trim();
-  const s = String(state || '').toLowerCase().trim();
-  return (c && a.includes(c)) || (s && a.includes(s));
-}
-
 function categories(x) {
   const out = [];
   const add = v => {
@@ -72,8 +82,9 @@ function categories(x) {
   return [...new Set(out.filter(Boolean))];
 }
 
-function mapsRow(x) {
+function mapsRow(x, rankPosition) {
   return {
+    rankPosition,
     name: x.title || x.name || '',
     placeId: x.placeId || x.cid || '',
     rating: Number(x.totalScore || x.rating || 0) || null,
@@ -88,71 +99,39 @@ function mapsRow(x) {
   };
 }
 
-// Generic words that don't add identity to a business name. If a GBP name is
-// ONLY made of these + the search keyword, it's a category listing, not a
-// real distinct business. ("Roofing Company", "Plumbing Services", etc.)
-const GENERIC_WORDS = new Set([
-  'company', 'service', 'services', 'contractor', 'contractors',
-  'pros', 'pro', 'expert', 'experts', 'shop', 'group', 'solutions',
-  'specialist', 'specialists', 'professional', 'professionals',
-]);
+// Match an input business against the rankings. Returns the ranked profile
+// + match metadata, or null if not found in top 100.
+function matchInRanking(business, rankings, city, state) {
+  const businessHost = business.website ? host(business.website) : '';
 
-function isGenericName(name) {
-  const words = norm(name).split(' ').filter(w => w.length > 2);
-  const meaningful = words.filter(w => !GENERIC_WORDS.has(w));
-  return meaningful.length <= 1;
-}
-
-// bestMatch — now with hard-reject rules to prevent false positives:
-//   1. Phone mismatch (both have phones, they don't match) → reject
-//      unless website host matches (strong override).
-//   2. Generic GBP names ("roofing company", "plumbing service") require
-//      a phone or website confirmation to be trusted.
-function bestMatch(business, mapsResults, city, state) {
-  let best = null;
-  for (const m of mapsResults) {
-    let score = similarity(business.name, m.name);
-    let phoneMatch = null;     // null = no info, true = match, false = mismatch
-    let websiteMatch = false;
-
-    // Website host = strong signal
-    if (business.websiteHost && m.websiteHost && business.websiteHost === m.websiteHost) {
-      score = Math.max(score, 0.98);
-      websiteMatch = true;
+  // Pass 1: hard signals — phone or website host. These are unambiguous.
+  for (const m of rankings) {
+    if (business.phone && m.phone && phoneMatches(business.phone, m.phone)) {
+      return { profile: m, matchType: 'phone' };
     }
-
-    // Phone digit match — both directions
-    if (business.phone && m.phone) {
-      const digits = s => String(s).replace(/\D/g, '');
-      const a = digits(business.phone);
-      const b = digits(m.phone);
-      if (a.length >= 7 && b.length >= 7) {
-        if (a.slice(-7) === b.slice(-7)) {
-          score = Math.max(score, 0.95);
-          phoneMatch = true;
-        } else {
-          phoneMatch = false;
-        }
-      }
+    if (businessHost && m.websiteHost && businessHost === m.websiteHost) {
+      return { profile: m, matchType: 'website' };
     }
-
-    // HARD REJECT 1: Phones disagree and no website match → not the same business.
-    // This kills the "every roofer matched to 'roofing company' (253) 216-6559" bug.
-    if (phoneMatch === false && !websiteMatch) continue;
-
-    // HARD REJECT 2: GBP name is generic (e.g. "roofing company") and we have
-    // no hard signal to confirm. Word-overlap alone isn't enough — every business
-    // with the keyword in its name would falsely match.
-    if (isGenericName(m.name) && phoneMatch !== true && !websiteMatch) continue;
-
-    // Soft boost: address confirms expected city/state
-    if (addressContainsCity(m.address, city, state)) {
-      score = Math.min(0.99, score + 0.10);
-    }
-
-    if (!best || score > best.score) best = { score, item: m };
   }
-  return best && best.score >= 0.65 ? best : null;
+
+  // Pass 2: strong name similarity + address confirms locality.
+  // Threshold raised to 0.85 (vs. 0.65 in the old per-name search) because
+  // here we're choosing among 100 different real businesses — false matches
+  // are easier and we want to be conservative.
+  const c = String(city || '').toLowerCase();
+  const s = String(state || '').toLowerCase();
+  let best = null;
+  for (const m of rankings) {
+    const score = similarity(business.name, m.name);
+    if (score < 0.85) continue;
+    const addr = String(m.address || '').toLowerCase();
+    const localityOk = !c || addr.includes(c) || (s && addr.includes(s));
+    if (!localityOk) continue;
+    if (!best || score > best.score) best = { score, profile: m };
+  }
+  if (best) return { profile: best.profile, matchType: 'name+address' };
+
+  return null;
 }
 
 async function handler(req, res) {
@@ -174,7 +153,7 @@ async function handler(req, res) {
   if (!datasetId) return json(res, 400, { error: 'Missing datasetId' });
   if (!businesses.length) return json(res, 400, { error: 'Missing businesses for matching' });
 
-  const url = `${APIFY_BASE}/datasets/${encodeURIComponent(datasetId)}/items?token=${encodeURIComponent(token)}&clean=true&limit=1000&format=json`;
+  const url = `${APIFY_BASE}/datasets/${encodeURIComponent(datasetId)}/items?token=${encodeURIComponent(token)}&clean=true&limit=200&format=json`;
   try {
     const r = await fetch(url);
     if (!r.ok) {
@@ -184,34 +163,62 @@ async function handler(req, res) {
       return json(res, r.status, { error: `Apify HTTP ${r.status}: ${detail.slice(0, 300)}` });
     }
     const items = await r.json();
-    const profiles = (items || []).map(mapsRow).filter(p => p.name);
+    // Apify preserves order from the search — first item = rank #1.
+    // Ghost listings (no phone/website/address) get their rank skipped because
+    // they don't represent real ranking positions in the local pack.
+    const rankings = (items || [])
+      .map((x, i) => mapsRow(x, i + 1))
+      .filter(p => p.name && (p.phone || p.website || p.address));
 
     const results = businesses.map(b => {
-      const match = bestMatch(b, profiles, city, state);
-      const gbp = match?.item || null;
+      const match = matchInRanking(b, rankings, city, state);
+      if (match) {
+        const gbp = match.profile;
+        return {
+          ...b,
+          gbpFound: true,
+          gbpRankPosition: gbp.rankPosition,
+          gbpMatchType: match.matchType,
+          gbpName: gbp.name,
+          gbpRating: gbp.rating,
+          gbpReviews: gbp.reviews,
+          gbpPrimaryCategory: gbp.primaryCategory,
+          gbpCategories: gbp.categories,
+          gbpAddress: gbp.address,
+          gbpPhone: gbp.phone,
+          gbpWebsite: gbp.website,
+          gbpMapsUrl: gbp.mapsUrl,
+        };
+      }
       return {
         ...b,
-        gbpFound: !!gbp,
-        gbpMatchScore: match ? Math.round(match.score * 100) : 0,
-        gbpName: gbp?.name || '',
-        gbpRating: gbp?.rating || null,
-        gbpReviews: gbp?.reviews || null,
-        gbpPrimaryCategory: gbp?.primaryCategory || '',
-        gbpCategories: gbp?.categories || [],
-        gbpAddress: gbp?.address || '',
-        gbpPhone: gbp?.phone || '',
-        gbpWebsite: gbp?.website || '',
-        gbpMapsUrl: gbp?.mapsUrl || '',
+        gbpFound: false,
+        gbpRankPosition: null,
+        gbpMatchType: null,
+        gbpName: '',
+        gbpRating: null,
+        gbpReviews: null,
+        gbpPrimaryCategory: '',
+        gbpCategories: [],
+        gbpAddress: '',
+        gbpPhone: '',
+        gbpWebsite: '',
+        gbpMapsUrl: '',
       };
     });
 
+    const found = results.filter(r => r.gbpFound);
     return json(res, 200, {
       ok: true,
+      strategy: 'keyword-rank',
       datasetId,
+      rankingsReturned: rankings.length,
       checked: businesses.length,
-      profilesReturned: profiles.length,
-      gbpFoundCount: results.filter(r => r.gbpFound).length,
-      noGbpCount: results.filter(r => !r.gbpFound).length,
+      gbpFoundCount: found.length,
+      gbpInTop10: found.filter(r => r.gbpRankPosition <= 10).length,
+      gbpInTop20: found.filter(r => r.gbpRankPosition <= 20).length,
+      gbpRanksPoorly: found.filter(r => r.gbpRankPosition > 20).length,
+      notFoundInTop100: results.length - found.length,
       results,
     });
   } catch (e) {
