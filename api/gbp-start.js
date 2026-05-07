@@ -1,6 +1,13 @@
 // Vercel Serverless Function: POST /api/gbp-start
-// STRATEGY: keyword-rank.
-// ONE Maps search for keyword in city, get top 100 ranking businesses.
+// Starts an Apify Google Maps run, searching for each input business by name.
+// Returns runId immediately; client polls /api/scrape-status, then calls
+// /api/gbp-results to fetch + match the dataset.
+//
+// NOTE: this is the per-business-name strategy. We tried a keyword-rank
+// strategy (one search for "hvac Spokane" → top 100 ranking businesses)
+// but the Maps actor returned poor data for short generic keywords. Reverted.
+// The `keyword` field in the request body is ignored here (the HTML still
+// sends it for forward compat) — harmless.
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 const MAPS_ACTOR = 'compass~crawler-google-places';
@@ -24,24 +31,30 @@ async function handler(req, res) {
   const city = String(body.city || '').trim();
   const state = String(body.state || body.region || '').trim();
   const language = String(body.language || 'en').trim();
-  const keyword = String(body.keyword || '').trim();
+  const businesses = Array.isArray(body.businesses) ? body.businesses : [];
+  // Async architecture has no Vercel timeout pressure — allow large batches.
+  const maxBatch = Math.min(100, Math.max(1, Number(body.maxBatch || 100)));
 
   if (!token) return json(res, 400, { error: 'Missing Apify token' });
   if (!city) return json(res, 400, { error: 'Missing city' });
-  if (!keyword) return json(res, 400, { error: 'Missing keyword' });
+  if (!businesses.length) return json(res, 400, { error: 'No businesses provided' });
+  if (businesses.length > maxBatch) {
+    return json(res, 400, { error: `Too many businesses (max ${maxBatch}). Split into batches.` });
+  }
 
   const locationQuery = state ? `${city}, ${state}` : city;
-
-  // CRITICAL: combine keyword + location into ONE search phrase, like a real
-  // Google Maps user types. The actor's behavior with short generic keywords
-  // (e.g. "hvac") + separate locationQuery is unreliable — sometimes returns
-  // 1-5 results instead of 100. Combined phrase is robust.
-  const combinedSearch = `${keyword} ${locationQuery}`;
+  // Search by NAME ONLY; locationQuery does the geo-filtering. Concatenating
+  // "Vista Window Cleaning Spokane, WA" was previously treated as one long
+  // literal string by Maps and returned irrelevant results.
+  const searchStrings = businesses.map(b => String(b.name).trim());
 
   const input = {
-    searchStringsArray: [combinedSearch],
-    locationQuery,                       // kept as secondary geo signal
-    maxCrawledPlacesPerSearch: 100,
+    searchStringsArray: searchStrings,
+    locationQuery,
+    // 15 results per search-string. Maps often returns the right business at
+    // position 5-10, especially for businesses with common names or many
+    // lookalike franchise locations.
+    maxCrawledPlacesPerSearch: 15,
     language,
     maxReviews: 0,
     maxImages: 0,
@@ -75,10 +88,8 @@ async function handler(req, res) {
       status: run.status,
       startedAt: run.startedAt,
       actor: MAPS_ACTOR,
-      strategy: 'keyword-rank',
-      keyword,
-      combinedSearch,
-      locationQuery,
+      strategy: 'per-business-name',
+      searchedFor: businesses.length,
     });
   } catch (e) {
     return json(res, 500, { error: e.message || String(e) });
