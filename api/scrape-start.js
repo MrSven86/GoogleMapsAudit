@@ -1,12 +1,9 @@
 // Vercel Serverless Function: POST /api/scrape-start
 // Starts an Apify actor run for the given source. Returns immediately with runId.
 // The client then polls /api/scrape-status to wait for completion.
-//
-// This decouples Apify run-time (5-15 min) from Vercel function-time (60s).
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 
-// Per-source actor + input builder
 const SOURCES = {
   bbb: {
     actor: 'crawlerbros~bbb-scraper',
@@ -20,26 +17,27 @@ const SOURCES = {
         apifyProxyGroups: ['RESIDENTIAL'],
         apifyProxyCountry: 'US',
       },
-      // Optional location fields (ignored if actor doesn't accept them)
       locations: state ? [`${city}, ${state}`] : [city],
       maxRecordsPerLocation: maxResults,
     }),
   },
   yelp: {
-    actor: 'tri_angle~yelp-scraper',
+    // Swapped from tri_angle/yelp-scraper (HTML scraping → blocked by Yelp)
+    // to axlymxp/yelp-scraper which uses Yelp's official API.
+    // Schema is completely different — singular `term` and `location` fields.
+    // Caveats:
+    //   - New actor, only 2 total users, no rating yet
+    //   - Pricing $2/1000 results
+    //   - Yelp API may have its own result-count limits (typically 50/query)
+    actor: 'axlymxp~yelp-scraper',
     buildInput: ({ keyword, city, state, maxResults }) => ({
-      searchTerms: [keyword],
-      locations: [state ? `${city}, ${state}` : city],
-      searchTerm: keyword,
+      term: keyword,
       location: state ? `${city}, ${state}` : city,
-      maxItems: maxResults,
+      // Some axlymxp actors accept maxResults, harmless if ignored
       maxResults,
-      proxyConfiguration: { useApifyProxy: true },
     }),
   },
   yellowpages: {
-    // Swapped from automation-lab to trudax — better established (4.6K users),
-    // cheaper ($2/1000 results), clean 3-field input schema.
     actor: 'trudax~yellow-pages-us-scraper',
     buildInput: ({ keyword, city, state, maxResults }) => ({
       search: keyword,
@@ -80,7 +78,6 @@ async function handler(req, res) {
 
   const input = config.buildInput({ keyword, city, state, maxResults });
 
-  // Start the actor — returns immediately, doesn't wait for completion
   const url = `${APIFY_BASE}/acts/${config.actor}/runs?token=${encodeURIComponent(token)}`;
   try {
     const r = await fetch(url, {
@@ -104,7 +101,6 @@ async function handler(req, res) {
       status: run.status,
       startedAt: run.startedAt,
       actor: config.actor,
-      // Echo what we sent for debugging
       inputSent: input,
     });
   } catch (e) {
