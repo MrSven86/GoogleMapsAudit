@@ -32,16 +32,12 @@ function similarity(a, b) {
   const A = norm(a), B = norm(b);
   if (!A || !B) return 0;
   if (A === B) return 1;
-  // Strong containment: one fully contains the other
   if (A.includes(B) || B.includes(A)) return 0.94;
 
-  // Word-level matching with partial-overlap support
   const wa = A.split(' ').filter(w => w.length > 2);
   const wb = B.split(' ').filter(w => w.length > 2);
   if (!wa.length || !wb.length) return 0;
 
-  // For each word in the shorter list, find best partial match in longer list
-  // Score: 1.0 for exact word match, 0.7 for partial (substring), 0 otherwise
   const [shorter, longer] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
   let totalScore = 0;
   for (const w of shorter) {
@@ -52,14 +48,9 @@ function similarity(a, b) {
     }
     totalScore += bestWordScore;
   }
-  // Score = average per word, weighted slightly toward shorter side
-  // (so "Vista" matches "Vista Window Cleaning LLC" with high confidence
-  //  even though there are 3 unmatched words on the longer side)
   return totalScore / shorter.length;
 }
 
-// Bonus signal: does the address contain the expected city/state?
-// Used to boost matches when address partially confirms the location.
 function addressContainsCity(address, city, state) {
   const a = String(address || '').toLowerCase();
   if (!a) return false;
@@ -97,38 +88,70 @@ function mapsRow(x) {
   };
 }
 
-// bestMatch now takes city/state context. Address-confirms-location is a
-// secondary signal: a 0.65 name-match in the right city is more trustworthy
-// than a 0.65 name-match somewhere else.
+// Generic words that don't add identity to a business name. If a GBP name is
+// ONLY made of these + the search keyword, it's a category listing, not a
+// real distinct business. ("Roofing Company", "Plumbing Services", etc.)
+const GENERIC_WORDS = new Set([
+  'company', 'service', 'services', 'contractor', 'contractors',
+  'pros', 'pro', 'expert', 'experts', 'shop', 'group', 'solutions',
+  'specialist', 'specialists', 'professional', 'professionals',
+]);
+
+function isGenericName(name) {
+  const words = norm(name).split(' ').filter(w => w.length > 2);
+  const meaningful = words.filter(w => !GENERIC_WORDS.has(w));
+  return meaningful.length <= 1;
+}
+
+// bestMatch — now with hard-reject rules to prevent false positives:
+//   1. Phone mismatch (both have phones, they don't match) → reject
+//      unless website host matches (strong override).
+//   2. Generic GBP names ("roofing company", "plumbing service") require
+//      a phone or website confirmation to be trusted.
 function bestMatch(business, mapsResults, city, state) {
   let best = null;
   for (const m of mapsResults) {
     let score = similarity(business.name, m.name);
+    let phoneMatch = null;     // null = no info, true = match, false = mismatch
+    let websiteMatch = false;
 
-    // Hard signals — override name match if they hit
+    // Website host = strong signal
     if (business.websiteHost && m.websiteHost && business.websiteHost === m.websiteHost) {
       score = Math.max(score, 0.98);
+      websiteMatch = true;
     }
+
+    // Phone digit match — both directions
     if (business.phone && m.phone) {
       const digits = s => String(s).replace(/\D/g, '');
-      if (digits(business.phone).length >= 7 && digits(business.phone).slice(-7) === digits(m.phone).slice(-7)) {
-        score = Math.max(score, 0.95);
+      const a = digits(business.phone);
+      const b = digits(m.phone);
+      if (a.length >= 7 && b.length >= 7) {
+        if (a.slice(-7) === b.slice(-7)) {
+          score = Math.max(score, 0.95);
+          phoneMatch = true;
+        } else {
+          phoneMatch = false;
+        }
       }
     }
 
-    // Soft signal — address confirms city/state. Adds +0.10 to the score,
-    // capped at 0.99. This is what catches "Vista Window Cleaning" matching
-    // when the GBP name is "Vista Window Cleaning LLC" + address shows "Spokane Valley, WA"
+    // HARD REJECT 1: Phones disagree and no website match → not the same business.
+    // This kills the "every roofer matched to 'roofing company' (253) 216-6559" bug.
+    if (phoneMatch === false && !websiteMatch) continue;
+
+    // HARD REJECT 2: GBP name is generic (e.g. "roofing company") and we have
+    // no hard signal to confirm. Word-overlap alone isn't enough — every business
+    // with the keyword in its name would falsely match.
+    if (isGenericName(m.name) && phoneMatch !== true && !websiteMatch) continue;
+
+    // Soft boost: address confirms expected city/state
     if (addressContainsCity(m.address, city, state)) {
       score = Math.min(0.99, score + 0.10);
     }
 
     if (!best || score > best.score) best = { score, item: m };
   }
-  // CRITICAL FIX: threshold lowered from 0.78 to 0.65.
-  // Combined with the address-confirm bonus above, a true match in the
-  // right city now scores ~0.75-0.85, while false matches in other cities
-  // stay below 0.65 and get filtered out.
   return best && best.score >= 0.65 ? best : null;
 }
 
