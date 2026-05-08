@@ -1,20 +1,16 @@
 // Vercel Serverless Function: POST /api/gbp-results
-// Fetches Maps actor results from a completed Apify run, matches each input
-// business against the returned profiles, returns merged result rows.
+// Strategy: per-business-name matching against Maps results.
 //
-// Strategy: per-business-name (gbp-start searched each business by name).
-// All matching guards developed earlier:
-//   1. Ghost listings (no phone, no website, no address) — never match.
-//   2. Generic GBP names ("roofing company") — require phone or website confirm.
-//   3. Phone mismatch + no website override → reject.
-//   4. Shared hosts (facebook.com, yelp.com, ...) don't count as website match.
-//   5. Address-confirms-locality adds +0.10 score bonus.
-//   6. 0.65 similarity threshold for fallback matches.
+// Hard match signals (any one is enough to confirm match):
+//   - Phone digits match (last 7)
+//   - First-party website host match
+//   - Street address match  ← NEW: catches Sturm/Shaw cases where business
+//     has same physical location but BBB has stale phone number
+// Soft signals: name similarity, address-contains-city.
+// Hard reject: phone mismatch + no other hard signal, ghost listings, generic names.
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 
-// Hosts shared by millions of unrelated businesses. Two facebook.com URLs
-// don't prove anything. Real first-party domains do.
 const SHARED_HOSTS = new Set([
   'facebook.com', 'fb.com', 'instagram.com', 'twitter.com', 'x.com',
   'linkedin.com', 'tiktok.com', 'youtube.com', 'pinterest.com',
@@ -56,6 +52,72 @@ function norm(s) {
     .replace(/\b(llc|inc|ltd|co|company|corp|corporation|pllc|lp|llp|ab|gmbh|the)\b/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// Street-level address normalizer. We want to match "1112 N Nelson St, Spokane, WA"
+// across BBB and GBP even if one writes "Street" and the other writes "St", or
+// one has the suite number and the other doesn't.
+// Strategy: extract just the street-number + street-name portion (drop city,
+// state, zip, suite, unit, country). Then normalize abbreviations.
+const STREET_SUFFIXES = {
+  'street': 'st', 'st': 'st',
+  'avenue': 'ave', 'ave': 'ave', 'av': 'ave',
+  'boulevard': 'blvd', 'blvd': 'blvd',
+  'road': 'rd', 'rd': 'rd',
+  'drive': 'dr', 'dr': 'dr',
+  'lane': 'ln', 'ln': 'ln',
+  'court': 'ct', 'ct': 'ct',
+  'place': 'pl', 'pl': 'pl',
+  'highway': 'hwy', 'hwy': 'hwy',
+  'parkway': 'pkwy', 'pkwy': 'pkwy',
+  'circle': 'cir', 'cir': 'cir',
+  'terrace': 'ter', 'ter': 'ter',
+  'way': 'way',
+  'trail': 'trl', 'trl': 'trl',
+};
+const DIRECTIONALS = {
+  'north': 'n', 'n': 'n',
+  'south': 's', 's': 's',
+  'east': 'e', 'e': 'e',
+  'west': 'w', 'w': 'w',
+  'northeast': 'ne', 'ne': 'ne',
+  'northwest': 'nw', 'nw': 'nw',
+  'southeast': 'se', 'se': 'se',
+  'southwest': 'sw', 'sw': 'sw',
+};
+
+function streetKey(address) {
+  if (!address) return '';
+  // Take everything before the first comma — that's the street line.
+  let s = String(address).split(',')[0].toLowerCase().trim();
+  // Strip suite/unit/apt etc.
+  s = s.replace(/\b(suite|ste|unit|apt|apartment|#)\s*[\w-]+/gi, '').trim();
+  s = s.replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!s) return '';
+  const tokens = s.split(' ').map(t => {
+    if (DIRECTIONALS[t]) return DIRECTIONALS[t];
+    if (STREET_SUFFIXES[t]) return STREET_SUFFIXES[t];
+    return t;
+  });
+  return tokens.join(' ').trim();
+}
+
+function addressesMatch(a, b) {
+  const ka = streetKey(a);
+  const kb = streetKey(b);
+  if (!ka || !kb) return false;
+  if (ka === kb) return true;
+  // Allow: one side has the suite cleaned, the other has slightly different
+  // tokenization. Require: same street number + same street-name core word.
+  const numA = (ka.match(/^\d+/) || [''])[0];
+  const numB = (kb.match(/^\d+/) || [''])[0];
+  if (!numA || numA !== numB) return false;
+  // Same street number; check substantial overlap in remaining tokens.
+  const restA = ka.replace(/^\d+\s*/, '').split(' ').filter(Boolean);
+  const restB = kb.replace(/^\d+\s*/, '').split(' ').filter(Boolean);
+  if (!restA.length || !restB.length) return false;
+  const overlap = restA.filter(t => restB.includes(t)).length;
+  return overlap >= Math.min(restA.length, restB.length) * 0.6;
 }
 
 function similarity(a, b) {
@@ -146,8 +208,9 @@ function bestMatch(business, mapsResults, city, state) {
     let score = similarity(business.name, m.name);
     let phoneMatch = null;
     let websiteMatch = false;
+    let addressMatch = false;
 
-    // Website match — only counts when both sides are first-party domains.
+    // Hard signal: same first-party website host.
     if (businessHostUseful && m.websiteHost && businessHost === m.websiteHost && isFirstPartyHost(m.websiteHost)) {
       score = Math.max(score, 0.98);
       websiteMatch = true;
@@ -168,13 +231,26 @@ function bestMatch(business, mapsResults, city, state) {
       }
     }
 
-    // Reject: phones disagree and no website override.
-    if (phoneMatch === false && !websiteMatch) continue;
+    // NEW hard signal: street address match. Same building = same business
+    // even when phone numbers differ (different lines, stale BBB data, etc.)
+    if (business.address && m.address && addressesMatch(business.address, m.address)) {
+      // Require some name plausibility — addresses match but a totally
+      // unrelated business at the same multi-tenant building shouldn't pass.
+      // A modest name-similarity floor (0.4) handles this.
+      if (score >= 0.4) {
+        score = Math.max(score, 0.96);
+        addressMatch = true;
+      }
+    }
 
-    // Reject: generic GBP name with no hard signal to confirm.
-    if (isGenericName(m.name) && phoneMatch !== true && !websiteMatch) continue;
+    // Hard reject: phones disagree AND no other hard signal.
+    // (Address match is now an "other hard signal" — Sturm/Shaw will pass here.)
+    if (phoneMatch === false && !websiteMatch && !addressMatch) continue;
 
-    // Bonus: address confirms expected city/state.
+    // Hard reject: generic GBP name with no hard signal.
+    if (isGenericName(m.name) && phoneMatch !== true && !websiteMatch && !addressMatch) continue;
+
+    // Soft bonus: address contains expected city/state.
     if (addressContainsCity(m.address, city, state)) {
       score = Math.min(0.99, score + 0.10);
     }
