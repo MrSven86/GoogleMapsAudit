@@ -1,6 +1,6 @@
 // Vercel Serverless Function: POST /api/scrape-start
-// Starts an Apify actor run for the given source. Returns immediately with runId.
-// The client then polls /api/scrape-status to wait for completion.
+// THIS IS FOR DIRECTORY SCRAPING (BBB / Yelp / Yellow Pages).
+// Do NOT confuse with /api/gbp-start which is for Google Maps lookups.
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 
@@ -22,18 +22,12 @@ const SOURCES = {
     }),
   },
   yelp: {
-    // Swapped from tri_angle/yelp-scraper (HTML scraping → blocked by Yelp)
-    // to axlymxp/yelp-scraper which uses Yelp's official API.
-    // Schema is completely different — singular `term` and `location` fields.
-    // Caveats:
-    //   - New actor, only 2 total users, no rating yet
-    //   - Pricing $2/1000 results
-    //   - Yelp API may have its own result-count limits (typically 50/query)
+    // axlymxp/yelp-scraper — uses Yelp's official API, not HTML scraping.
+    // Schema: term (singular) + location (singular).
     actor: 'axlymxp~yelp-scraper',
     buildInput: ({ keyword, city, state, maxResults }) => ({
       term: keyword,
       location: state ? `${city}, ${state}` : city,
-      // Some axlymxp actors accept maxResults, harmless if ignored
       maxResults,
     }),
   },
