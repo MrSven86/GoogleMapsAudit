@@ -1,29 +1,30 @@
 // Vercel Serverless Function: POST /api/scrape-start
-// THIS IS FOR DIRECTORY SCRAPING (BBB / Yelp / Yellow Pages).
-// Do NOT confuse with /api/gbp-start which is for Google Maps lookups.
+// Directory scraping (BBB / Yelp / Yellow Pages).
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 
 const SOURCES = {
   bbb: {
-    actor: 'crawlerbros~bbb-scraper',
+    // Swapped from crawlerbros/bbb-scraper.
+    // Old actor capped at ~14 results regardless of maxRecordsGlobal — silently
+    // ignored `locations` field and didn't paginate properly.
+    // scrapestorm actor explicitly accepts `place` and supports pagination.
+    // Verified schema (from official JS API example):
+    //   keyword:  string (singular)
+    //   place:    string
+    //   sort_by:  "Relevance" | "Distance" | "Rating"
+    //   maxitems: integer
+    // Note: this actor is $14.99/month flat-rate (not per-result).
+    actor: 'scrapestorm~bbb-business-directory-scraper---cheap-fast',
     buildInput: ({ keyword, city, state, maxResults }) => ({
-      keywords: keyword,
-      maxRecordsGlobal: maxResults,
-      minRating: 'any',
-      accreditedOnly: false,
-      proxyConfiguration: {
-        useApifyProxy: true,
-        apifyProxyGroups: ['RESIDENTIAL'],
-        apifyProxyCountry: 'US',
-      },
-      locations: state ? [`${city}, ${state}`] : [city],
-      maxRecordsPerLocation: maxResults,
+      keyword,
+      place: state ? `${city}, ${state}` : city,
+      sort_by: 'Relevance',
+      maxitems: maxResults,
     }),
   },
   yelp: {
-    // axlymxp/yelp-scraper — uses Yelp's official API, not HTML scraping.
-    // Schema: term (singular) + location (singular).
+    // axlymxp/yelp-scraper — uses Yelp's official API.
     actor: 'axlymxp~yelp-scraper',
     buildInput: ({ keyword, city, state, maxResults }) => ({
       term: keyword,
