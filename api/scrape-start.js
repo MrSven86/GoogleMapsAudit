@@ -5,26 +5,29 @@ const APIFY_BASE = 'https://api.apify.com/v2';
 
 const SOURCES = {
   bbb: {
-    // Swapped from crawlerbros/bbb-scraper.
-    // Old actor capped at ~14 results regardless of maxRecordsGlobal — silently
-    // ignored `locations` field and didn't paginate properly.
-    // scrapestorm actor explicitly accepts `place` and supports pagination.
-    // Verified schema (from official JS API example):
-    //   keyword:  string (singular)
-    //   place:    string
-    //   sort_by:  "Relevance" | "Distance" | "Rating"
-    //   maxitems: integer
-    // Note: this actor is $14.99/month flat-rate (not per-result).
-    actor: 'scrapestorm~bbb-business-directory-scraper---cheap-fast',
+    // haketa/bbb-scraper — pay-per-result, supports keyword + location + pagination.
+    // Verified schema from official docs:
+    //   keyword, location, country, accreditedOnly, sort, scrapeDetails,
+    //   maxResults, maxPages, requestDelay, maxConcurrency
+    //
+    // scrapeDetails:true costs $6/1000 vs $2/1000 search-only, but unlocks
+    // website, email, ownerName, yearsInBusiness, complaintsTotal — exactly
+    // the fields needed for outreach. Worth the extra ~$0.40 per 100-result scan.
+    actor: 'haketa~bbb-scraper',
     buildInput: ({ keyword, city, state, maxResults }) => ({
       keyword,
-      place: state ? `${city}, ${state}` : city,
-      sort_by: 'Relevance',
-      maxitems: maxResults,
+      location: state ? `${city}, ${state}` : city,
+      country: 'USA',
+      maxResults,
+      maxPages: Math.ceil(maxResults / 20) + 2,  // ~20 results/page per docs
+      scrapeDetails: true,
+      sort: 'Relevance',
+      accreditedOnly: false,
+      requestDelay: 1500,
+      maxConcurrency: 1,
     }),
   },
   yelp: {
-    // axlymxp/yelp-scraper — uses Yelp's official API.
     actor: 'axlymxp~yelp-scraper',
     buildInput: ({ keyword, city, state, maxResults }) => ({
       term: keyword,
