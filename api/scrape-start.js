@@ -5,22 +5,19 @@ const APIFY_BASE = 'https://api.apify.com/v2';
 
 const SOURCES = {
   bbb: {
-    // haketa/bbb-scraper — pay-per-result, supports keyword + location + pagination.
-    // Verified schema from official docs:
-    //   keyword, location, country, accreditedOnly, sort, scrapeDetails,
-    //   maxResults, maxPages, requestDelay, maxConcurrency
-    //
-    // scrapeDetails:true costs $6/1000 vs $2/1000 search-only, but unlocks
-    // website, email, ownerName, yearsInBusiness, complaintsTotal — exactly
-    // the fields needed for outreach. Worth the extra ~$0.40 per 100-result scan.
+    // haketa/bbb-scraper, search-mode only ($2/1000 results).
+    // scrapeDetails:false because detail mode = 1 request per business with
+    // 1500ms delay + concurrency 1 = 15+ min for 100 results. Search mode
+    // gives us name, phone, address, BBB rating, accredited, categories,
+    // profileUrl — enough for BBB-as-enrichment workflow.
     actor: 'haketa~bbb-scraper',
     buildInput: ({ keyword, city, state, maxResults }) => ({
       keyword,
       location: state ? `${city}, ${state}` : city,
       country: 'USA',
       maxResults,
-      maxPages: Math.ceil(maxResults / 20) + 2,  // ~20 results/page per docs
-      scrapeDetails: true,
+      maxPages: Math.ceil(maxResults / 20) + 2,
+      scrapeDetails: false,
       sort: 'Relevance',
       accreditedOnly: false,
       requestDelay: 1500,
