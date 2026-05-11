@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Directory Scanner v4 — Polling architecture</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg: #0a0a0a;
@@ -198,7 +199,7 @@ a:hover{text-decoration:underline}
   <div class="results-top">
     <h2 id="resultsTitle">Results</h2>
     <div class="actions">
-      <button class="btn-secondary" onclick="exportCsv()">Export CSV</button>
+      <button class="btn-secondary" onclick="exportCsv()">Export XLSX</button>
       <button class="btn-secondary" onclick="clearResults()">Clear</button>
     </div>
   </div>
@@ -568,6 +569,7 @@ async function checkGbpForSelected() {
   const city = document.getElementById('city').value.trim();
   const state = document.getElementById('state').value.trim();
   const language = document.getElementById('language').value;
+  const keyword = document.getElementById('keyword').value.trim();
 
   if (!token) return showError('Apify token required');
   if (!city) return showError('City required');
@@ -578,6 +580,7 @@ async function checkGbpForSelected() {
     phone: businesses[i].phone,
     website: businesses[i].website,
     websiteHost: businesses[i].websiteHost,
+    address: businesses[i].address,
   }));
 
   pollStartedAt = Date.now();
@@ -588,7 +591,7 @@ async function checkGbpForSelected() {
     const res = await fetch('/api/gbp-start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ apifyToken: token, city, state, language, keyword, businesses: payloadBusinesses }),
+      body: JSON.stringify({ apifyToken: token, city, state, language, keyword, businesses: payloadBusinesses }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
@@ -714,29 +717,45 @@ async function fetchGbpResults(datasetId) {
   }
 }
 
-// ── CSV export ──
+// ── XLSX export ──
+// Function name stays exportCsv() so onclick handler keeps working.
+// Outputs a real .xlsx file (not CSV) — opens correctly in Excel on all
+// language versions without delimiter-parsing problems.
 function exportCsv() {
   if (!businesses.length) return;
+  if (typeof XLSX === 'undefined') {
+    alert('XLSX library not loaded. Check your network connection and reload.');
+    return;
+  }
   const cols = [
     'source', 'name', 'phone', 'website', 'address',
     'rating', 'reviews', 'bbbRating', 'accredited', 'yearsInBusiness', 'ownerName',
     'gbpFound', 'gbpMatchScore', 'gbpName', 'gbpRating', 'gbpReviews', 'gbpPrimaryCategory', 'gbpAddress', 'gbpPhone', 'gbpWebsite', 'gbpMapsUrl',
     'profileUrl',
   ];
-  const csv = [cols.join(',')].concat(
-    businesses.map(b => cols.map(c => {
+  const rows = businesses.map(b => {
+    const row = {};
+    cols.forEach(c => {
       const v = b[c];
-      const s = Array.isArray(v) ? v.join('|') : (v == null ? '' : String(v));
-      return `"${s.replace(/"/g, '""')}"`;
-    }).join(','))
-  ).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+      row[c] = Array.isArray(v) ? v.join(' | ') : (v == null ? '' : v);
+    });
+    return row;
+  });
+  const ws = XLSX.utils.json_to_sheet(rows, { header: cols });
+  // Auto-size columns based on header + first 50 rows
+  ws['!cols'] = cols.map(c => {
+    let maxLen = c.length;
+    for (let i = 0; i < Math.min(rows.length, 50); i++) {
+      const v = String(rows[i][c] ?? '');
+      if (v.length > maxLen) maxLen = v.length;
+    }
+    return { wch: Math.min(maxLen + 2, 60) };
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Directory Scan');
   const city = document.getElementById('city').value.trim().replace(/\s+/g, '-').toLowerCase();
   const kw = document.getElementById('keyword').value.trim().replace(/\s+/g, '-').toLowerCase();
-  a.download = `directory-scan-${kw}-${city}.csv`;
-  a.click();
+  XLSX.writeFile(wb, `directory-scan-${kw}-${city}.xlsx`);
 }
 
 function clearResults() {
