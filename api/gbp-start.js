@@ -6,6 +6,13 @@
 // Starts a Google Maps Apify run searching for each input business by name.
 // Returns runId immediately; client polls /api/scrape-status, then calls
 // /api/gbp-results to fetch + match the dataset.
+//
+// STRATEGY: One targeted search per business. Query format:
+//   "{business name} {city} {state}"
+// This forces Google Maps to return the SPECIFIC business, not popular-
+// places fallback. No locationQuery — that triggers fallback behavior
+// where Apify returns generic nearby businesses (CVS, Costco, etc.) when
+// it can't find an exact match.
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 const MAPS_ACTOR = 'compass~crawler-google-places';
@@ -18,6 +25,7 @@ function json(res, status, body) {
 
 async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' });
+
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
@@ -39,14 +47,26 @@ async function handler(req, res) {
     return json(res, 400, { error: `Too many businesses (max ${maxBatch}). Split into batches.` });
   }
 
-  const locationQuery = state ? `${city}, ${state}` : city;
-  // Search Maps by business name only; locationQuery handles geo-filtering.
-  const searchStrings = businesses.map(b => String(b.name).trim());
+  // Build one targeted query per business: "{name} {city} {state}".
+  // Apify treats each string as a separate Maps search. Google's own
+  // ranking returns the matching business as #1 result in almost every case.
+  const geoSuffix = state ? `${city} ${state}` : city;
+  const searchStrings = businesses
+    .map(b => String(b.name || '').trim())
+    .filter(Boolean)
+    .map(name => `${name} ${geoSuffix}`.trim());
+
+  if (!searchStrings.length) {
+    return json(res, 400, { error: 'No valid business names to search' });
+  }
 
   const input = {
     searchStringsArray: searchStrings,
-    locationQuery,
-    maxCrawledPlacesPerSearch: 15,
+    // NO locationQuery — it triggers the fallback-to-popular-places
+    // behavior that returns CVS, Costco, Wingstop, etc. when Apify
+    // can't find an exact match. The geo terms in the search string
+    // itself give us location targeting without that fallback.
+    maxCrawledPlacesPerSearch: 3, // Top 3 is plenty — we only need #1 in most cases
     language,
     maxReviews: 0,
     maxImages: 0,
@@ -58,6 +78,7 @@ async function handler(req, res) {
   };
 
   const url = `${APIFY_BASE}/acts/${MAPS_ACTOR}/runs?token=${encodeURIComponent(token)}`;
+
   try {
     const r = await fetch(url, {
       method: 'POST',
@@ -80,8 +101,8 @@ async function handler(req, res) {
       status: run.status,
       startedAt: run.startedAt,
       actor: MAPS_ACTOR,
-      strategy: 'per-business-name',
-      searchedFor: businesses.length,
+      strategy: 'per-business-name-with-geo',
+      searchedFor: searchStrings.length,
     });
   } catch (e) {
     return json(res, 500, { error: e.message || String(e) });
