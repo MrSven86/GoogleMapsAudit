@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mass Lead Finder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f1115;
+    color: #e6e9ef;
+    margin: 0;
+    padding: 0;
+  }
+  .nav {
+    background: #1a1d24;
+    padding: 12px 24px;
+    border-bottom: 1px solid #2a2e38;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .nav a {
+    color: #9ba1ad;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .nav a:hover { background: #2a2e38; color: #fff; }
+  .nav a.active { background: #3b82f6; color: #fff; }
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+  }
+  .subtitle {
+    color: #9ba1ad;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: #1a1d24;
+    border: 1px solid #2a2e38;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 100px 120px;
+    gap: 12px;
+    align-items: end;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: #9ba1ad;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .field input {
+    width: 100%;
+    background: #0f1115;
+    border: 1px solid #2a2e38;
+    color: #e6e9ef;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+  .token-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  button.primary {
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    height: 40px;
+  }
+  button.primary:hover { background: #2563eb; }
+  button.primary:disabled { background: #2a2e38; cursor: not-allowed; }
+  button.secondary {
+    background: #2a2e38;
+    color: #e6e9ef;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button.secondary:hover { background: #3a3e48; }
+  .progress {
+    margin-top: 16px;
+    padding: 16px;
+    background: #0f1115;
+    border-radius: 8px;
+    border: 1px solid #2a2e38;
+    font-family: monospace;
+    font-size: 13px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .progress-line {
+    padding: 4px 0;
+    color: #9ba1ad;
+  }
+  .progress-line.success { color: #10b981; }
+  .progress-line.error { color: #ef4444; }
+  .progress-line.info { color: #60a5fa; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .stat {
+    background: #0f1115;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #2a2e38;
+  }
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: #9ba1ad;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: #0f1115;
+    color: #9ba1ad;
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #2a2e38;
+    position: sticky;
+    top: 0;
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a2e38;
+  }
+  tr:hover td { background: #0f1115; }
+  .email-cell { color: #10b981; font-weight: 500; }
+  .email-cell.none { color: #6b7280; font-style: italic; }
+  .source-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .source-website { background: #1e3a8a; color: #93c5fd; }
+  .source-facebook { background: #1e40af; color: #bfdbfe; }
+  .source-none { background: #374151; color: #9ca3af; }
+  .table-wrap {
+    max-height: 600px;
+    overflow-y: auto;
+  }
+  a.link { color: #60a5fa; text-decoration: none; }
+  a.link:hover { text-decoration: underline; }
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/">Bulk Rank Checker</a>
+  <a href="/maps-rank-tracker.html">Grid Tracker</a>
+  <a href="/seo-rank-checker.html">SEO Rank</a>
+  <a href="/business_presence_scanner.html">Presence Scanner</a>
+  <a href="/competitor-audit.html">Competitor Audit</a>
+  <a href="/industry-discovery.html">Industry Discovery</a>
+  <a href="/mass-lead-finder.html" class="active">Mass Lead Finder</a>
+</nav>
+
+<div class="container">
+  <h1>Mass Lead Finder</h1>
+  <p class="subtitle">Search Google Maps + scrape websites + fall back to Facebook. Output: business list with emails.</p>
+
+  <div class="card">
+    <div class="token-row">
+      <div class="field">
+        <label>Apify Token</label>
+        <input type="password" id="apifyToken" placeholder="apify_api_..." />
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Keyword</label>
+        <input type="text" id="keyword" placeholder="pressure washing" />
+      </div>
+      <div class="field">
+        <label>City</label>
+        <input type="text" id="city" placeholder="Tampa" />
+      </div>
+      <div class="field">
+        <label>State</label>
+        <input type="text" id="state" placeholder="FL" maxlength="2" />
+      </div>
+      <button class="primary" id="runBtn" onclick="run()">Find Leads</button>
+    </div>
+
+    <div class="form-grid" style="margin-top: 12px; grid-template-columns: 200px 1fr;">
+      <div class="field">
+        <label>Max Results</label>
+        <input type="number" id="maxResults" value="100" min="10" max="200" />
+      </div>
+    </div>
+
+    <div class="progress" id="progress" style="display:none;"></div>
+
+    <div class="stats" id="stats" style="display:none;">
+      <div class="stat"><div class="stat-value" id="statBusinesses">0</div><div class="stat-label">Businesses</div></div>
+      <div class="stat"><div class="stat-value" id="statWebsites">0</div><div class="stat-label">With Website</div></div>
+      <div class="stat"><div class="stat-value" id="statEmails">0</div><div class="stat-label">Emails Found</div></div>
+      <div class="stat"><div class="stat-value" id="statHitRate">0%</div><div class="stat-label">Hit Rate</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="resultsCard" style="display:none;">
+    <div class="toolbar">
+      <strong>Results</strong>
+      <div>
+        <button class="secondary" onclick="exportXLSX()">Export XLSX</button>
+        <button class="secondary" onclick="exportCSV()">Export CSV</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Website</th>
+            <th>Facebook</th>
+            <th>Email</th>
+            <th>Source</th>
+            <th>GBP</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// State
+// ============================================================
+let businesses = []; // { name, phone, website, facebook, email, emailSource, gbpUrl }
+
+// ============================================================
+// Token persistence (localStorage)
+// ============================================================
+const TOKEN_KEY = 'gma_apify_token';
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(TOKEN_KEY);
+  if (saved) document.getElementById('apifyToken').value = saved;
+});
+document.getElementById('apifyToken').addEventListener('change', e => {
+  localStorage.setItem(TOKEN_KEY, e.target.value);
+});
+
+// ============================================================
+// Logging
+// ============================================================
+function log(msg, type = '') {
+  const el = document.getElementById('progress');
+  el.style.display = 'block';
+  const line = document.createElement('div');
+  line.className = `progress-line ${type}`;
+  const time = new Date().toLocaleTimeString();
+  line.textContent = `[${time}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('progress').innerHTML = '';
+}
+
+// ============================================================
+// Apify run helpers (via /api/lead-finder-start + /api/scrape-status + /api/proxy)
+// ============================================================
+async function startRun(actor, payload) {
+  const r = await fetch('/api/lead-finder-start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, actor }),
+  });
+  const data = await r.json();
+  if (!r.ok || !data.ok) throw new Error(data.error || `Failed to start ${actor}`);
+  return data.runId;
+}
+
+async function pollRun(runId, token, label) {
+  const start = Date.now();
+  while (true) {
+    const r = await fetch(`/api/scrape-status?runId=${encodeURIComponent(runId)}&apifyToken=${encodeURIComponent(token)}`);
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Failed to poll ${label}`);
+
+    const elapsed = Math.round((Date.now() - start) / 1000);
+    if (data.status === 'SUCCEEDED') {
+      log(`✓ ${label} done in ${elapsed}s`, 'success');
+      return data.datasetId;
+    }
+    if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(data.status)) {
+      throw new Error(`${label} ${data.status}`);
+    }
+    // Still running — log occasionally
+    if (elapsed % 15 === 0) log(`  ${label} running... (${elapsed}s)`);
+    await new Promise(r => setTimeout(r, 5000));
+  }
+}
+
+async function fetchDataset(datasetId, token) {
+  const url = `https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items?token=${encodeURIComponent(token)}&clean=true&limit=1000&format=json`;
+  const r = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
+  if (!r.ok) throw new Error(`Dataset fetch failed: HTTP ${r.status}`);
+  return await r.json();
+}
+
+// ============================================================
+// Email filtering (drop junk)
+// ============================================================
+const JUNK_DOMAINS = [
+  'wixpress.com', 'sentry.io', 'example.com', 'domain.com',
+  'yourname.com', 'wordpress.com', 'sentry-next.wixpress.com',
+  'sentry.wixpress.com'
+];
+const JUNK_PATTERNS = [
+  /^noreply@/i, /^no-reply@/i, /^donotreply@/i, /^wordpress@/i,
+  /^yourname@/i, /^email@/i, /^test@/i, /^admin@example/i
+];
+const IMG_EXT = /\.(png|jpg|jpeg|gif|svg|webp|ico|bmp)$/i;
+
+function isValidEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  email = email.toLowerCase().trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+  if (IMG_EXT.test(email)) return false;
+  const domain = email.split('@')[1] || '';
+  if (JUNK_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))) return false;
+  if (JUNK_PATTERNS.some(p => p.test(email))) return false;
+  return true;
+}
+
+function pickBestEmail(emails, businessDomain) {
+  const valid = emails.filter(isValidEmail);
+  if (valid.length === 0) return null;
+  if (!businessDomain) return valid[0];
+  // Prefer emails matching the business's domain
+  const matched = valid.find(e => e.toLowerCase().endsWith('@' + businessDomain));
+  return matched || valid[0];
+}
+
+function hostOf(url) {
+  try { return new URL(url).hostname.replace(/^www\./, '').toLowerCase(); }
+  catch { return ''; }
+}
+
+// ============================================================
+// Main pipeline
+// ============================================================
+async function run() {
+  const token = document.getElementById('apifyToken').value.trim();
+  const keyword = document.getElementById('keyword').value.trim();
+  const city = document.getElementById('city').value.trim();
+  const state = document.getElementById('state').value.trim().toUpperCase();
+  const maxResults = parseInt(document.getElementById('maxResults').value) || 100;
+
+  if (!token) { alert('Enter Apify token'); return; }
+  if (!keyword || !city) { alert('Enter keyword and city'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  clearLog();
+  businesses = [];
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('stats').style.display = 'none';
+
+  try {
+    // -------- STEP 1: Google Maps --------
+    log('Step 1/3: Searching Google Maps...', 'info');
+    const gmapsRunId = await startRun('gmaps', { apifyToken: token, keyword, city, state, maxResults });
+    log(`  Apify run started: ${gmapsRunId}`);
+    const gmapsDataset = await pollRun(gmapsRunId, token, 'Google Maps');
+    const gmapsItems = await fetchDataset(gmapsDataset, token);
+    log(`  Got ${gmapsItems.length} businesses from Google Maps`, 'success');
+
+    // Normalize GMaps items
+    businesses = gmapsItems.map(x => {
+      const facebook = (x.facebooks && x.facebooks[0])
+        || (Array.isArray(x.socialMedias) ? x.socialMedias.find(s => /facebook\.com/i.test(s)) : null)
+        || '';
+      return {
+        name: x.title || x.name || '',
+        phone: x.phone || x.phoneNumber || '',
+        website: x.website || '',
+        websiteHost: x.website ? hostOf(x.website) : '',
+        facebook: facebook || '',
+        gbpUrl: x.url || '',
+        email: '',
+        emailSource: '',
+        // Keep raw emails from gmaps if present (sometimes scrapeContacts gives them)
+        _gmapsEmails: Array.isArray(x.emails) ? x.emails : [],
+      };
+    }).filter(b => b.name);
+
+    // Dedup by name+phone
+    const seen = new Set();
+    businesses = businesses.filter(b => {
+      const key = (b.name + '|' + b.phone).toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    log(`  After dedup: ${businesses.length} unique businesses`);
+
+    // Try emails from GMaps scrapeContacts first (free, already there)
+    let gmapsEmailHits = 0;
+    businesses.forEach(b => {
+      const email = pickBestEmail(b._gmapsEmails, b.websiteHost);
+      if (email) {
+        b.email = email;
+        b.emailSource = 'gmaps';
+        gmapsEmailHits++;
+      }
+      delete b._gmapsEmails;
+    });
+    if (gmapsEmailHits > 0) {
+      log(`  GMaps contacts already gave us ${gmapsEmailHits} emails for free`, 'success');
+    }
+
+    updateStats();
+
+    // -------- STEP 2: Website scrape for businesses without email but with website --------
+    const websiteTargets = businesses.filter(b => !b.email && b.website);
+    if (websiteTargets.length > 0) {
+      log(`Step 2/3: Scraping ${websiteTargets.length} websites for emails...`, 'info');
+      const contactRunId = await startRun('contact', {
+        apifyToken: token,
+        startUrls: websiteTargets.map(b => b.website),
+      });
+      log(`  Apify run started: ${contactRunId}`);
+      const contactDataset = await pollRun(contactRunId, token, 'Contact scraper');
+      const contactItems = await fetchDataset(contactDataset, token);
+      log(`  Got ${contactItems.length} pages scraped`, 'success');
+
+      // Map results back: contact scraper returns items keyed by URL
+      // Each item has: url, emails[], phones[], etc.
+      // Multiple items can belong to the same domain (different pages crawled).
+      const emailsByHost = {};
+      for (const item of contactItems) {
+        const itemHost = hostOf(item.url || '');
+        if (!itemHost) continue;
+        if (!emailsByHost[itemHost]) emailsByHost[itemHost] = [];
+        if (Array.isArray(item.emails)) emailsByHost[itemHost].push(...item.emails);
+      }
+
+      let websiteHits = 0;
+      websiteTargets.forEach(b => {
+        const collected = emailsByHost[b.websiteHost] || [];
+        const email = pickBestEmail(collected, b.websiteHost);
+        if (email) {
+          b.email = email;
+          b.emailSource = 'website';
+          websiteHits++;
+        }
+      });
+      log(`  Found emails on ${websiteHits} websites`, 'success');
+      updateStats();
+    } else {
+      log('Step 2/3: Skipped (no websites to scrape)', 'info');
+    }
+
+    // -------- STEP 3: Facebook fallback --------
+    const fbTargets = businesses.filter(b => !b.email && b.facebook);
+    if (fbTargets.length > 0) {
+      log(`Step 3/3: Scraping ${fbTargets.length} Facebook pages for emails...`, 'info');
+      const fbRunId = await startRun('facebook', {
+        apifyToken: token,
+        startUrls: fbTargets.map(b => b.facebook),
+      });
+      log(`  Apify run started: ${fbRunId}`);
+      const fbDataset = await pollRun(fbRunId, token, 'Facebook scraper');
+      const fbItems = await fetchDataset(fbDataset, token);
+      log(`  Got ${fbItems.length} FB pages scraped`, 'success');
+
+      // Map FB results back by page URL
+      const emailByFbUrl = {};
+      for (const item of fbItems) {
+        const url = (item.pageUrl || item.url || '').toLowerCase().replace(/\/$/, '');
+        if (!url) continue;
+        const email = item.email || (Array.isArray(item.emails) ? item.emails[0] : '');
+        if (email && isValidEmail(email)) emailByFbUrl[url] = email;
+      }
+
+      let fbHits = 0;
+      fbTargets.forEach(b => {
+        const key = (b.facebook || '').toLowerCase().replace(/\/$/, '');
+        const email = emailByFbUrl[key];
+        if (email) {
+          b.email = email;
+          b.emailSource = 'facebook';
+          fbHits++;
+        }
+      });
+      log(`  Found emails on ${fbHits} Facebook pages`, 'success');
+    } else {
+      log('Step 3/3: Skipped (no FB pages to scrape)', 'info');
+    }
+
+    // -------- Render --------
+    renderResults();
+    updateStats();
+    const finalEmails = businesses.filter(b => b.email).length;
+    log(`✓ Done! ${finalEmails}/${businesses.length} businesses have emails (${Math.round(finalEmails / businesses.length * 100)}% hit rate)`, 'success');
+
+  } catch (e) {
+    log(`✗ Error: ${e.message}`, 'error');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Find Leads';
+  }
+}
+
+// ============================================================
+// Stats + table rendering
+// ============================================================
+function updateStats() {
+  document.getElementById('stats').style.display = 'grid';
+  const total = businesses.length;
+  const withSite = businesses.filter(b => b.website).length;
+  const withEmail = businesses.filter(b => b.email).length;
+  const rate = total ? Math.round(withEmail / total * 100) : 0;
+  document.getElementById('statBusinesses').textContent = total;
+  document.getElementById('statWebsites').textContent = withSite;
+  document.getElementById('statEmails').textContent = withEmail;
+  document.getElementById('statHitRate').textContent = rate + '%';
+}
+
+function renderResults() {
+  document.getElementById('resultsCard').style.display = 'block';
+  const body = document.getElementById('resultsBody');
+  body.innerHTML = '';
+  // Sort: businesses with email first
+  const sorted = [...businesses].sort((a, b) => {
+    if (a.email && !b.email) return -1;
+    if (!a.email && b.email) return 1;
+    return 0;
+  });
+  for (const b of sorted) {
+    const tr = document.createElement('tr');
+    const sourceLabel = b.emailSource
+      ? `<span class="source-pill source-${b.emailSource === 'facebook' ? 'facebook' : 'website'}">${b.emailSource}</span>`
+      : `<span class="source-pill source-none">none</span>`;
+    tr.innerHTML = `
+      <td>${escapeHtml(b.name)}</td>
+      <td>${escapeHtml(b.phone)}</td>
+      <td>${b.website ? `<a class="link" href="${escapeAttr(b.website)}" target="_blank">${escapeHtml(hostOf(b.website))}</a>` : ''}</td>
+      <td>${b.facebook ? `<a class="link" href="${escapeAttr(b.facebook)}" target="_blank">FB</a>` : ''}</td>
+      <td class="email-cell ${b.email ? '' : 'none'}">${b.email ? escapeHtml(b.email) : '—'}</td>
+      <td>${sourceLabel}</td>
+      <td>${b.gbpUrl ? `<a class="link" href="${escapeAttr(b.gbpUrl)}" target="_blank">GBP</a>` : ''}</td>
+    `;
+    body.appendChild(tr);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+// ============================================================
+// Export
+// ============================================================
+function exportXLSX() {
+  if (!businesses.length) return;
+  const rows = businesses.map(b => ({
+    Name: b.name,
+    Phone: b.phone,
+    Website: b.website,
+    Facebook: b.facebook,
+    Email: b.email,
+    'Email Source': b.emailSource,
+    'GBP URL': b.gbpUrl,
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+  const kw = (document.getElementById('keyword').value || 'leads').replace(/[^a-z0-9]+/gi, '_');
+  const city = (document.getElementById('city').value || '').replace(/[^a-z0-9]+/gi, '_');
+  XLSX.writeFile(wb, `leads_${kw}_${city}_${Date.now()}.xlsx`);
+}
+
+function exportCSV() {
+  if (!businesses.length) return;
+  const headers = ['Name','Phone','Website','Facebook','Email','Email Source','GBP URL'];
+  const lines = [headers.join(',')];
+  for (const b of businesses) {
+    const row = [b.name, b.phone, b.website, b.facebook, b.email, b.emailSource, b.gbpUrl];
+    lines.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const kw = (document.getElementById('keyword').value || 'leads').replace(/[^a-z0-9]+/gi, '_');
+  const city = (document.getElementById('city').value || '').replace(/[^a-z0-9]+/gi, '_');
+  a.download = `leads_${kw}_${city}_${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
